@@ -117,7 +117,7 @@ export function CelebrationMascot({ message }: { message?: string }) {
   return (
     <div className="flex flex-col items-center gap-4 py-8 px-4 text-center">
       <div className="relative">
-        <div className="w-24 h-24 rounded-full overflow-hidden bg-secondary/50 shadow-warm-lg ring-4 ring-primary/20">
+        <div className="w-32 h-32 rounded-full overflow-hidden shadow-warm-lg">
           <Image
             src="/images/branding/mascot celebrate circle.png"
             alt="Celebration!"
@@ -126,9 +126,9 @@ export function CelebrationMascot({ message }: { message?: string }) {
           />
         </div>
         {/* Celebration sparkles */}
-        <span className="absolute -top-2 -right-2 text-2xl animate-bounce">🎉</span>
-        <span className="absolute -top-1 -left-3 text-xl animate-bounce delay-100">✨</span>
-        <span className="absolute -bottom-1 -right-3 text-xl animate-bounce delay-200">🌟</span>
+        <span className="absolute -top-2 -right-1 text-2xl animate-bounce">🎉</span>
+        <span className="absolute -top-1 -left-4 text-xl animate-bounce delay-100">✨</span>
+        <span className="absolute -bottom-1 -right-4 text-xl animate-bounce delay-200">🌟</span>
       </div>
       <div>
         <h3 className="text-xl font-bold text-primary">
