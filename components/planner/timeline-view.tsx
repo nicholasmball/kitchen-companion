@@ -46,7 +46,7 @@ export function TimelineView({ events, serveTime }: TimelineViewProps) {
       <CardContent>
         <div className="relative">
           {/* Timeline line */}
-          <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-border" />
+          <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary/30 via-primary/20 to-primary/30" />
 
           {/* Events */}
           <div className="space-y-4">

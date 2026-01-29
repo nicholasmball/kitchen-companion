@@ -69,7 +69,7 @@ export function ActivePlanWidget() {
   const planServeTime = new Date(activePlan.serve_time!)
 
   return (
-    <Card>
+    <Card className="shadow-warm">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div>

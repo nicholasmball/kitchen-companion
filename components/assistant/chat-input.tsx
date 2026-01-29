@@ -54,7 +54,7 @@ export function ChatInput({
   }
 
   return (
-    <div className="flex gap-2 items-end p-4 border-t bg-background">
+    <div className="flex gap-2 items-end p-4 border-t bg-card/50">
       <textarea
         ref={textareaRef}
         value={input}
@@ -63,14 +63,14 @@ export function ChatInput({
         placeholder={placeholder}
         disabled={disabled}
         rows={1}
-        className="flex-1 resize-none rounded-xl border bg-muted/50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
+        className="flex-1 resize-none rounded-2xl border border-border/50 bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 disabled:opacity-50 shadow-warm"
       />
       {isLoading ? (
         <Button
           onClick={onStop}
           variant="outline"
           size="icon"
-          className="h-11 w-11 shrink-0 rounded-xl"
+          className="h-11 w-11 shrink-0 rounded-2xl"
         >
           <StopIcon className="h-5 w-5" />
         </Button>
@@ -79,7 +79,7 @@ export function ChatInput({
           onClick={handleSubmit}
           disabled={!input.trim() || disabled}
           size="icon"
-          className="h-11 w-11 shrink-0 rounded-xl"
+          className="h-11 w-11 shrink-0 rounded-2xl shadow-warm"
         >
           <SendIcon className="h-5 w-5" />
         </Button>

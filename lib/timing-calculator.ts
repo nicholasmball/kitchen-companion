@@ -202,21 +202,22 @@ export function formatTimeUntil(eventTime: Date): string {
 
 /**
  * Get a color for an event type (for UI)
+ * Using warm color palette: teal, orange, amber, dusty rose, sage green
  */
 export function getEventColor(type: TimelineEventType): string {
   switch (type) {
     case 'prep_start':
-      return 'bg-blue-100 text-blue-800 border-blue-200'
+      return 'bg-[#3D8B8B]/15 text-[#2D6B6B] border-[#3D8B8B]/30'
     case 'cook_start':
-      return 'bg-orange-100 text-orange-800 border-orange-200'
+      return 'bg-[#D97B4A]/15 text-[#C46A3A] border-[#D97B4A]/30'
     case 'cook_end':
-      return 'bg-amber-100 text-amber-800 border-amber-200'
+      return 'bg-[#C9A962]/20 text-[#8B7A3D] border-[#C9A962]/30'
     case 'rest_start':
-      return 'bg-purple-100 text-purple-800 border-purple-200'
+      return 'bg-[#C4897A]/20 text-[#8B5A4A] border-[#C4897A]/30'
     case 'serve':
-      return 'bg-green-100 text-green-800 border-green-200'
+      return 'bg-[#7A9B76]/20 text-[#4A6B46] border-[#7A9B76]/30'
     default:
-      return 'bg-gray-100 text-gray-800 border-gray-200'
+      return 'bg-[#8B5A2B]/10 text-[#5C3D1E] border-[#8B5A2B]/20'
   }
 }
 

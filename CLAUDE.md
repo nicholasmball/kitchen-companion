@@ -992,6 +992,68 @@ The app is complete when:
 
 ---
 
+## UI Redesign: "Cat's Kitchen Companion" Branding
+
+### Reference Files
+- `DESIGN_GUIDE.md` - Complete UX/UI specification
+- `public/images/branding/mascot.png` - "Cat" (blonde woman cooking) and her tabby cat companion
+
+### Phase 1: Color System ✅ COMPLETE
+- [x] Warm cream backgrounds: #FAF6F1 (base), #F5E6D3 (cards), #EDD9C4 (nested), #E5CCAF (pressed)
+- [x] Warm orange accents: #D97B4A (primary CTA), #C46A3A (hover)
+- [x] Warm brown text: #3D2914 (body), #5C3D1E (headings), #8B5A2B (secondary)
+- [x] Warm shadows using rgba(139, 90, 43, 0.12)
+- [x] Updated globals.css with CSS variable overrides (light and dark modes)
+
+### Phase 2: Typography & Spacing ✅ COMPLETE
+- [x] Switched to Nunito font (rounded, friendly)
+- [x] Minimum 16px body text, larger in cooking mode
+- [x] Border-radius: 1rem for cards, 0.75rem for buttons
+
+### Phase 3: Component Restyling ✅ COMPLETE
+- [x] Cards: cream backgrounds, warm shadows, rounded-2xl, hover effects
+- [x] Buttons: warm orange primary, cream secondary, rounded corners
+- [x] Navigation: sticky header with warm shadow, 🍳 branding
+- [x] Forms & Inputs: warm styling, focus states
+- [x] Chat Interface: warm bubbles, rounded corners
+- [x] Timeline: warm gradient line, event colors updated
+
+### Phase 4: Mascot Integration ✅ COMPLETE
+- [x] Created reusable Mascot component (components/shared/mascot.tsx)
+- [x] Empty recipe collection: mascot with "Your recipe book is waiting!"
+- [x] Empty meal plan: mascot with "No meals planned yet. What shall we cook?"
+- [x] No search results: mascot with "Couldn't find that one"
+- [x] Dashboard welcome: mascot image in hero section
+- [x] Chat assistant: mascot avatar for assistant messages
+- [x] Navbar branding: mascot image in logo (brand name: "Cat's Kitchen")
+- [x] Recipe saved: toast with cat icon (lib/toast.tsx)
+- [x] Meal plan completed: CelebrationMascot with sparkles and mascot
+- [x] CookingLoader: frying pan spinner animation available for loading states
+
+### Phase 5: Micro-interactions ✅ COMPLETE
+- [x] Card hover: scale with shadow enhancement (hover-lift class)
+- [x] Smooth transitions on all interactive elements
+- [x] Timeline gradient effects
+
+### Phase 6: Dark Mode ✅ COMPLETE
+- [x] Warm dark brown background (#1A1412)
+- [x] Warm dark cards (#2D2420)
+- [x] Cream text for contrast (#F5E6D3)
+- [x] Orange accents remain vibrant
+
+### Phase 7: Final Polish Checklist ✅ COMPLETE
+- [x] All backgrounds are cream, not white
+- [x] All shadows use warm brown tint
+- [x] Primary buttons are warm orange
+- [x] Touch targets minimum 44px on mobile
+- [x] Cooking mode has large text
+- [x] Empty states have mascot messaging
+- [x] No default shadcn/ui gray colors remain
+- [x] Dark mode maintains warmth
+- [x] Fonts are rounded/friendly (Nunito)
+
+---
+
 ## Notes for Development
 
 - Start simple, iterate. Don't over-engineer initially.

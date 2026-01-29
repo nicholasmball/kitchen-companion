@@ -152,7 +152,7 @@ export function AddRecipeToPlan({ open, onOpenChange, onAdd }: AddRecipeToPlanPr
                             </div>
                           </div>
                           {recipe.is_favourite && (
-                            <HeartIcon className="h-4 w-4 text-red-500 fill-red-500" />
+                            <HeartIcon className="h-4 w-4 text-[#C4897A] fill-[#C4897A]" />
                           )}
                         </div>
                       </CardContent>

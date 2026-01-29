@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -33,11 +34,23 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header with gradient */}
+      {/* Header with gradient and mascot */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/90 to-primary p-8 text-primary-foreground">
-        <div className="relative z-10">
-          <h1 className="text-3xl font-bold">Welcome back, {userName}</h1>
-          <p className="mt-1 opacity-90">What would you like to cook today?</p>
+        <div className="relative z-10 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Welcome back, {userName}</h1>
+            <p className="mt-1 opacity-90">What would you like to cook today?</p>
+          </div>
+          {/* Mascot */}
+          <div className="hidden sm:block relative w-24 h-24 rounded-full overflow-hidden border-4 border-white/20 shadow-warm-lg shrink-0">
+            <Image
+              src="/images/branding/mascot circle.png"
+              alt="Cat's Kitchen Companion"
+              fill
+              className="object-cover"
+              priority
+            />
+          </div>
         </div>
         {/* Decorative elements */}
         <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/10" />
@@ -51,28 +64,28 @@ export default async function DashboardPage() {
           title="Plan a Meal"
           description="Time your dishes perfectly"
           icon={<CalendarIcon />}
-          color="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+          color="bg-[#D97B4A]/15 text-[#C46A3A] dark:bg-[#D97B4A]/20 dark:text-[#F4A574]"
         />
         <QuickActionCard
           href="/assistant"
           title="Ask the Chef"
           description="Get cooking advice"
           icon={<ChefIcon />}
-          color="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+          color="bg-[#7A9B76]/20 text-[#5C7A58] dark:bg-[#7A9B76]/20 dark:text-[#8FBC8F]"
         />
         <QuickActionCard
           href="/recipes"
           title="My Recipes"
           description="Browse your collection"
           icon={<BookIcon />}
-          color="bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400"
+          color="bg-[#3D8B8B]/15 text-[#2D6B6B] dark:bg-[#3D8B8B]/20 dark:text-[#5DADAD]"
         />
         <QuickActionCard
           href="/recipes/new"
           title="Add Recipe"
           description="Save a new recipe"
           icon={<PlusIcon />}
-          color="bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400"
+          color="bg-[#C4897A]/20 text-[#A06B5C] dark:bg-[#C4897A]/20 dark:text-[#D4A594]"
         />
       </div>
 
@@ -146,7 +159,7 @@ function RecipeCard({ recipe }: {
 }) {
   return (
     <Link href={`/recipes/${recipe.id}`}>
-      <Card className="h-full hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer">
+      <Card className="h-full shadow-warm hover:shadow-warm-lg hover:-translate-y-0.5 transition-all cursor-pointer">
         <CardContent className="pt-4 pb-4">
           <div className="flex items-start justify-between gap-2">
             <h3 className="font-medium line-clamp-2">{recipe.title}</h3>
@@ -188,22 +201,22 @@ function LandingPage() {
 
       {/* Features */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl w-full text-left">
-        <div className="p-4 rounded-lg bg-card border">
-          <div className="h-8 w-8 rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 flex items-center justify-center mb-2">
+        <div className="p-4 rounded-lg bg-card border shadow-warm">
+          <div className="h-8 w-8 rounded-full bg-[#D97B4A]/15 text-[#C46A3A] dark:bg-[#D97B4A]/20 dark:text-[#F4A574] flex items-center justify-center mb-2">
             <ClockIcon className="h-4 w-4" />
           </div>
           <h3 className="font-medium">Perfect Timing</h3>
           <p className="text-sm text-muted-foreground">Everything ready at the same time</p>
         </div>
-        <div className="p-4 rounded-lg bg-card border">
-          <div className="h-8 w-8 rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 flex items-center justify-center mb-2">
+        <div className="p-4 rounded-lg bg-card border shadow-warm">
+          <div className="h-8 w-8 rounded-full bg-[#7A9B76]/20 text-[#5C7A58] dark:bg-[#7A9B76]/20 dark:text-[#8FBC8F] flex items-center justify-center mb-2">
             <ChefHatIcon className="h-4 w-4" />
           </div>
           <h3 className="font-medium">AI Chef</h3>
           <p className="text-sm text-muted-foreground">Get expert cooking advice</p>
         </div>
-        <div className="p-4 rounded-lg bg-card border">
-          <div className="h-8 w-8 rounded-full bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400 flex items-center justify-center mb-2">
+        <div className="p-4 rounded-lg bg-card border shadow-warm">
+          <div className="h-8 w-8 rounded-full bg-[#3D8B8B]/15 text-[#2D6B6B] dark:bg-[#3D8B8B]/20 dark:text-[#5DADAD] flex items-center justify-center mb-2">
             <BookIcon className="h-4 w-4" />
           </div>
           <h3 className="font-medium">Recipe Library</h3>
@@ -238,7 +251,7 @@ function QuickActionCard({
 }) {
   return (
     <Link href={href}>
-      <Card className="h-full hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer">
+      <Card className="h-full shadow-warm hover:shadow-warm-lg hover:-translate-y-0.5 transition-all cursor-pointer">
         <CardContent className="pt-6">
           <div className={`mb-3 inline-flex h-12 w-12 items-center justify-center rounded-xl ${color}`}>
             {icon}

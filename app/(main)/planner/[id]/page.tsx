@@ -173,7 +173,7 @@ export default function MealPlanDetailPage() {
   if (error || !plan) {
     return (
       <div className="text-center py-12">
-        <p className="text-red-600 mb-4">{error || 'Meal plan not found'}</p>
+        <p className="text-destructive mb-4">{error || 'Meal plan not found'}</p>
         <Link href="/planner">
           <Button>Back to Plans</Button>
         </Link>

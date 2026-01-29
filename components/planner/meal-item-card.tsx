@@ -27,7 +27,7 @@ export function MealItemCard({ item, onEdit, onDelete }: MealItemCardProps) {
   const totalTime = (item.prep_time_minutes || 0) + item.cook_time_minutes + (item.rest_time_minutes || 0)
 
   return (
-    <Card>
+    <Card className="hover-lift">
       <CardContent className="py-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">

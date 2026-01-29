@@ -48,7 +48,7 @@ export default function EditRecipePage() {
   if (error || !recipe) {
     return (
       <div className="text-center py-12">
-        <p className="text-red-600">{error || 'Recipe not found'}</p>
+        <p className="text-destructive">{error || 'Recipe not found'}</p>
       </div>
     )
   }

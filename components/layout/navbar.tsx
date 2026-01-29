@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -42,21 +43,30 @@ export function Navbar() {
   }
 
   return (
-    <header className="border-b bg-background">
+    <header className="border-b bg-card/80 backdrop-blur-sm sticky top-0 z-50 shadow-warm">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center gap-8">
-          <Link href="/" className="font-semibold text-lg">
-            Kitchen Companion
+          <Link href="/" className="font-bold text-lg flex items-center gap-2 text-primary hover:text-primary/80 transition-colors">
+            <div className="w-8 h-8 rounded-full overflow-hidden shadow-warm shrink-0">
+              <Image
+                src="/images/branding/mascot circle.png"
+                alt="Cat's Kitchen"
+                width={32}
+                height={32}
+                className="object-cover"
+              />
+            </div>
+            <span className="hidden sm:inline">Cat&apos;s Kitchen</span>
           </Link>
           {user && (
             <nav className="hidden md:flex items-center gap-6">
-              <Link href="/planner" className="text-muted-foreground hover:text-foreground transition-colors">
+              <Link href="/planner" className="text-muted-foreground hover:text-primary font-medium transition-colors">
                 Planner
               </Link>
-              <Link href="/assistant" className="text-muted-foreground hover:text-foreground transition-colors">
+              <Link href="/assistant" className="text-muted-foreground hover:text-primary font-medium transition-colors">
                 Chef
               </Link>
-              <Link href="/recipes" className="text-muted-foreground hover:text-foreground transition-colors">
+              <Link href="/recipes" className="text-muted-foreground hover:text-primary font-medium transition-colors">
                 Recipes
               </Link>
             </nav>
@@ -89,7 +99,7 @@ export function Navbar() {
                   <Link href="/planner">Meal Plans</Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut} className="text-red-600">
+                <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
                   Sign out
                 </DropdownMenuItem>
               </DropdownMenuContent>

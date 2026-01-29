@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useMealPlans } from '@/hooks/use-meal-plan'
 import { MealPlanForm } from '@/components/planner/meal-plan-form'
+import { EmptyStateWithMascot } from '@/components/shared/mascot'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -55,7 +56,7 @@ export default function PlannerPage() {
   if (error) {
     return (
       <div className="text-center py-12">
-        <p className="text-red-600">Error loading meal plans: {error}</p>
+        <p className="text-destructive">Error loading meal plans: {error}</p>
       </div>
     )
   }
@@ -79,16 +80,17 @@ export default function PlannerPage() {
       {/* Plans List */}
       {mealPlans.length === 0 ? (
         <Card className="border-dashed">
-          <CardContent className="py-12 text-center">
-            <CalendarIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="font-semibold text-lg">No meal plans yet</h3>
-            <p className="text-muted-foreground mt-1 mb-4">
-              Create your first meal plan to start timing your dishes perfectly
-            </p>
-            <Button onClick={() => setFormOpen(true)}>
-              <PlusIcon className="h-4 w-4 mr-2" />
-              Create Meal Plan
-            </Button>
+          <CardContent className="py-6">
+            <EmptyStateWithMascot
+              title="No meals planned yet"
+              message="What shall we cook? Create your first meal plan to start timing your dishes perfectly."
+              action={
+                <Button onClick={() => setFormOpen(true)}>
+                  <PlusIcon className="h-4 w-4 mr-2" />
+                  Create Meal Plan
+                </Button>
+              }
+            />
           </CardContent>
         </Card>
       ) : (
@@ -144,7 +146,7 @@ export default function PlannerPage() {
                             e.preventDefault()
                             setDeleteDialog(plan)
                           }}
-                          className="text-red-600"
+                          className="text-destructive"
                         >
                           Delete
                         </DropdownMenuItem>

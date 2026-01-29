@@ -2,6 +2,7 @@
 
 import { useTimers } from '@/hooks/use-timers'
 import { useNotifications } from '@/hooks/use-notifications'
+import { CelebrationMascot } from '@/components/shared/mascot'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -101,14 +102,7 @@ export function TimerDisplay({ events, serveTime }: TimerDisplayProps) {
 
         {/* Complete state */}
         {isComplete && (
-          <div className="text-center py-4">
-            <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900 mb-2">
-              <CheckIcon className="h-6 w-6 text-green-600 dark:text-green-400" />
-            </div>
-            <p className="text-lg font-semibold text-green-600 dark:text-green-400">
-              All done! Time to serve!
-            </p>
-          </div>
+          <CelebrationMascot message="All done! Time to serve!" />
         )}
 
         {/* Upcoming events preview */}
@@ -149,10 +143,3 @@ function formatCountdown(time: { hours: number; minutes: number; seconds: number
   return `${time.seconds}s`
 }
 
-function CheckIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-    </svg>
-  )
-}

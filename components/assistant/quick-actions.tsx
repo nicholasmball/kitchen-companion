@@ -53,7 +53,7 @@ export function QuickActions({ onSelect, hasActivePlan, disabled }: QuickActions
   ]
 
   return (
-    <div className="flex flex-wrap gap-2 p-4">
+    <div className="flex flex-wrap gap-2 p-4 border-t bg-muted/30">
       {actions.map((action) => (
         <Button
           key={action.label}
@@ -61,7 +61,7 @@ export function QuickActions({ onSelect, hasActivePlan, disabled }: QuickActions
           size="sm"
           onClick={() => onSelect(action.prompt)}
           disabled={disabled}
-          className="rounded-full"
+          className="rounded-full bg-card hover:bg-secondary hover:text-secondary-foreground hover:border-secondary"
         >
           {action.icon}
           <span className="ml-1">{action.label}</span>

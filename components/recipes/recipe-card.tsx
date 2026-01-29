@@ -44,7 +44,7 @@ export function RecipeCard({ recipe, onToggleFavourite }: RecipeCardProps) {
             >
               <HeartIcon
                 className={`h-4 w-4 ${
-                  recipe.is_favourite ? 'fill-red-500 text-red-500' : ''
+                  recipe.is_favourite ? 'fill-[#C4897A] text-[#C4897A]' : ''
                 }`}
               />
             </Button>

@@ -144,7 +144,7 @@ export function RecipeImporter({ open, onOpenChange, onResult }: RecipeImporterP
                 </p>
               </div>
 
-              {error && <p className="text-sm text-red-500">{error}</p>}
+              {error && <p className="text-sm text-destructive">{error}</p>}
 
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={handleClose} disabled={loading}>
@@ -169,7 +169,7 @@ export function RecipeImporter({ open, onOpenChange, onResult }: RecipeImporterP
                 disabled={loading}
               />
 
-              {error && <p className="text-sm text-red-500">{error}</p>}
+              {error && <p className="text-sm text-destructive">{error}</p>}
 
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={handleClose} disabled={loading}>

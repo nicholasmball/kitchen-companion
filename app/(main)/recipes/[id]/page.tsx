@@ -166,7 +166,7 @@ export default function RecipeDetailPage() {
   if (error || !recipe) {
     return (
       <div className="text-center py-12">
-        <p className="text-red-600 mb-4">{error || 'Recipe not found'}</p>
+        <p className="text-destructive mb-4">{error || 'Recipe not found'}</p>
         <Link href="/recipes">
           <Button>Back to Recipes</Button>
         </Link>
@@ -181,7 +181,7 @@ export default function RecipeDetailPage() {
     )}>
       {/* Cooking Mode Banner */}
       {cookingMode && (
-        <div className="bg-primary text-primary-foreground p-4 rounded-lg flex items-center justify-between sticky top-0 z-10">
+        <div className="bg-primary text-primary-foreground p-4 rounded-2xl flex items-center justify-between sticky top-16 z-10 shadow-warm-lg">
           <div className="flex items-center gap-2">
             <ChefHatIcon className="h-5 w-5" />
             <span className="font-medium">Cooking Mode</span>
@@ -218,7 +218,7 @@ export default function RecipeDetailPage() {
               className="shrink-0"
             >
               <HeartIcon
-                className={`h-6 w-6 ${recipe.is_favourite ? 'fill-red-500 text-red-500' : ''}`}
+                className={`h-6 w-6 ${recipe.is_favourite ? 'fill-[#C4897A] text-[#C4897A]' : ''}`}
               />
             </Button>
           )}

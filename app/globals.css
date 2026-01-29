@@ -44,93 +44,132 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
+
+  /* Custom warm color palette */
+  --color-cream-50: #FAF6F1;
+  --color-cream-100: #F5E6D3;
+  --color-cream-200: #EDD9C4;
+  --color-cream-300: #E5CCAF;
+  --color-warm-orange-400: #F4A574;
+  --color-warm-orange-500: #D97B4A;
+  --color-warm-orange-600: #C46A3A;
+  --color-warm-brown-500: #8B5A2B;
+  --color-warm-brown-600: #5C3D1E;
+  --color-warm-brown-700: #3D2914;
+
+  /* Warm shadows */
+  --shadow-soft: 0 4px 16px rgba(139, 90, 43, 0.12);
+  --shadow-soft-lg: 0 8px 24px rgba(139, 90, 43, 0.15);
+  --shadow-soft-xl: 0 12px 40px rgba(139, 90, 43, 0.18);
 }
 
 :root {
-  --radius: 0.625rem;
-  /* Soft off-white with slight warmth */
-  --background: oklch(0.97 0.005 90);
-  --foreground: oklch(0.28 0.015 60);
-  /* Clean white cards */
-  --card: oklch(0.995 0.002 90);
-  --card-foreground: oklch(0.28 0.015 60);
-  --popover: oklch(0.995 0.002 90);
-  --popover-foreground: oklch(0.28 0.015 60);
-  /* Muted sage green primary */
-  --primary: oklch(0.52 0.08 160);
-  --primary-foreground: oklch(0.98 0 0);
-  /* Light gray-green secondary */
-  --secondary: oklch(0.94 0.01 150);
-  --secondary-foreground: oklch(0.35 0.02 60);
-  /* Soft muted tones */
-  --muted: oklch(0.94 0.008 100);
-  --muted-foreground: oklch(0.55 0.01 60);
-  /* Soft sage accent */
-  --accent: oklch(0.92 0.02 150);
-  --accent-foreground: oklch(0.35 0.02 60);
-  --destructive: oklch(0.55 0.2 25);
-  /* Soft borders */
-  --border: oklch(0.91 0.008 100);
-  --input: oklch(0.93 0.006 100);
-  --ring: oklch(0.52 0.08 160);
-  /* Muted chart colors */
-  --chart-1: oklch(0.52 0.08 160);
-  --chart-2: oklch(0.6 0.1 45);
-  --chart-3: oklch(0.55 0.08 250);
-  --chart-4: oklch(0.65 0.1 90);
-  --chart-5: oklch(0.55 0.12 350);
-  /* Sidebar */
-  --sidebar: oklch(0.96 0.006 100);
-  --sidebar-foreground: oklch(0.28 0.015 60);
-  --sidebar-primary: oklch(0.52 0.08 160);
-  --sidebar-primary-foreground: oklch(0.98 0 0);
-  --sidebar-accent: oklch(0.92 0.015 150);
-  --sidebar-accent-foreground: oklch(0.35 0.02 60);
-  --sidebar-border: oklch(0.91 0.008 100);
-  --sidebar-ring: oklch(0.52 0.08 160);
+  /* Increased base radius for warmer, friendlier look */
+  --radius: 0.75rem;
+
+  /* Warm cream background hierarchy */
+  --background: #FAF6F1;
+  --foreground: #3D2914;
+
+  /* Card surfaces - slightly darker cream */
+  --card: #F5E6D3;
+  --card-foreground: #3D2914;
+  --popover: #F5E6D3;
+  --popover-foreground: #3D2914;
+
+  /* Deep orange primary - appetite-stimulating CTA color */
+  --primary: #D97B4A;
+  --primary-foreground: #FFFFFF;
+
+  /* Nested elements - warm cream */
+  --secondary: #EDD9C4;
+  --secondary-foreground: #5C3D1E;
+
+  /* Muted tones - pressed states and subtle backgrounds */
+  --muted: #E5CCAF;
+  --muted-foreground: #8B5A2B;
+
+  /* Accent - warm cream for subtle highlights */
+  --accent: #EDD9C4;
+  --accent-foreground: #5C3D1E;
+
+  /* Warm red for destructive actions */
+  --destructive: #BB3E43;
+
+  /* Warm cream borders */
+  --border: #EDD9C4;
+  --input: #F5E6D3;
+  --ring: #D97B4A;
+
+  /* Chart colors - warm palette */
+  --chart-1: #D97B4A;
+  --chart-2: #8B5A2B;
+  --chart-3: #7A9B76;
+  --chart-4: #C9A962;
+  --chart-5: #C4897A;
+
+  /* Sidebar - warm cream */
+  --sidebar: #F5E6D3;
+  --sidebar-foreground: #3D2914;
+  --sidebar-primary: #D97B4A;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #EDD9C4;
+  --sidebar-accent-foreground: #5C3D1E;
+  --sidebar-border: #EDD9C4;
+  --sidebar-ring: #D97B4A;
 }
 
 .dark {
-  /* Soft dark background */
-  --background: oklch(0.18 0.01 160);
-  --foreground: oklch(0.92 0.008 100);
-  /* Dark cards */
-  --card: oklch(0.22 0.012 160);
-  --card-foreground: oklch(0.92 0.008 100);
-  --popover: oklch(0.22 0.012 160);
-  --popover-foreground: oklch(0.92 0.008 100);
-  /* Muted sage green primary */
-  --primary: oklch(0.65 0.1 160);
-  --primary-foreground: oklch(0.18 0.01 160);
-  /* Muted secondary */
-  --secondary: oklch(0.26 0.012 160);
-  --secondary-foreground: oklch(0.92 0.008 100);
+  /* Warm dark brown backgrounds */
+  --background: #1A1412;
+  --foreground: #F5E6D3;
+
+  /* Dark cards with warm undertones */
+  --card: #2D2420;
+  --card-foreground: #F5E6D3;
+  --popover: #2D2420;
+  --popover-foreground: #F5E6D3;
+
+  /* Orange primary stays vibrant in dark mode */
+  --primary: #F4A574;
+  --primary-foreground: #1A1412;
+
+  /* Muted warm dark tones */
+  --secondary: #3D3028;
+  --secondary-foreground: #EDD9C4;
+
   /* Muted tones */
-  --muted: oklch(0.26 0.012 160);
-  --muted-foreground: oklch(0.65 0.01 100);
-  /* Soft accent */
-  --accent: oklch(0.28 0.015 160);
-  --accent-foreground: oklch(0.92 0.008 100);
-  --destructive: oklch(0.65 0.18 25);
-  /* Soft borders */
-  --border: oklch(0.30 0.012 160);
-  --input: oklch(0.28 0.01 160);
-  --ring: oklch(0.65 0.1 160);
-  /* Muted chart colors */
-  --chart-1: oklch(0.65 0.1 160);
-  --chart-2: oklch(0.65 0.1 45);
-  --chart-3: oklch(0.6 0.08 250);
-  --chart-4: oklch(0.7 0.1 90);
-  --chart-5: oklch(0.6 0.12 350);
-  /* Sidebar */
-  --sidebar: oklch(0.20 0.01 160);
-  --sidebar-foreground: oklch(0.92 0.008 100);
-  --sidebar-primary: oklch(0.65 0.1 160);
-  --sidebar-primary-foreground: oklch(0.18 0.01 160);
-  --sidebar-accent: oklch(0.26 0.012 160);
-  --sidebar-accent-foreground: oklch(0.92 0.008 100);
-  --sidebar-border: oklch(0.30 0.012 160);
-  --sidebar-ring: oklch(0.65 0.1 160);
+  --muted: #3D3028;
+  --muted-foreground: #C4897A;
+
+  /* Accent */
+  --accent: #3D3028;
+  --accent-foreground: #EDD9C4;
+
+  /* Warm red destructive */
+  --destructive: #E05D62;
+
+  /* Warm dark borders */
+  --border: #3D3028;
+  --input: #2D2420;
+  --ring: #F4A574;
+
+  /* Chart colors - adjusted for dark mode */
+  --chart-1: #F4A574;
+  --chart-2: #C4897A;
+  --chart-3: #8FBC8F;
+  --chart-4: #DAC282;
+  --chart-5: #D4A574;
+
+  /* Sidebar - warm dark */
+  --sidebar: #241E1A;
+  --sidebar-foreground: #F5E6D3;
+  --sidebar-primary: #F4A574;
+  --sidebar-primary-foreground: #1A1412;
+  --sidebar-accent: #3D3028;
+  --sidebar-accent-foreground: #EDD9C4;
+  --sidebar-border: #3D3028;
+  --sidebar-ring: #F4A574;
 }
 
 @layer base {
@@ -139,5 +178,81 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Custom utility classes for warm shadows */
+@layer utilities {
+  .shadow-warm {
+    box-shadow: 0 4px 16px rgba(139, 90, 43, 0.12);
+  }
+  .shadow-warm-lg {
+    box-shadow: 0 8px 24px rgba(139, 90, 43, 0.15);
+  }
+  .shadow-warm-xl {
+    box-shadow: 0 12px 40px rgba(139, 90, 43, 0.18);
+  }
+}
+
+/* Dark mode shadow adjustments */
+.dark .shadow-warm {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+.dark .shadow-warm-lg {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+.dark .shadow-warm-xl {
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+
+/* Smooth transitions for interactive elements */
+@layer base {
+  button, a, input, select, textarea {
+    @apply transition-all duration-200 ease-out;
+  }
+}
+
+/* Warm focus ring */
+@layer utilities {
+  .focus-warm {
+    @apply focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-background;
+  }
+}
+
+/* Animation for cards on hover */
+@layer utilities {
+  .hover-lift {
+    transition: all 0.2s ease-out;
+  }
+  .hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(139, 90, 43, 0.15);
+  }
+}
+
+.dark .hover-lift:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* Skeleton loading animation with warm tint */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@layer utilities {
+  .skeleton-warm {
+    background: linear-gradient(
+      90deg,
+      var(--muted) 25%,
+      var(--secondary) 50%,
+      var(--muted) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
   }
 }

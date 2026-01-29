@@ -2,7 +2,9 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { cn } from '@/lib/utils'
+import { toastSuccess } from '@/lib/toast'
 import { Button } from '@/components/ui/button'
 import { useRecipes } from '@/hooks/use-recipes'
 import type { ChatMessage } from '@/hooks/use-chat'
@@ -186,6 +188,7 @@ export function ChatMessageBubble({ message, isStreaming }: ChatMessageProps) {
       })
       if (result) {
         setSaved(true)
+        toastSuccess('Recipe saved!', 'Opening editor to refine details...')
         // Navigate to edit page so user can refine the recipe
         router.push(`/recipes/${result.id}/edit`)
       }
@@ -205,16 +208,24 @@ export function ChatMessageBubble({ message, isStreaming }: ChatMessageProps) {
     >
       <div
         className={cn(
-          'max-w-[85%] rounded-2xl px-4 py-3',
+          'max-w-[85%] rounded-2xl px-4 py-3 shadow-[0_2px_8px_rgba(139,90,43,0.08)]',
           isUser
             ? 'bg-primary text-primary-foreground rounded-br-md'
-            : 'bg-muted rounded-bl-md'
+            : 'bg-secondary rounded-bl-md'
         )}
       >
         {!isUser && (
-          <div className="flex items-center gap-2 mb-1">
-            <ChefIcon className="h-4 w-4 text-primary" />
-            <span className="text-xs font-medium text-primary">Chef</span>
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-6 h-6 rounded-full overflow-hidden bg-secondary shadow-warm shrink-0">
+              <Image
+                src="/images/branding/mascot.png"
+                alt="Chef"
+                width={24}
+                height={24}
+                className="object-cover object-top"
+              />
+            </div>
+            <span className="text-xs font-medium text-primary">Cat&apos;s Kitchen</span>
           </div>
         )}
         <div className={cn(
@@ -241,7 +252,7 @@ export function ChatMessageBubble({ message, isStreaming }: ChatMessageProps) {
           </Button>
         )}
         {saved && (
-          <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
+          <p className="text-xs text-[#6B8E5E] mt-2 flex items-center gap-1">
             <CheckIcon className="h-3 w-3" />
             Saved! Opening editor...
           </p>

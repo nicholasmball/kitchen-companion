@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useRecipes } from '@/hooks/use-recipes'
 import { RecipeCard } from '@/components/recipes/recipe-card'
 import { RecipeImporter } from '@/components/recipes/recipe-importer'
+import { EmptyStateWithMascot } from '@/components/shared/mascot'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -93,7 +94,7 @@ export default function RecipesPage() {
   if (error) {
     return (
       <div className="text-center py-12">
-        <p className="text-red-600">Error loading recipes: {error}</p>
+        <p className="text-destructive">Error loading recipes: {error}</p>
         <Button onClick={() => window.location.reload()} className="mt-4">
           Try again
         </Button>
@@ -224,30 +225,27 @@ export default function RecipesPage() {
 function EmptyState({ search, hasRecipes }: { search: string; hasRecipes: boolean }) {
   if (search || hasRecipes) {
     return (
-      <div className="text-center py-12">
-        <SearchIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-        <h3 className="font-semibold text-lg">No recipes found</h3>
-        <p className="text-muted-foreground mt-1">
-          Try adjusting your search or filters
-        </p>
-      </div>
+      <EmptyStateWithMascot
+        title="Hmm, couldn't find that one"
+        message="Try adjusting your search or filters - maybe the cat hid it somewhere?"
+        size="sm"
+      />
     )
   }
 
   return (
-    <div className="text-center py-12">
-      <BookIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-      <h3 className="font-semibold text-lg">No recipes yet</h3>
-      <p className="text-muted-foreground mt-1">
-        Start building your recipe collection
-      </p>
-      <Link href="/recipes/new">
-        <Button className="mt-4">
-          <PlusIcon className="h-4 w-4 mr-2" />
-          Add your first recipe
-        </Button>
-      </Link>
-    </div>
+    <EmptyStateWithMascot
+      title="Your recipe book is waiting!"
+      message="Let's add your first recipe and start building your collection."
+      action={
+        <Link href="/recipes/new">
+          <Button>
+            <PlusIcon className="h-4 w-4 mr-2" />
+            Add your first recipe
+          </Button>
+        </Link>
+      }
+    />
   )
 }
 
