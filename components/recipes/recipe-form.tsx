@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { RecipeImageUpload } from './recipe-image-upload'
 import type { Recipe, Ingredient } from '@/types'
 
 interface RecipeFormProps {
@@ -61,6 +62,7 @@ export function RecipeForm({ recipe, onSubmit }: RecipeFormProps) {
   const [sourceName, setSourceName] = useState(recipe?.source_name || '')
   const [sourceUrl, setSourceUrl] = useState(recipe?.source_url || '')
   const [tags, setTags] = useState(recipe?.tags?.join(', ') || '')
+  const [imageUrl, setImageUrl] = useState(recipe?.image_url || '')
 
   const addIngredient = () => {
     setIngredients([...ingredients, { amount: '', unit: '', item: '', notes: '' }])
@@ -101,6 +103,7 @@ export function RecipeForm({ recipe, onSubmit }: RecipeFormProps) {
       source_name: sourceName.trim() || null,
       source_url: sourceUrl.trim() || null,
       tags: tags ? tags.split(',').map((t) => t.trim()).filter(Boolean) : [],
+      image_url: imageUrl || null,
     }
 
     const result = await onSubmit(data)
@@ -120,6 +123,20 @@ export function RecipeForm({ recipe, onSubmit }: RecipeFormProps) {
           {error}
         </div>
       )}
+
+      {/* Recipe Image */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Recipe Photo</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <RecipeImageUpload
+            currentImageUrl={imageUrl || null}
+            recipeId={recipe?.id}
+            onImageChange={(url) => setImageUrl(url || '')}
+          />
+        </CardContent>
+      </Card>
 
       {/* Basic Info */}
       <Card>
