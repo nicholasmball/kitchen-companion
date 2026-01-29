@@ -60,6 +60,7 @@ export async function POST(request: Request) {
   "instructions": "Step by step instructions as a single string with numbered steps",
   "prep_time_minutes": number or null,
   "cook_time_minutes": number or null,
+  "rest_time_minutes": number or null,
   "servings": number or null,
   "difficulty": "easy" | "medium" | "hard" | null,
   "cuisine": "cuisine type if mentioned" or null,
@@ -72,6 +73,7 @@ Notes:
 - Extract ALL ingredients you can see, preserving quantities
 - For instructions, number each step clearly
 - If handwritten, do your best to read the text
+- IMPORTANT: Look for resting/standing/cooling time in the instructions. Phrases like "let rest for 10 minutes", "allow to stand", "rest before carving", "cool for 15 minutes" indicate rest_time_minutes.
 
 Return ONLY the JSON object, no other text.`,
             },

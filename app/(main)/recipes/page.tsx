@@ -207,6 +207,7 @@ export default function RecipesPage() {
             instructions: data.instructions || null,
             prep_time_minutes: data.prep_time_minutes || null,
             cook_time_minutes: data.cook_time_minutes || null,
+            rest_time_minutes: data.rest_time_minutes || null,
             servings: data.servings || null,
             difficulty: data.difficulty || null,
             cuisine: data.cuisine || null,

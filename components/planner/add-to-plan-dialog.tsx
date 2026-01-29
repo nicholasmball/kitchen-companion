@@ -20,6 +20,7 @@ interface RecipeData {
   title: string
   cook_time_minutes?: number | null
   prep_time_minutes?: number | null
+  rest_time_minutes?: number | null
   instructions?: string | null
 }
 
@@ -73,7 +74,7 @@ export function AddToPlanDialog({ open, onOpenChange, recipe, onSuccess }: AddTo
         name: recipe.title,
         cook_time_minutes: recipe.cook_time_minutes || 30,
         prep_time_minutes: recipe.prep_time_minutes || 0,
-        rest_time_minutes: 0,
+        rest_time_minutes: recipe.rest_time_minutes || 0,
         cooking_method: 'oven',
         instructions: recipe.instructions || null,
         notes: null,

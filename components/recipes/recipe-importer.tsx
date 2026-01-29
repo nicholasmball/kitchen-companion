@@ -21,6 +21,7 @@ interface ParsedRecipe {
   instructions?: string
   prep_time_minutes?: number
   cook_time_minutes?: number
+  rest_time_minutes?: number
   servings?: number
   difficulty?: string
   cuisine?: string
@@ -215,6 +216,11 @@ export function RecipeImporter({ open, onOpenChange, onResult }: RecipeImporterP
                 {result.cook_time_minutes && (
                   <span className="bg-background px-2 py-1 rounded">
                     Cook: {result.cook_time_minutes}m
+                  </span>
+                )}
+                {result.rest_time_minutes && (
+                  <span className="bg-background px-2 py-1 rounded">
+                    Rest: {result.rest_time_minutes}m
                   </span>
                 )}
                 {result.servings && (

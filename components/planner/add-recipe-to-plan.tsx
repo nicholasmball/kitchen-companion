@@ -48,7 +48,7 @@ export function AddRecipeToPlan({ open, onOpenChange, onAdd }: AddRecipeToPlanPr
         name: recipe.title,
         cook_time_minutes: recipe.cook_time_minutes || 30,
         prep_time_minutes: recipe.prep_time_minutes || 0,
-        rest_time_minutes: 0,
+        rest_time_minutes: recipe.rest_time_minutes || 0,
         temperature: null,
         temperature_unit: 'C',
         cooking_method: 'oven',
@@ -68,6 +68,7 @@ export function AddRecipeToPlan({ open, onOpenChange, onAdd }: AddRecipeToPlanPr
     instructions?: string
     prep_time_minutes?: number
     cook_time_minutes?: number
+    rest_time_minutes?: number
   }) => {
     setAdding(true)
     try {
@@ -75,7 +76,7 @@ export function AddRecipeToPlan({ open, onOpenChange, onAdd }: AddRecipeToPlanPr
         name: data.title || 'Imported Recipe',
         cook_time_minutes: data.cook_time_minutes || 30,
         prep_time_minutes: data.prep_time_minutes || 0,
-        rest_time_minutes: 0,
+        rest_time_minutes: data.rest_time_minutes || 0,
         temperature: null,
         temperature_unit: 'C',
         cooking_method: 'oven',
