@@ -2,9 +2,44 @@
 
 ## Overview
 
-Build a Next.js 14+ app for home cooks to plan meal timings, get AI chef assistance, and store recipes. The app helps coordinate cooking multiple dishes to serve at the same time, provides an AI chef assistant for cooking guidance, and stores favourite recipes.
+A Next.js 14+ app for home cooks to plan meal timings, get AI chef assistance, and store recipes. The app helps coordinate cooking multiple dishes to serve at the same time, provides an AI chef assistant for cooking guidance, and stores favourite recipes.
 
 **Primary Use Case:** Someone cooking a complex meal (e.g., Sunday roast with meat, potatoes, vegetables, gravy) who needs help timing everything to be ready simultaneously.
+
+**Live URL:** Deployed on Vercel (see environment configuration)
+
+---
+
+## Current Implementation Status
+
+### Completed Features
+- ✅ Authentication (email/password via Supabase)
+- ✅ Dashboard with active meal plan widget and quick actions
+- ✅ Meal timing planner with timeline calculations
+- ✅ Label scanning via Claude Vision
+- ✅ Browser notifications with audio alerts
+- ✅ Timer display with countdown
+- ✅ Chef assistant with streaming chat (British personality, metric/Celsius)
+- ✅ Recipe CRUD (create, read, update, delete)
+- ✅ Recipe import from URLs and images
+- ✅ Recipe search and filters (cuisine, course, difficulty, time, favourites)
+- ✅ Favourite recipes toggle
+- ✅ Add recipe to meal plan
+- ✅ Start cooking from recipe (creates plan and navigates to planner)
+- ✅ Multi-recipe meal plan building
+
+### Not Yet Implemented
+- ❌ "Remember me" option on login
+- ❌ Password reset flow
+- ❌ Welcome message with user's name on dashboard
+- ❌ Recent/favourite recipes sections on dashboard
+- ❌ Save recipe from chat button
+- ❌ Cooking mode for recipes (larger font, keep screen awake)
+- ❌ Servings adjuster on recipe detail page
+- ❌ Dark mode manual toggle (currently follows system preference only)
+- ❌ Service Worker for true background notifications
+- ❌ Recipe image upload to cloud storage
+- ❌ Sound files (/public/sounds/*.mp3) - uses Web Audio API synthesis instead
 
 ---
 
@@ -15,7 +50,7 @@ Build a Next.js 14+ app for home cooks to plan meal timings, get AI chef assista
 - **Database:** Supabase (Postgres + Auth + Row Level Security)
 - **AI:** Anthropic Claude API (claude-sonnet-4-20250514) for chef assistant + vision capabilities for label/recipe scanning
 - **Deployment:** Vercel
-- **State Management:** React hooks, Supabase realtime for active timers
+- **State Management:** React hooks
 - **Notifications:** Browser Notification API + Web Audio API for alerts
 
 ---
@@ -260,8 +295,8 @@ create trigger update_chat_sessions_updated_at
     /layout.tsx                 # Main app layout with navigation
     /page.tsx                   # Dashboard/Home
     /planner
-      /page.tsx                 # Meal timing planner
-      /[id]/page.tsx            # Specific saved meal plan
+      /page.tsx                 # Meal timing planner (list of plans)
+      /[id]/page.tsx            # Specific saved meal plan detail
     /assistant/page.tsx         # Chef AI chat
     /recipes
       /page.tsx                 # Recipe collection list
@@ -273,13 +308,17 @@ create trigger update_chat_sessions_updated_at
     /parse-label/route.ts       # Claude Vision for food labels
     /parse-recipe-image/route.ts # Claude Vision for recipe images
     /parse-recipe-url/route.ts  # Extract recipe from URL
+  /auth
+    /callback/route.ts          # Supabase auth callback handler
 /components
   /ui/                          # shadcn/ui components
   /layout
     /navbar.tsx                 # Top navigation bar
     /mobile-nav.tsx             # Bottom navigation for mobile
-    /sidebar.tsx                # Desktop sidebar (optional)
   /planner
+    /active-plan-widget.tsx     # Dashboard widget showing active plan
+    /add-recipe-to-plan.tsx     # Add recipe from planner page
+    /add-to-plan-dialog.tsx     # Add recipe to plan from recipe page
     /meal-plan-form.tsx         # Form to create/edit meal plan
     /meal-item-card.tsx         # Individual item in plan
     /meal-item-form.tsx         # Add/edit item modal
@@ -290,42 +329,37 @@ create trigger update_chat_sessions_updated_at
   /recipes
     /recipe-card.tsx            # Recipe preview card
     /recipe-form.tsx            # Add/edit recipe form
-    /recipe-detail.tsx          # Full recipe display
-    /ingredients-list.tsx       # Scalable ingredients display
     /recipe-importer.tsx        # URL/image import modal
   /assistant
     /chat-interface.tsx         # Main chat UI
     /chat-message.tsx           # Individual message bubble
     /chat-input.tsx             # Message input with suggestions
+    /chat-history.tsx           # Chat session history sidebar
     /quick-actions.tsx          # Preset action buttons
   /shared
-    /loading-spinner.tsx
-    /empty-state.tsx
-    /confirmation-dialog.tsx
-    /image-upload.tsx
+    /image-upload.tsx           # Reusable image upload component
 /lib
   /supabase
     /client.ts                  # Browser Supabase client
     /server.ts                  # Server Supabase client
-    /middleware.ts              # Auth middleware
   /anthropic.ts                 # Claude API client setup
-  /utils.ts                     # General utilities
+  /utils.ts                     # General utilities (cn function, etc.)
   /timing-calculator.ts         # Calculate cooking schedule from serve time
   /notifications.ts             # Browser notification helpers
-  /audio.ts                     # Alert sound utilities
+  /audio.ts                     # Alert sound utilities (Web Audio API synthesis)
 /hooks
   /use-meal-plan.ts             # Meal plan CRUD operations
   /use-recipes.ts               # Recipes CRUD operations
   /use-timers.ts                # Timer management
   /use-notifications.ts         # Notification permission & sending
-  /use-chat.ts                  # Chat state management
+  /use-chat.ts                  # Chat streaming state management
+  /use-chat-sessions.ts         # Chat session persistence
 /types
   /database.ts                  # Supabase generated types
   /index.ts                     # App-specific types
+/middleware.ts                  # Auth middleware (root level)
 /public
-  /sounds
-    /alert.mp3                  # Timer alert sound
-    /notification.mp3           # Gentle notification sound
+  /images/branding/mascot.png   # App mascot image
 ```
 
 ---
@@ -475,8 +509,10 @@ type NotificationType =
 
 #### 4.2 System Prompt
 
+The chef assistant has a **British personality** - uses Celsius, metric measurements, and British cooking terminology (hob, grill, etc.).
+
 ```
-You are an expert chef assistant with decades of professional kitchen experience. You help home cooks with:
+You are an expert British chef assistant with decades of professional kitchen experience. You help home cooks with:
 
 - Cooking techniques and tips
 - Recipe suggestions and modifications
@@ -487,19 +523,22 @@ You are an expert chef assistant with decades of professional kitchen experience
 - Explaining culinary terms and methods
 
 Your personality:
-- Warm, encouraging, and patient
+- Warm, encouraging, and patient like a friendly British cooking show host
 - Practical and focused on home cooking realities
 - Happy to explain the "why" behind techniques
 - Honest about difficulty levels
 - Safety-conscious, especially regarding food temperatures and allergens
 
+Important:
+- Always use Celsius for temperatures (e.g., "180°C" not "350°F")
+- Use metric measurements primarily (grams, ml, litres)
+- Use British terminology: "hob" not "stovetop", "grill" not "broiler", "cling film" not "plastic wrap"
+
 When providing recipes, structure them clearly with:
-- Ingredients list with quantities
+- Ingredients list with quantities (metric)
 - Step-by-step instructions
 - Tips for success
 - Common mistakes to avoid
-
-If the user asks you to search for a specific recipe or cooking guide online, use your web search capability to find reputable sources and provide links. Prefer established cooking sites like BBC Good Food, Serious Eats, NYT Cooking, etc.
 
 {If user has active meal plan, include context here}
 ```
@@ -513,8 +552,12 @@ If the user asks you to search for a specific recipe or cooking guide online, us
 
 #### 4.4 Web Search Integration
 
-**Requirements:**
-- When user asks for specific recipes or guides, use Claude's web search
+**Status: NOT IMPLEMENTED**
+
+The Claude API does not have built-in web search capabilities. To add this feature, would need to integrate a search API (e.g., Serper, Tavily, or similar) and pass results as context to Claude.
+
+**Original Requirements (for future implementation):**
+- When user asks for specific recipes or guides, search the web
 - Provide source links in responses
 - Offer to save found recipes to user's collection
 
@@ -922,28 +965,28 @@ Before considering each feature complete:
 
 The app is complete when:
 
-- [ ] User can sign up and log in
-- [ ] User can create a meal plan with multiple items
-- [ ] User can set a serve time and see calculated timeline
-- [ ] User can scan a food label and have details extracted
-- [ ] Notifications fire at correct times (with permission)
-- [ ] Audio alerts play with notifications
-- [ ] User can save and load meal plans
-- [ ] User can chat with the chef assistant
-- [ ] Chef assistant responses stream in real-time
-- [ ] Chef assistant can search web for recipes when asked
-- [ ] User can save recipes from chat
-- [ ] User can manually add recipes
-- [ ] User can import recipes from images
-- [ ] User can import recipes from URLs
-- [ ] User can edit and delete recipes
-- [ ] User can favourite recipes
-- [ ] User can search and filter recipes
-- [ ] User can scale recipe servings
-- [ ] App is responsive and works on mobile
-- [ ] App works in dark mode
-- [ ] App is deployed to Vercel
-- [ ] All data persists in Supabase
+- [x] User can sign up and log in
+- [x] User can create a meal plan with multiple items
+- [x] User can set a serve time and see calculated timeline
+- [x] User can scan a food label and have details extracted
+- [x] Notifications fire at correct times (with permission)
+- [x] Audio alerts play with notifications
+- [x] User can save and load meal plans
+- [x] User can chat with the chef assistant
+- [x] Chef assistant responses stream in real-time
+- [ ] Chef assistant can search web for recipes when asked (not implemented - requires external search API)
+- [ ] User can save recipes from chat (not implemented)
+- [x] User can manually add recipes
+- [x] User can import recipes from images
+- [x] User can import recipes from URLs
+- [x] User can edit and delete recipes
+- [x] User can favourite recipes
+- [x] User can search and filter recipes
+- [ ] User can scale recipe servings (not implemented)
+- [x] App is responsive and works on mobile
+- [x] App works in dark mode (system preference)
+- [x] App is deployed to Vercel
+- [x] All data persists in Supabase
 
 ---
 
