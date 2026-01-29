@@ -19,6 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { cn } from '@/lib/utils'
 import type { Recipe } from '@/types'
 
 export default function RecipeDetailPage() {
@@ -37,6 +38,7 @@ export default function RecipeDetailPage() {
   const [startCookingOpen, setStartCookingOpen] = useState(false)
   const [startingCooking, setStartingCooking] = useState(false)
   const [addToPlanOpen, setAddToPlanOpen] = useState(false)
+  const [cookingMode, setCookingMode] = useState(false)
   const [serveTime, setServeTime] = useState(() => {
     // Default to 1 hour from now, rounded to nearest 15 minutes
     const now = new Date()
@@ -58,6 +60,29 @@ export default function RecipeDetailPage() {
     }
     fetchRecipe()
   }, [id, getRecipe])
+
+  // Keep screen awake in cooking mode using Wake Lock API
+  useEffect(() => {
+    let wakeLock: WakeLockSentinel | null = null
+
+    async function requestWakeLock() {
+      if (cookingMode && 'wakeLock' in navigator) {
+        try {
+          wakeLock = await navigator.wakeLock.request('screen')
+        } catch (err) {
+          console.log('Wake Lock not available:', err)
+        }
+      }
+    }
+
+    requestWakeLock()
+
+    return () => {
+      if (wakeLock) {
+        wakeLock.release()
+      }
+    }
+  }, [cookingMode])
 
   const handleDelete = async () => {
     setDeleting(true)
@@ -150,71 +175,111 @@ export default function RecipeDetailPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className={cn(
+      "max-w-3xl mx-auto space-y-6",
+      cookingMode && "text-lg"
+    )}>
+      {/* Cooking Mode Banner */}
+      {cookingMode && (
+        <div className="bg-primary text-primary-foreground p-4 rounded-lg flex items-center justify-between sticky top-0 z-10">
+          <div className="flex items-center gap-2">
+            <ChefHatIcon className="h-5 w-5" />
+            <span className="font-medium">Cooking Mode</span>
+          </div>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setCookingMode(false)}
+          >
+            Exit
+          </Button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col gap-4">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">
+            <h1 className={cn(
+              "font-bold",
+              cookingMode ? "text-4xl" : "text-3xl"
+            )}>
               {recipe.title}
             </h1>
-            {recipe.description && (
+            {recipe.description && !cookingMode && (
               <p className="text-muted-foreground mt-2">{recipe.description}</p>
             )}
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleToggleFavourite}
-            className="shrink-0"
-          >
-            <HeartIcon
-              className={`h-6 w-6 ${recipe.is_favourite ? 'fill-red-500 text-red-500' : ''}`}
-            />
-          </Button>
+          {!cookingMode && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleToggleFavourite}
+              className="shrink-0"
+            >
+              <HeartIcon
+                className={`h-6 w-6 ${recipe.is_favourite ? 'fill-red-500 text-red-500' : ''}`}
+              />
+            </Button>
+          )}
         </div>
 
-        {/* Meta badges */}
-        <div className="flex flex-wrap gap-2">
-          {recipe.total_time_minutes && (
-            <Badge variant="secondary">
-              <ClockIcon className="h-3 w-3 mr-1" />
-              {recipe.total_time_minutes} min total
-            </Badge>
-          )}
-          {recipe.prep_time_minutes && (
-            <Badge variant="outline">{recipe.prep_time_minutes} min prep</Badge>
-          )}
-          {recipe.cook_time_minutes && (
-            <Badge variant="outline">{recipe.cook_time_minutes} min cook</Badge>
-          )}
-          {recipe.difficulty && (
-            <Badge variant="secondary" className="capitalize">{recipe.difficulty}</Badge>
-          )}
-          {recipe.cuisine && <Badge variant="outline">{recipe.cuisine}</Badge>}
-          {recipe.course && <Badge variant="outline" className="capitalize">{recipe.course}</Badge>}
-        </div>
+        {/* Meta badges - hidden in cooking mode */}
+        {!cookingMode && (
+          <div className="flex flex-wrap gap-2">
+            {recipe.total_time_minutes && (
+              <Badge variant="secondary">
+                <ClockIcon className="h-3 w-3 mr-1" />
+                {recipe.total_time_minutes} min total
+              </Badge>
+            )}
+            {recipe.prep_time_minutes && (
+              <Badge variant="outline">{recipe.prep_time_minutes} min prep</Badge>
+            )}
+            {recipe.cook_time_minutes && (
+              <Badge variant="outline">{recipe.cook_time_minutes} min cook</Badge>
+            )}
+            {recipe.difficulty && (
+              <Badge variant="secondary" className="capitalize">{recipe.difficulty}</Badge>
+            )}
+            {recipe.cuisine && <Badge variant="outline">{recipe.cuisine}</Badge>}
+            {recipe.course && <Badge variant="outline" className="capitalize">{recipe.course}</Badge>}
+          </div>
+        )}
 
         {/* Action buttons */}
         <div className="flex flex-wrap gap-2">
-          <Button onClick={() => setStartCookingOpen(true)}>
-            <PlayIcon className="h-4 w-4 mr-2" />
-            Start Cooking
-          </Button>
-          <Button variant="outline" onClick={() => setAddToPlanOpen(true)}>
-            <CalendarPlusIcon className="h-4 w-4 mr-2" />
-            Add to Plan
-          </Button>
-          <Link href={`/recipes/${id}/edit`}>
-            <Button variant="outline">
-              <EditIcon className="h-4 w-4 mr-2" />
-              Edit
+          {!cookingMode ? (
+            <>
+              <Button onClick={() => setCookingMode(true)}>
+                <ChefHatIcon className="h-4 w-4 mr-2" />
+                Cooking Mode
+              </Button>
+              <Button variant="outline" onClick={() => setStartCookingOpen(true)}>
+                <PlayIcon className="h-4 w-4 mr-2" />
+                Start Timer
+              </Button>
+              <Button variant="outline" onClick={() => setAddToPlanOpen(true)}>
+                <CalendarPlusIcon className="h-4 w-4 mr-2" />
+                Add to Plan
+              </Button>
+              <Link href={`/recipes/${id}/edit`}>
+                <Button variant="outline">
+                  <EditIcon className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+              </Link>
+              <Button variant="outline" onClick={() => setDeleteDialogOpen(true)}>
+                <TrashIcon className="h-4 w-4 mr-2" />
+                Delete
+              </Button>
+            </>
+          ) : (
+            <Button variant="outline" onClick={() => setStartCookingOpen(true)}>
+              <PlayIcon className="h-4 w-4 mr-2" />
+              Start Timer
             </Button>
-          </Link>
-          <Button variant="outline" onClick={() => setDeleteDialogOpen(true)}>
-            <TrashIcon className="h-4 w-4 mr-2" />
-            Delete
-          </Button>
+          )}
         </div>
       </div>
 
@@ -249,18 +314,21 @@ export default function RecipeDetailPage() {
       {recipe.ingredients && recipe.ingredients.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Ingredients</CardTitle>
+            <CardTitle className={cookingMode ? "text-2xl" : ""}>Ingredients</CardTitle>
           </CardHeader>
           <CardContent>
-            <ul className="space-y-2">
+            <ul className={cn("space-y-2", cookingMode && "space-y-3")}>
               {recipe.ingredients.map((ing, i) => (
-                <li key={i} className="flex gap-2">
-                  <span className="font-medium min-w-[4rem]">
+                <li key={i} className={cn(
+                  "flex gap-2",
+                  cookingMode && "text-xl py-1 border-b border-muted last:border-0"
+                )}>
+                  <span className={cn("font-medium", cookingMode ? "min-w-[5rem]" : "min-w-[4rem]")}>
                     {scaleAmount(ing.amount)} {ing.unit !== 'none' ? ing.unit : ''}
                   </span>
                   <span>
                     {ing.item}
-                    {ing.notes && (
+                    {ing.notes && !cookingMode && (
                       <span className="text-muted-foreground"> ({ing.notes})</span>
                     )}
                   </span>
@@ -275,12 +343,18 @@ export default function RecipeDetailPage() {
       {recipe.instructions && (
         <Card>
           <CardHeader>
-            <CardTitle>Instructions</CardTitle>
+            <CardTitle className={cookingMode ? "text-2xl" : ""}>Instructions</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="prose prose-sm max-w-none">
+            <div className={cn(
+              "max-w-none",
+              cookingMode ? "text-xl leading-relaxed space-y-4" : "prose prose-sm"
+            )}>
               {recipe.instructions.split('\n').map((line, i) => (
-                <p key={i} className={line.trim() ? '' : 'h-4'}>
+                <p key={i} className={cn(
+                  line.trim() ? '' : 'h-4',
+                  cookingMode && line.trim() && "py-2 border-b border-muted last:border-0"
+                )}>
                   {line}
                 </p>
               ))}
@@ -453,6 +527,15 @@ function CalendarPlusIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z" />
+    </svg>
+  )
+}
+
+function ChefHatIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3-5.108 8.25 8.25 0 0 1 3.362.72Z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 18a3.75 3.75 0 0 0 .495-7.468 5.99 5.99 0 0 0-1.925 3.547 5.975 5.975 0 0 1-2.133-1.001A3.75 3.75 0 0 0 12 18Z" />
     </svg>
   )
 }
