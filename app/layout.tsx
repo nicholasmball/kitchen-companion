@@ -29,11 +29,20 @@ export const metadata: Metadata = {
     siteName: "Cat's Kitchen",
     locale: "en_GB",
     type: "website",
+    images: [
+      {
+        url: "/images/branding/mascot circle.png",
+        width: 512,
+        height: 512,
+        alt: "Cat's Kitchen mascot",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Cat's Kitchen",
     description: "Plan your meals, time your dishes, and get AI-powered cooking assistance.",
+    images: ["/images/branding/mascot circle.png"],
   },
 };
 
