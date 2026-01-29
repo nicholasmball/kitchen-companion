@@ -39,6 +39,129 @@ function extractRecipeTitle(content: string): string {
   return 'Recipe from Chef'
 }
 
+interface ParsedIngredient {
+  amount: string
+  unit: string
+  item: string
+  notes: string
+}
+
+interface ParsedRecipe {
+  title: string
+  description: string
+  ingredients: ParsedIngredient[]
+  instructions: string
+  prep_time_minutes: number | null
+  cook_time_minutes: number | null
+  servings: number | null
+}
+
+// Parse a recipe from chat message content
+function parseRecipeFromContent(content: string): ParsedRecipe {
+  const title = extractRecipeTitle(content)
+
+  // Extract ingredients section
+  const ingredientsMatch = content.match(/#{1,3}\s*ingredients:?\s*\n([\s\S]*?)(?=#{1,3}\s*(?:method|instructions|directions|steps)|$)/i)
+  const ingredientsSection = ingredientsMatch ? ingredientsMatch[1] : ''
+
+  // Parse individual ingredients
+  const ingredientLines = ingredientsSection.split('\n').filter(line => line.trim().startsWith('-') || line.trim().match(/^\d+\./))
+  const ingredients: ParsedIngredient[] = ingredientLines.map(line => {
+    // Remove leading - or number
+    const cleaned = line.replace(/^[\s-]*/, '').replace(/^\d+\.\s*/, '').trim()
+
+    // Try to parse amount and unit
+    // Pattern: "800g chicken" or "2 tbsp oil" or "1 large onion"
+    const amountMatch = cleaned.match(/^([\d½¼¾⅓⅔\/\s]+)\s*(g|kg|ml|l|tsp|tbsp|cup|cups|oz|lb|cloves?|pieces?|tin|tins|large|medium|small|cm)?\s*(.*)$/i)
+
+    if (amountMatch) {
+      const amount = amountMatch[1].trim()
+      const unit = amountMatch[2] || ''
+      const rest = amountMatch[3] || ''
+
+      // Check for notes in parentheses
+      const notesMatch = rest.match(/^(.*?)\s*\(([^)]+)\)\s*$/)
+      if (notesMatch) {
+        return {
+          amount,
+          unit: unit.toLowerCase(),
+          item: notesMatch[1].trim(),
+          notes: notesMatch[2].trim()
+        }
+      }
+
+      // Check for notes after comma
+      const commaMatch = rest.match(/^([^,]+),\s*(.+)$/)
+      if (commaMatch) {
+        return {
+          amount,
+          unit: unit.toLowerCase(),
+          item: commaMatch[1].trim(),
+          notes: commaMatch[2].trim()
+        }
+      }
+
+      return {
+        amount,
+        unit: unit.toLowerCase(),
+        item: rest.trim(),
+        notes: ''
+      }
+    }
+
+    // Fallback: just put the whole thing as the item
+    return {
+      amount: '',
+      unit: '',
+      item: cleaned,
+      notes: ''
+    }
+  }).filter(ing => ing.item)
+
+  // Extract instructions/method section
+  const methodMatch = content.match(/#{1,3}\s*(?:method|instructions|directions|steps):?\s*\n([\s\S]*?)(?=#{1,3}\s*(?:tips|notes|variations)|$)/i)
+  let instructions = methodMatch ? methodMatch[1].trim() : ''
+
+  // If no method section found, try to get everything after ingredients
+  if (!instructions && ingredientsMatch) {
+    const afterIngredients = content.substring(content.indexOf(ingredientsMatch[0]) + ingredientsMatch[0].length)
+    // Remove any remaining headers and clean up
+    instructions = afterIngredients.replace(/#{1,3}\s*(?:method|instructions|directions|steps):?\s*/gi, '').trim()
+  }
+
+  // Clean up instructions - remove markdown formatting for cleaner display
+  instructions = instructions
+    .replace(/\*\*([^*]+)\*\*/g, '$1') // Remove bold
+    .replace(/\*([^*]+)\*/g, '$1') // Remove italic
+    .trim()
+
+  // Try to extract times
+  const prepMatch = content.match(/prep(?:aration)?(?:\s*time)?:?\s*(\d+)\s*(?:min|minutes)/i)
+  const cookMatch = content.match(/cook(?:ing)?(?:\s*time)?:?\s*(\d+)\s*(?:min|minutes)/i)
+  const servingsMatch = content.match(/serves:?\s*(\d+)|(\d+)\s*servings/i)
+
+  // Extract description (text before ingredients section)
+  let description = ''
+  const beforeIngredients = content.split(/#{1,3}\s*ingredients/i)[0]
+  if (beforeIngredients) {
+    // Get the first paragraph after any title
+    const descLines = beforeIngredients.split('\n').filter(l => l.trim() && !l.trim().startsWith('#'))
+    if (descLines.length > 0) {
+      description = descLines[0].trim()
+    }
+  }
+
+  return {
+    title,
+    description,
+    ingredients,
+    instructions,
+    prep_time_minutes: prepMatch ? parseInt(prepMatch[1]) : null,
+    cook_time_minutes: cookMatch ? parseInt(cookMatch[1]) : null,
+    servings: servingsMatch ? parseInt(servingsMatch[1] || servingsMatch[2]) : null
+  }
+}
+
 export function ChatMessageBubble({ message, isStreaming }: ChatMessageProps) {
   const isUser = message.role === 'user'
   const router = useRouter()
@@ -51,11 +174,15 @@ export function ChatMessageBubble({ message, isStreaming }: ChatMessageProps) {
   const handleSaveRecipe = async () => {
     setSaving(true)
     try {
-      const title = extractRecipeTitle(message.content)
+      const parsed = parseRecipeFromContent(message.content)
       const result = await createRecipe({
-        title,
-        instructions: message.content,
-        // Let user fill in the rest via edit
+        title: parsed.title,
+        description: parsed.description || null,
+        ingredients: parsed.ingredients,
+        instructions: parsed.instructions || null,
+        prep_time_minutes: parsed.prep_time_minutes,
+        cook_time_minutes: parsed.cook_time_minutes,
+        servings: parsed.servings || 4,
       })
       if (result) {
         setSaved(true)
