@@ -19,7 +19,7 @@ import {
 
 export default function RecipesPage() {
   const router = useRouter()
-  const { recipes, loading, error, toggleFavourite, createRecipe } = useRecipes()
+  const { recipes, loading, error, toggleFavourite, deleteRecipe, createRecipe } = useRecipes()
   const [importerOpen, setImporterOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [filterFavourites, setFilterFavourites] = useState(false)
@@ -188,6 +188,7 @@ export default function RecipesPage() {
               key={recipe.id}
               recipe={recipe}
               onToggleFavourite={toggleFavourite}
+              onDelete={deleteRecipe}
             />
           ))}
         </div>
