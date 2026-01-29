@@ -117,12 +117,12 @@ export function CelebrationMascot({ message }: { message?: string }) {
   return (
     <div className="flex flex-col items-center gap-4 py-8 px-4 text-center">
       <div className="relative">
-        <div className="w-32 h-32 rounded-full overflow-hidden shadow-warm-lg">
+        <div className="w-32 h-32 rounded-full overflow-hidden shadow-warm-lg" style={{ clipPath: 'circle(50%)' }}>
           <Image
             src="/images/branding/mascot celebrate circle.png"
             alt="Celebration!"
             fill
-            className="object-cover"
+            className="object-cover scale-105"
           />
         </div>
         {/* Celebration sparkles */}
