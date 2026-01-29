@@ -26,11 +26,39 @@ export function ImageUpload({
       return
     }
 
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const base64 = e.target?.result as string
+    // Compress and resize large images
+    const img = new Image()
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return
+
+      // Max dimensions - keep readable for text extraction
+      const maxWidth = 1600
+      const maxHeight = 1600
+      let { width, height } = img
+
+      // Calculate new dimensions maintaining aspect ratio
+      if (width > maxWidth || height > maxHeight) {
+        const ratio = Math.min(maxWidth / width, maxHeight / height)
+        width = Math.round(width * ratio)
+        height = Math.round(height * ratio)
+      }
+
+      canvas.width = width
+      canvas.height = height
+      ctx.drawImage(img, 0, 0, width, height)
+
+      // Convert to JPEG with 85% quality for smaller file size
+      const base64 = canvas.toDataURL('image/jpeg', 0.85)
       setPreview(base64)
       onImageSelect(base64)
+    }
+
+    // Read file as data URL to load into image
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      img.src = e.target?.result as string
     }
     reader.readAsDataURL(file)
   }, [onImageSelect])

@@ -82,6 +82,15 @@ export function RecipeImporter({ open, onOpenChange, onResult }: RecipeImporterP
         body: JSON.stringify({ image }),
       })
 
+      // Handle non-JSON responses (like 413 from Vercel)
+      const contentType = response.headers.get('content-type')
+      if (!contentType?.includes('application/json')) {
+        if (response.status === 413) {
+          throw new Error('Image too large. Please try a smaller image.')
+        }
+        throw new Error(`Server error: ${response.status}`)
+      }
+
       const data = await response.json()
 
       if (!response.ok || !data.success) {

@@ -1,7 +1,19 @@
 import { createAnthropicClient, CLAUDE_MODEL } from '@/lib/anthropic'
 import { NextResponse } from 'next/server'
 
+// Route segment config for App Router
+export const runtime = 'nodejs'
+export const maxDuration = 60 // Allow up to 60 seconds for AI processing
+
 export async function POST(request: Request) {
+  // Check content length before processing
+  const contentLength = request.headers.get('content-length')
+  if (contentLength && parseInt(contentLength) > 10 * 1024 * 1024) {
+    return NextResponse.json(
+      { error: 'Image too large. Please use an image under 10MB.' },
+      { status: 413 }
+    )
+  }
   try {
     const { image } = await request.json()
 
