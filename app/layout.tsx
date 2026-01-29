@@ -16,9 +16,25 @@ const dmMono = DM_Mono({
   weight: ["400", "500"],
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://catskitchen.co.uk'
+
 export const metadata: Metadata = {
-  title: "Kitchen Companion",
+  title: "Cat's Kitchen",
   description: "Plan your meals, time your dishes, and get AI-powered cooking assistance.",
+  metadataBase: new URL(siteUrl),
+  openGraph: {
+    title: "Cat's Kitchen",
+    description: "Plan your meals, time your dishes, and get AI-powered cooking assistance.",
+    url: siteUrl,
+    siteName: "Cat's Kitchen",
+    locale: "en_GB",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Cat's Kitchen",
+    description: "Plan your meals, time your dishes, and get AI-powered cooking assistance.",
+  },
 };
 
 export default function RootLayout({

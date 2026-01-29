@@ -6,7 +6,7 @@ A Next.js 14+ app for home cooks to plan meal timings, get AI chef assistance, a
 
 **Primary Use Case:** Someone cooking a complex meal (e.g., Sunday roast with meat, potatoes, vegetables, gravy) who needs help timing everything to be ready simultaneously.
 
-**Live URL:** Deployed on Vercel (see environment configuration)
+**Live URL:** https://catskitchen.co.uk
 
 ---
 
