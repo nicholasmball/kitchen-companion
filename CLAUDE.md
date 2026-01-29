@@ -14,30 +14,30 @@ A Next.js 14+ app for home cooks to plan meal timings, get AI chef assistance, a
 
 ### Completed Features
 - ✅ Authentication (email/password via Supabase)
+- ✅ Password reset flow (forgot-password, reset-password pages)
 - ✅ Dashboard with active meal plan widget and quick actions
+- ✅ Dashboard personalization (user name, recent recipes, favourites sections)
 - ✅ Meal timing planner with timeline calculations
 - ✅ Label scanning via Claude Vision
 - ✅ Browser notifications with audio alerts
+- ✅ Service Worker for background notifications
 - ✅ Timer display with countdown
 - ✅ Chef assistant with streaming chat (British personality, metric/Celsius)
+- ✅ Save recipe from chat button (auto-detects recipes in responses)
 - ✅ Recipe CRUD (create, read, update, delete)
 - ✅ Recipe import from URLs and images
 - ✅ Recipe search and filters (cuisine, course, difficulty, time, favourites)
 - ✅ Favourite recipes toggle
+- ✅ Servings adjuster on recipe detail page
+- ✅ Cooking mode for recipes (larger font, simplified UI, screen wake lock)
 - ✅ Add recipe to meal plan
 - ✅ Start cooking from recipe (creates plan and navigates to planner)
 - ✅ Multi-recipe meal plan building
+- ✅ Dark mode toggle (light/dark/system preference)
 
 ### Not Yet Implemented
 - ❌ "Remember me" option on login
-- ❌ Password reset flow
-- ❌ Welcome message with user's name on dashboard
-- ❌ Recent/favourite recipes sections on dashboard
-- ❌ Save recipe from chat button
-- ❌ Cooking mode for recipes (larger font, keep screen awake)
-- ❌ Servings adjuster on recipe detail page
-- ❌ Dark mode manual toggle (currently follows system preference only)
-- ❌ Service Worker for true background notifications
+- ❌ Web search integration for chef assistant (requires external search API)
 - ❌ Recipe image upload to cloud storage
 - ❌ Sound files (/public/sounds/*.mp3) - uses Web Audio API synthesis instead
 
@@ -966,6 +966,7 @@ Before considering each feature complete:
 The app is complete when:
 
 - [x] User can sign up and log in
+- [x] User can reset their password via email
 - [x] User can create a meal plan with multiple items
 - [x] User can set a serve time and see calculated timeline
 - [x] User can scan a food label and have details extracted
@@ -975,16 +976,17 @@ The app is complete when:
 - [x] User can chat with the chef assistant
 - [x] Chef assistant responses stream in real-time
 - [ ] Chef assistant can search web for recipes when asked (not implemented - requires external search API)
-- [ ] User can save recipes from chat (not implemented)
+- [x] User can save recipes from chat
 - [x] User can manually add recipes
 - [x] User can import recipes from images
 - [x] User can import recipes from URLs
 - [x] User can edit and delete recipes
 - [x] User can favourite recipes
 - [x] User can search and filter recipes
-- [ ] User can scale recipe servings (not implemented)
+- [x] User can scale recipe servings
+- [x] App has cooking mode for recipes (larger text, screen stays on)
 - [x] App is responsive and works on mobile
-- [x] App works in dark mode (system preference)
+- [x] App works in dark mode (manual toggle + system preference)
 - [x] App is deployed to Vercel
 - [x] All data persists in Supabase
 
