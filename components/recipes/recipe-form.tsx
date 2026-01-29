@@ -53,6 +53,7 @@ export function RecipeForm({ recipe, onSubmit }: RecipeFormProps) {
   const [instructions, setInstructions] = useState(recipe?.instructions || '')
   const [prepTime, setPrepTime] = useState(recipe?.prep_time_minutes?.toString() || '')
   const [cookTime, setCookTime] = useState(recipe?.cook_time_minutes?.toString() || '')
+  const [restTime, setRestTime] = useState(recipe?.rest_time_minutes?.toString() || '')
   const [servings, setServings] = useState(recipe?.servings?.toString() || '4')
   const [difficulty, setDifficulty] = useState(recipe?.difficulty || '')
   const [cuisine, setCuisine] = useState(recipe?.cuisine || '')
@@ -92,6 +93,7 @@ export function RecipeForm({ recipe, onSubmit }: RecipeFormProps) {
       instructions: instructions.trim() || null,
       prep_time_minutes: prepTime ? parseInt(prepTime) : null,
       cook_time_minutes: cookTime ? parseInt(cookTime) : null,
+      rest_time_minutes: restTime ? parseInt(restTime) : null,
       servings: servings ? parseInt(servings) : 4,
       difficulty: difficulty as 'easy' | 'medium' | 'hard' | null || null,
       cuisine: cuisine || null,
@@ -231,9 +233,9 @@ export function RecipeForm({ recipe, onSubmit }: RecipeFormProps) {
           <CardTitle>Times & Servings</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="prepTime">Prep Time (min)</Label>
+              <Label htmlFor="prepTime">Prep (min)</Label>
               <Input
                 id="prepTime"
                 type="number"
@@ -244,13 +246,24 @@ export function RecipeForm({ recipe, onSubmit }: RecipeFormProps) {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="cookTime">Cook Time (min)</Label>
+              <Label htmlFor="cookTime">Cook (min)</Label>
               <Input
                 id="cookTime"
                 type="number"
                 value={cookTime}
                 onChange={(e) => setCookTime(e.target.value)}
                 placeholder="30"
+                min="0"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="restTime">Rest (min)</Label>
+              <Input
+                id="restTime"
+                type="number"
+                value={restTime}
+                onChange={(e) => setRestTime(e.target.value)}
+                placeholder="10"
                 min="0"
               />
             </div>

@@ -133,7 +133,7 @@ export default function RecipeDetailPage() {
         name: recipe.title,
         cook_time_minutes: recipe.cook_time_minutes || 30,
         prep_time_minutes: recipe.prep_time_minutes || 0,
-        rest_time_minutes: 0,
+        rest_time_minutes: recipe.rest_time_minutes || 0,
         cooking_method: 'oven',
         instructions: recipe.instructions || null,
         notes: null,
@@ -238,6 +238,9 @@ export default function RecipeDetailPage() {
             )}
             {recipe.cook_time_minutes && (
               <Badge variant="outline">{recipe.cook_time_minutes} min cook</Badge>
+            )}
+            {recipe.rest_time_minutes && (
+              <Badge variant="outline">{recipe.rest_time_minutes} min rest</Badge>
             )}
             {recipe.difficulty && (
               <Badge variant="secondary" className="capitalize">{recipe.difficulty}</Badge>
@@ -449,7 +452,8 @@ export default function RecipeDetailPage() {
             {recipe.cook_time_minutes && (
               <p className="text-sm text-muted-foreground">
                 This recipe takes {recipe.prep_time_minutes ? `${recipe.prep_time_minutes} min prep + ` : ''}
-                {recipe.cook_time_minutes} min to cook.
+                {recipe.cook_time_minutes} min to cook
+                {recipe.rest_time_minutes ? ` + ${recipe.rest_time_minutes} min rest` : ''}.
               </p>
             )}
           </div>

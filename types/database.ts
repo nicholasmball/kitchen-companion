@@ -93,6 +93,7 @@ export type Database = {
           instructions: string | null
           prep_time_minutes: number | null
           cook_time_minutes: number | null
+          rest_time_minutes: number | null
           total_time_minutes: number | null
           servings: number
           difficulty: Difficulty | null
@@ -115,6 +116,7 @@ export type Database = {
           instructions?: string | null
           prep_time_minutes?: number | null
           cook_time_minutes?: number | null
+          rest_time_minutes?: number | null
           servings?: number
           difficulty?: Difficulty | null
           cuisine?: string | null
@@ -136,6 +138,7 @@ export type Database = {
           instructions?: string | null
           prep_time_minutes?: number | null
           cook_time_minutes?: number | null
+          rest_time_minutes?: number | null
           servings?: number
           difficulty?: Difficulty | null
           cuisine?: string | null

@@ -68,6 +68,7 @@ export interface ParsedRecipe {
   instructions: string
   prep_time_minutes?: number
   cook_time_minutes?: number
+  rest_time_minutes?: number
   servings?: number
   difficulty?: 'easy' | 'medium' | 'hard'
   cuisine?: string
