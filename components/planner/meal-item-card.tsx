@@ -123,19 +123,19 @@ export function MealItemCard({ item, onEdit, onDelete }: MealItemCardProps) {
             </div>
 
             {/* Time breakdown */}
-            <div className="grid grid-cols-3 gap-3 text-center">
+            <div className="flex flex-wrap gap-3 justify-center">
               {item.prep_time_minutes > 0 && (
-                <div className="bg-muted/50 rounded-lg p-3">
+                <div className="bg-muted/50 rounded-lg p-3 min-w-[80px] text-center">
                   <p className="text-2xl font-semibold">{item.prep_time_minutes}</p>
                   <p className="text-xs text-muted-foreground">min prep</p>
                 </div>
               )}
-              <div className="bg-muted/50 rounded-lg p-3">
+              <div className="bg-muted/50 rounded-lg p-3 min-w-[80px] text-center">
                 <p className="text-2xl font-semibold">{item.cook_time_minutes}</p>
                 <p className="text-xs text-muted-foreground">min cook</p>
               </div>
               {item.rest_time_minutes > 0 && (
-                <div className="bg-muted/50 rounded-lg p-3">
+                <div className="bg-muted/50 rounded-lg p-3 min-w-[80px] text-center">
                   <p className="text-2xl font-semibold">{item.rest_time_minutes}</p>
                   <p className="text-xs text-muted-foreground">min rest</p>
                 </div>

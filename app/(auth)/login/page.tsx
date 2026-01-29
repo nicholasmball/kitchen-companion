@@ -43,7 +43,7 @@ function LoginForm() {
     <Card>
       <CardHeader className="text-center">
         <CardTitle className="text-2xl">Welcome back</CardTitle>
-        <CardDescription>Sign in to Kitchen Companion</CardDescription>
+        <CardDescription>Sign in to Cat&apos;s Kitchen</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
@@ -103,7 +103,7 @@ export default function LoginPage() {
       <Card>
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Welcome back</CardTitle>
-          <CardDescription>Sign in to Kitchen Companion</CardDescription>
+          <CardDescription>Sign in to Cat&apos;s Kitchen</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="h-10 bg-muted animate-pulse rounded" />

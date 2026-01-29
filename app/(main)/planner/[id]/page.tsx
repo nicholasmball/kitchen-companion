@@ -200,20 +200,20 @@ export default function MealPlanDetailPage() {
               <p className="text-muted-foreground mt-1 ml-7">{plan.description}</p>
             )}
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {!plan.is_active ? (
-              <Button variant="outline" onClick={handleSetActive}>
+              <Button variant="outline" size="sm" onClick={handleSetActive}>
                 Set Active
               </Button>
             ) : (
-              <Button variant="outline" onClick={handleDeactivate}>
+              <Button variant="outline" size="sm" onClick={handleDeactivate}>
                 Deactivate
               </Button>
             )}
-            <Button variant="outline" onClick={() => setEditPlanOpen(true)}>
+            <Button variant="outline" size="sm" onClick={() => setEditPlanOpen(true)}>
               Edit Plan
             </Button>
-            <Button variant="outline" onClick={() => setDeletePlanDialog(true)}>
+            <Button variant="outline" size="sm" onClick={() => setDeletePlanDialog(true)}>
               Delete
             </Button>
           </div>
