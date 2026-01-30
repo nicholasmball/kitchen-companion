@@ -190,10 +190,16 @@ function LandingPage() {
     <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-8">
       {/* Hero */}
       <div className="space-y-4">
-        <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground mb-4">
-          <ChefHatIcon className="h-8 w-8" />
+        <div className="relative w-32 h-32 mx-auto mb-4 rounded-full overflow-hidden border-4 border-primary/20 shadow-warm-lg">
+          <Image
+            src="/images/branding/mascot circle.png"
+            alt="Cat's Kitchen Companion"
+            fill
+            className="object-cover"
+            priority
+          />
         </div>
-        <h1 className="text-4xl font-bold">Kitchen Companion</h1>
+        <h1 className="text-4xl font-bold">Cat&apos;s Kitchen</h1>
         <p className="text-xl text-muted-foreground max-w-md">
           Plan your meals, time your dishes, and get AI-powered cooking assistance.
         </p>
