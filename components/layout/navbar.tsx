@@ -99,6 +99,9 @@ export function Navbar() {
                   <Link href="/planner">Meal Plans</Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/settings">Settings</Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
                   Sign out
                 </DropdownMenuItem>

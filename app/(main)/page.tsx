@@ -14,8 +14,14 @@ export default async function DashboardPage() {
     return <LandingPage />
   }
 
-  // Get user's name from email (part before @)
-  const userName = user.email?.split('@')[0] || 'Chef'
+  // Get user's display name from profile
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('display_name')
+    .eq('id', user.id)
+    .single()
+
+  const userName = profile?.display_name || user.email?.split('@')[0] || 'Chef'
 
   // Fetch recent recipes (last 6 by updated_at)
   const { data: recentRecipes } = await supabase
