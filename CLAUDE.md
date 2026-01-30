@@ -35,6 +35,8 @@ A Next.js 14+ app for home cooks to plan meal timings, get AI chef assistance, a
 - ✅ Multi-recipe meal plan building
 - ✅ Dark mode toggle (light/dark/system preference)
 - ✅ Recipe image upload via Supabase Storage
+- ✅ User profiles with display name (stored in profiles table)
+- ✅ Settings page for editing profile
 
 ### Not Yet Implemented
 - ❌ "Remember me" option on login
