@@ -121,7 +121,7 @@ Supabase Storage bucket `recipe-images` for recipe image uploads.
 
 - **Mobile-first** - Primary use is in the kitchen with messy hands
 - **Large touch targets** - Minimum 44x44px
-- **Warm cream/orange branding** - See `DESIGN_GUIDE.md`
+- **Warm cream/orange branding** - Full spec in `DESIGN_GUIDE.md` (colors, typography, components)
 - **Mascot** - "Cat" appears in empty states, chat, navbar (`/public/images/branding/`)
 - **Dark mode** - Warm brown tones, manual toggle + system preference
 
@@ -134,6 +134,25 @@ Supabase Storage bucket `recipe-images` for recipe image uploads.
 - Custom hooks for reusable logic (`/hooks`)
 - Supabase RLS for all data access (never bypass security)
 - Consistent API response format: `{ success: boolean, data?: T, error?: string }`
+
+---
+
+## Quick Commands
+
+```bash
+npm run dev          # Start development server
+npm run build        # Production build
+npm run lint         # Run ESLint
+```
+
+---
+
+## Deployment
+
+- **Platform:** Vercel (auto-deploys from main branch)
+- **Database:** Supabase (separate project)
+- **Storage:** Supabase Storage bucket `recipe-images`
+- **Domain:** catskitchen.co.uk
 
 ---
 

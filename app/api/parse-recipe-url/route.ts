@@ -8,9 +8,47 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+// Validate URL to prevent SSRF attacks
+function isValidExternalUrl(urlString: string): boolean {
+  try {
+    const url = new URL(urlString)
+
+    // Only allow http and https protocols
+    if (!['http:', 'https:'].includes(url.protocol)) {
+      return false
+    }
+
+    // Block localhost and common internal hostnames
+    const hostname = url.hostname.toLowerCase()
+    if (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname === '0.0.0.0' ||
+      hostname.endsWith('.local') ||
+      hostname.endsWith('.internal') ||
+      hostname === '169.254.169.254' || // AWS metadata
+      hostname.startsWith('10.') ||
+      hostname.startsWith('192.168.') ||
+      hostname.match(/^172\.(1[6-9]|2[0-9]|3[0-1])\./)
+    ) {
+      return false
+    }
+
+    return true
+  } catch {
+    return false
+  }
+}
+
 // Download external image and upload to Supabase
 async function downloadAndUploadImage(imageUrl: string): Promise<string | null> {
   try {
+    // Validate image URL
+    if (!isValidExternalUrl(imageUrl)) {
+      console.error('Invalid image URL:', imageUrl)
+      return null
+    }
+
     console.log('Downloading image from:', imageUrl)
 
     // Fetch the image
@@ -92,6 +130,14 @@ export async function POST(request: Request) {
 
     if (!url) {
       return NextResponse.json({ error: 'URL is required' }, { status: 400 })
+    }
+
+    // Validate URL to prevent SSRF
+    if (!isValidExternalUrl(url)) {
+      return NextResponse.json(
+        { error: 'Invalid URL. Please provide a valid external URL.' },
+        { status: 400 }
+      )
     }
 
     // Fetch the webpage content
@@ -268,9 +314,10 @@ Return ONLY the JSON object, no other text.`,
         image_url: finalImageUrl,
       }
       return NextResponse.json({ success: true, data })
-    } catch {
+    } catch (parseError) {
+      console.error('Failed to parse AI response:', parseError)
       return NextResponse.json(
-        { error: 'Failed to parse AI response', raw: textContent.text },
+        { error: 'Failed to parse recipe data. The page format may not be supported.' },
         { status: 500 }
       )
     }

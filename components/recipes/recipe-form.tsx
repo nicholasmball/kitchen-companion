@@ -15,12 +15,13 @@ import {
 } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { RecipeImageUpload } from './recipe-image-upload'
-import type { Recipe, Ingredient } from '@/types'
+import type { Recipe, RecipeInsert, Ingredient } from '@/types'
+
+type RecipeFormData = Omit<RecipeInsert, 'user_id'>
 
 interface RecipeFormProps {
   recipe?: Recipe
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onSubmit: (data: any) => Promise<Recipe | null>
+  onSubmit: (data: RecipeFormData) => Promise<Recipe | null>
 }
 
 const UNITS = [
@@ -97,7 +98,7 @@ export function RecipeForm({ recipe, onSubmit }: RecipeFormProps) {
       cook_time_minutes: cookTime ? parseInt(cookTime) : null,
       rest_time_minutes: restTime ? parseInt(restTime) : null,
       servings: servings ? parseInt(servings) : 4,
-      difficulty: difficulty as 'easy' | 'medium' | 'hard' | null || null,
+      difficulty: (difficulty || null) as 'easy' | 'medium' | 'hard' | null,
       cuisine: cuisine || null,
       course: course || null,
       source_name: sourceName.trim() || null,
