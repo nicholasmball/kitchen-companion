@@ -25,6 +25,28 @@ export function Navbar() {
   useEffect(() => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser()
+
+      // Check "remember me" preference
+      if (user) {
+        const rememberMe = localStorage.getItem('rememberMe')
+        const sessionActive = document.cookie.includes('sessionActive=true')
+
+        // If user didn't check "remember me" and this is a new browser session, sign out
+        if (rememberMe === 'false' && !sessionActive) {
+          await supabase.auth.signOut()
+          localStorage.removeItem('rememberMe')
+          setUser(null)
+          router.push('/login')
+          router.refresh()
+          return
+        }
+
+        // Set a short-lived cookie (10 seconds) - will be refreshed by interval below
+        if (rememberMe === 'false') {
+          document.cookie = 'sessionActive=true; Max-Age=10; path=/'
+        }
+      }
+
       setUser(user)
     }
     getUser()
@@ -33,11 +55,24 @@ export function Navbar() {
       setUser(session?.user ?? null)
     })
 
-    return () => subscription.unsubscribe()
-  }, [supabase.auth])
+    // Keep refreshing the session cookie while page is open (for non-remembered sessions)
+    const intervalId = setInterval(() => {
+      const rememberMe = localStorage.getItem('rememberMe')
+      if (rememberMe === 'false') {
+        document.cookie = 'sessionActive=true; Max-Age=10; path=/'
+      }
+    }, 5000) // Refresh every 5 seconds
+
+    return () => {
+      subscription.unsubscribe()
+      clearInterval(intervalId)
+    }
+  }, [supabase.auth, router])
 
   async function handleSignOut() {
     await supabase.auth.signOut()
+    localStorage.removeItem('rememberMe')
+    document.cookie = 'sessionActive=; Max-Age=0; path=/' // Clear session cookie
     router.push('/login')
     router.refresh()
   }

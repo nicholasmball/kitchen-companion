@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [rememberMe, setRememberMe] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const router = useRouter()
@@ -33,6 +34,15 @@ function LoginForm() {
       setError(error.message)
       setLoading(false)
       return
+    }
+
+    // Store remember me preference
+    if (rememberMe) {
+      localStorage.setItem('rememberMe', 'true')
+    } else {
+      localStorage.setItem('rememberMe', 'false')
+      // Set short-lived session cookie (navbar will keep it refreshed)
+      document.cookie = 'sessionActive=true; Max-Age=10; path=/'
     }
 
     router.push(redirect)
@@ -77,6 +87,18 @@ function LoginForm() {
             <Link href="/forgot-password" className="absolute top-0 right-0 text-xs text-muted-foreground hover:text-primary">
               Forgot password?
             </Link>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="rememberMe"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="h-4 w-4 rounded border-input accent-primary"
+            />
+            <Label htmlFor="rememberMe" className="text-sm font-normal cursor-pointer">
+              Remember me
+            </Label>
           </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-4 pt-6">

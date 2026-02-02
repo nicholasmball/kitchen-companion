@@ -113,6 +113,7 @@ Supabase Storage bucket `recipe-images` for recipe image uploads.
 - Email/password via Supabase Auth
 - Password reset flow
 - User profiles with display name
+- "Remember me" option (unchecked = session ends when browser closes)
 
 ---
 
@@ -138,6 +139,5 @@ Supabase Storage bucket `recipe-images` for recipe image uploads.
 
 ## Not Yet Implemented
 
-- "Remember me" option on login
 - Web search integration for chef assistant (requires external search API)
 - Sound files (currently uses Web Audio API synthesis)
