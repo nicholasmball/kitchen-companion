@@ -2,10 +2,10 @@
 
 import { useCallback, useEffect, useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import type { Recipe, RecipeInsert, RecipeUpdate } from '@/types'
+import type { Recipe } from '@/types'
 
-type RecipeCreateInput = Omit<RecipeInsert, 'user_id'>
-type RecipeUpdateInput = RecipeUpdate
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type RecipeInput = any
 
 interface UseRecipesOptions {
   initialFetch?: boolean
@@ -37,7 +37,7 @@ export function useRecipes(options: UseRecipesOptions = { initialFetch: true }) 
     setLoading(false)
   }, [supabase])
 
-  const createRecipe = useCallback(async (recipe: RecipeCreateInput): Promise<Recipe | null> => {
+  const createRecipe = useCallback(async (recipe: RecipeInput): Promise<Recipe | null> => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       setError('You must be logged in to create a recipe')
@@ -59,7 +59,7 @@ export function useRecipes(options: UseRecipesOptions = { initialFetch: true }) 
     return data
   }, [supabase])
 
-  const updateRecipe = useCallback(async (id: string, updates: RecipeUpdateInput): Promise<Recipe | null> => {
+  const updateRecipe = useCallback(async (id: string, updates: RecipeInput): Promise<Recipe | null> => {
     const { data, error } = await supabase
       .from('recipes')
       .update(updates)

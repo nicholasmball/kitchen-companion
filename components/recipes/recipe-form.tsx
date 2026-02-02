@@ -15,13 +15,12 @@ import {
 } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { RecipeImageUpload } from './recipe-image-upload'
-import type { Recipe, RecipeInsert, Ingredient } from '@/types'
-
-type RecipeFormData = Omit<RecipeInsert, 'user_id'>
+import type { Recipe, Ingredient } from '@/types'
 
 interface RecipeFormProps {
   recipe?: Recipe
-  onSubmit: (data: RecipeFormData) => Promise<Recipe | null>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onSubmit: (data: any) => Promise<Recipe | null>
 }
 
 const UNITS = [

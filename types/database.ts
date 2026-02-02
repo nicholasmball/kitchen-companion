@@ -178,6 +178,26 @@ export type Database = {
           updated_at?: string
         }
       }
+      profiles: {
+        Row: {
+          id: string
+          display_name: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id: string
+          display_name?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          display_name?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
   }
 }
@@ -226,3 +246,7 @@ export type RecipeUpdate = Database['public']['Tables']['recipes']['Update']
 export type ChatSession = Database['public']['Tables']['chat_sessions']['Row']
 export type ChatSessionInsert = Database['public']['Tables']['chat_sessions']['Insert']
 export type ChatSessionUpdate = Database['public']['Tables']['chat_sessions']['Update']
+
+export type Profile = Database['public']['Tables']['profiles']['Row']
+export type ProfileInsert = Database['public']['Tables']['profiles']['Insert']
+export type ProfileUpdate = Database['public']['Tables']['profiles']['Update']
