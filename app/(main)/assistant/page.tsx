@@ -84,7 +84,7 @@ export default function AssistantPage() {
   )
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] gap-4">
+    <div className="flex h-[calc(100vh-14rem)] md:h-[calc(100vh-8rem)] gap-4">
       {/* Desktop sidebar */}
       <div className="hidden lg:block w-72 shrink-0">
         <div className="h-full bg-card rounded-lg border">
