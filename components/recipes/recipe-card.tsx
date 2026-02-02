@@ -34,6 +34,7 @@ export function RecipeCard({ recipe, onToggleFavourite, onDelete }: RecipeCardPr
   const totalTime = recipe.total_time_minutes
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showAddToPlanDialog, setShowAddToPlanDialog] = useState(false)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
 
   const handleDelete = () => {
     if (onDelete) {
@@ -80,7 +81,7 @@ export function RecipeCard({ recipe, onToggleFavourite, onDelete }: RecipeCardPr
                 </Button>
               )}
               {onDelete && (
-                <DropdownMenu>
+                <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
@@ -104,6 +105,7 @@ export function RecipeCard({ recipe, onToggleFavourite, onDelete }: RecipeCardPr
                     <DropdownMenuItem
                       onClick={(e) => {
                         e.preventDefault()
+                        setDropdownOpen(false)
                         setShowAddToPlanDialog(true)
                       }}
                     >
@@ -114,6 +116,7 @@ export function RecipeCard({ recipe, onToggleFavourite, onDelete }: RecipeCardPr
                       className="text-destructive focus:text-destructive"
                       onClick={(e) => {
                         e.preventDefault()
+                        setDropdownOpen(false)
                         setShowDeleteDialog(true)
                       }}
                     >
