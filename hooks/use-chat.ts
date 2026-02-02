@@ -29,14 +29,17 @@ export function useChat(options: UseChatOptions = {}) {
     if (options.session) {
       if (options.session.id !== sessionIdRef.current) {
         sessionIdRef.current = options.session.id
-        // Convert stored messages to chat messages
-        const loaded = options.session.messages.map((m, i) => ({
-          id: `${m.role}-${i}-${m.timestamp}`,
-          role: m.role,
-          content: m.content,
-          timestamp: new Date(m.timestamp),
-        }))
-        setMessages(loaded)
+        // Only load messages if the session has messages
+        // (skip if it's a fresh session - we'll persist to it instead)
+        if (options.session.messages.length > 0) {
+          const loaded = options.session.messages.map((m, i) => ({
+            id: `${m.role}-${i}-${m.timestamp}`,
+            role: m.role,
+            content: m.content,
+            timestamp: new Date(m.timestamp),
+          }))
+          setMessages(loaded)
+        }
       }
     } else {
       sessionIdRef.current = null
