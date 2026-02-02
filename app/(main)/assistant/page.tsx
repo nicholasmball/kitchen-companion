@@ -112,7 +112,7 @@ export default function AssistantPage() {
             <div>
               <h1 className="text-2xl font-bold">Chef Assistant</h1>
               {currentSession && (
-                <p className="text-sm text-muted-foreground truncate max-w-[200px]">
+                <p className="text-sm text-muted-foreground truncate max-w-[200px] hidden sm:block">
                   {currentSession.title}
                 </p>
               )}
