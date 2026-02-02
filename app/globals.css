@@ -98,7 +98,7 @@
 
   /* Warm cream borders */
   --border: #EDD9C4;
-  --input: #F5E6D3;
+  --input: #D4C4B0;
   --ring: #D97B4A;
 
   /* Chart colors - warm palette */
@@ -151,7 +151,7 @@
 
   /* Warm dark borders */
   --border: #3D3028;
-  --input: #2D2420;
+  --input: #4A3D33;
   --ring: #F4A574;
 
   /* Chart colors - adjusted for dark mode */
@@ -209,6 +209,17 @@
 @layer base {
   button, a, input, select, textarea {
     @apply transition-all duration-200 ease-out;
+  }
+
+  /* Give inputs a subtle background to stand out from cards */
+  input[data-slot="input"],
+  textarea {
+    background-color: rgba(255, 255, 255, 0.5);
+  }
+
+  .dark input[data-slot="input"],
+  .dark textarea {
+    background-color: rgba(0, 0, 0, 0.2);
   }
 }
 

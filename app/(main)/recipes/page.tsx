@@ -214,6 +214,7 @@ export default function RecipesPage() {
             cuisine: data.cuisine || null,
             course: data.course || null,
             source_url: data.source_url || null,
+            image_url: data.image_url || null,
           })
           if (recipe) {
             // Navigate to edit page so user can review/modify

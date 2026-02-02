@@ -27,6 +27,7 @@ interface ParsedRecipe {
   cuisine?: string
   course?: string
   source_url?: string
+  image_url?: string
 }
 
 interface RecipeImporterProps {

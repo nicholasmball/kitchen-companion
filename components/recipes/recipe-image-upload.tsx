@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -21,8 +21,14 @@ export function RecipeImageUpload({
   const [preview, setPreview] = useState<string | null>(currentImageUrl || null)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [imageLoadError, setImageLoadError] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const supabase = createClient()
+
+  // Reset error state when preview changes
+  useEffect(() => {
+    setImageLoadError(false)
+  }, [preview])
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -131,11 +137,23 @@ export function RecipeImageUpload({
 
       {preview ? (
         <div className="relative aspect-[4/3] rounded-lg overflow-hidden bg-muted">
-          <img
-            src={preview}
-            alt="Recipe preview"
-            className="w-full h-full object-cover"
-          />
+          {imageLoadError ? (
+            <div
+              className="w-full h-full flex flex-col items-center justify-center text-muted-foreground cursor-pointer hover:bg-muted/50 transition-colors"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <CameraIcon className="h-10 w-10 mb-2 opacity-50" />
+              <p className="text-sm">Image couldn&apos;t load</p>
+              <p className="text-xs opacity-70">Click to upload your own</p>
+            </div>
+          ) : (
+            <img
+              src={preview}
+              alt="Recipe preview"
+              className="w-full h-full object-cover"
+              onError={() => setImageLoadError(true)}
+            />
+          )}
           {uploading && (
             <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
               <div className="flex flex-col items-center gap-2">
