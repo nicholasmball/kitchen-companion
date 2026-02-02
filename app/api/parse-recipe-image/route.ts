@@ -57,7 +57,7 @@ export async function POST(request: Request) {
   "ingredients": [
     {"amount": "2", "unit": "cups", "item": "flour", "notes": "sifted"}
   ],
-  "instructions": "Step by step instructions as a single string with numbered steps",
+  "instructions": "Step by step instructions with each step on a NEW LINE. Format as: 1. First step\\n2. Second step\\n3. Third step",
   "prep_time_minutes": number or null,
   "cook_time_minutes": number or null,
   "rest_time_minutes": number or null,
@@ -71,7 +71,8 @@ export async function POST(request: Request) {
 Notes:
 - Use metric measurements (grams, ml) - convert from imperial if needed
 - Extract ALL ingredients you can see, preserving quantities
-- For instructions, number each step clearly
+- IMPORTANT: Put each instruction step on its own line with a newline character between steps
+- Number each instruction step clearly (1. 2. 3. etc.)
 - If handwritten, do your best to read the text
 - IMPORTANT: Look for resting/standing/cooling time in the instructions. Phrases like "let rest for 10 minutes", "allow to stand", "rest before carving", "cool for 15 minutes" indicate rest_time_minutes.
 
@@ -103,9 +104,10 @@ Return ONLY the JSON object, no other text.`,
 
       const data = JSON.parse(jsonText.trim())
       return NextResponse.json({ success: true, data })
-    } catch {
+    } catch (parseError) {
+      console.error('Failed to parse AI response:', parseError)
       return NextResponse.json(
-        { error: 'Failed to parse AI response', raw: textContent.text },
+        { error: 'Failed to parse recipe data from image.' },
         { status: 500 }
       )
     }

@@ -238,7 +238,7 @@ Return a JSON object with these fields (use null if not found):
   "ingredients": [
     {"amount": "200", "unit": "g", "item": "flour", "notes": "sifted"}
   ],
-  "instructions": "Step by step instructions as a single string with numbered steps. IMPORTANT: Include ALL steps from the recipe.",
+  "instructions": "Step by step instructions with each step on a NEW LINE. Format as: 1. First step\\n2. Second step\\n3. Third step. IMPORTANT: Include ALL steps.",
   "prep_time_minutes": number or null,
   "cook_time_minutes": number or null,
   "rest_time_minutes": number or null,
@@ -252,6 +252,7 @@ Notes:
 - Convert all measurements to metric (grams, ml, etc.)
 - Extract ALL ingredients with their quantities
 - IMPORTANT: Extract ALL instruction steps - do not truncate or summarize
+- IMPORTANT: Put each instruction step on its own line with a newline character between steps
 - Number each instruction step clearly (1. 2. 3. etc.)
 - IMPORTANT: Look for resting/standing/cooling time in the instructions. Phrases like "let rest for 10 minutes", "allow to stand", "rest before carving", "cool for 15 minutes" indicate rest_time_minutes. This is common for meats, baked goods, and dishes that need to set.
 - Ignore any "jump to recipe" buttons or duplicate content
