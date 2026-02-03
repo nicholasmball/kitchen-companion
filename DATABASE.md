@@ -15,6 +15,7 @@ create extension if not exists "uuid-ossp";
 create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   display_name text,
+  avatar_url text,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -261,4 +262,39 @@ create policy "Users can delete own recipe images"
 on storage.objects for delete
 to authenticated
 using (bucket_id = 'recipe-images');
+```
+
+### Profile Pictures Bucket
+
+Create a storage bucket for profile pictures:
+
+1. Go to Supabase Dashboard → Storage
+2. Create a new bucket called `profile-pictures`
+3. Set it to **Public**
+4. Add RLS policies:
+
+```sql
+-- Allow authenticated users to upload profile pictures (in their own folder)
+create policy "Users can upload profile pictures"
+on storage.objects for insert
+to authenticated
+with check (bucket_id = 'profile-pictures' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- Allow public read access
+create policy "Public read access for profile pictures"
+on storage.objects for select
+to public
+using (bucket_id = 'profile-pictures');
+
+-- Allow users to update their own profile pictures
+create policy "Users can update own profile pictures"
+on storage.objects for update
+to authenticated
+using (bucket_id = 'profile-pictures' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- Allow users to delete their own profile pictures
+create policy "Users can delete own profile pictures"
+on storage.objects for delete
+to authenticated
+using (bucket_id = 'profile-pictures' and (storage.foldername(name))[1] = auth.uid()::text);
 ```

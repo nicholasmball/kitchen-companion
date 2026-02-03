@@ -12,13 +12,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { useEffect, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
 
 export function Navbar() {
   const [user, setUser] = useState<User | null>(null)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const router = useRouter()
   const supabase = createClient()
 
@@ -48,12 +49,38 @@ export function Navbar() {
       }
 
       setUser(user)
+
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('avatar_url')
+          .eq('id', user.id)
+          .single()
+        setAvatarUrl(profile?.avatar_url || null)
+      }
     }
     getUser()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user ?? null)
+      if (session?.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('avatar_url')
+          .eq('id', session.user.id)
+          .single()
+        setAvatarUrl(profile?.avatar_url || null)
+      } else {
+        setAvatarUrl(null)
+      }
     })
+
+    // Listen for profile picture changes from settings page
+    const handleProfileUpdated = (e: Event) => {
+      const detail = (e as CustomEvent).detail
+      setAvatarUrl(detail?.avatarUrl || null)
+    }
+    window.addEventListener('profile-updated', handleProfileUpdated)
 
     // Keep refreshing the session cookie while page is open (for non-remembered sessions)
     const intervalId = setInterval(() => {
@@ -66,6 +93,7 @@ export function Navbar() {
     return () => {
       subscription.unsubscribe()
       clearInterval(intervalId)
+      window.removeEventListener('profile-updated', handleProfileUpdated)
     }
   }, [supabase.auth, router])
 
@@ -114,7 +142,8 @@ export function Navbar() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                  <Avatar className="h-10 w-10">
+                  <Avatar key={avatarUrl || 'fallback'} className="h-10 w-10">
+                    {avatarUrl && <AvatarImage src={avatarUrl} alt="Profile picture" />}
                     <AvatarFallback>
                       {user.email?.charAt(0).toUpperCase() || 'U'}
                     </AvatarFallback>

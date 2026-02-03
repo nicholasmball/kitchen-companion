@@ -1,19 +1,23 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useRouter } from 'next/navigation'
 
 export default function SettingsPage() {
   const [displayName, setDisplayName] = useState('')
   const [email, setEmail] = useState('')
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
   const supabase = createClient()
 
@@ -30,12 +34,13 @@ export default function SettingsPage() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('display_name')
+        .select('display_name, avatar_url')
         .eq('id', user.id)
         .single()
 
       if (profile) {
         setDisplayName(profile.display_name || '')
+        setAvatarUrl(profile.avatar_url || null)
       }
 
       setLoading(false)
@@ -43,6 +48,112 @@ export default function SettingsPage() {
 
     loadProfile()
   }, [supabase, router])
+
+  const compressImage = useCallback((file: File): Promise<Blob> => {
+    return new Promise((resolve) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        const ctx = canvas.getContext('2d')
+        if (!ctx) { resolve(file); return }
+
+        // Crop to square from center, then resize to 256x256
+        const size = Math.min(img.width, img.height)
+        const sx = (img.width - size) / 2
+        const sy = (img.height - size) / 2
+
+        canvas.width = 256
+        canvas.height = 256
+        ctx.drawImage(img, sx, sy, size, size, 0, 0, 256, 256)
+
+        canvas.toBlob(
+          (blob) => resolve(blob || file),
+          'image/jpeg',
+          0.85
+        )
+      }
+      const reader = new FileReader()
+      reader.onload = (e) => { img.src = e.target?.result as string }
+      reader.readAsDataURL(file)
+    })
+  }, [])
+
+  async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploadingAvatar(true)
+    setMessage(null)
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        setMessage({ type: 'error', text: 'Not authenticated' })
+        return
+      }
+
+      const compressed = await compressImage(file)
+      const formData = new FormData()
+      formData.append('file', compressed, 'avatar.jpg')
+
+      const response = await fetch('/api/upload-profile-picture', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${session.access_token}` },
+        body: formData,
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        setMessage({ type: 'error', text: result.error || 'Upload failed' })
+        return
+      }
+
+      setAvatarUrl(result.url)
+      setMessage({ type: 'success', text: 'Profile picture updated!' })
+      window.dispatchEvent(new CustomEvent('profile-updated', { detail: { avatarUrl: result.url } }))
+      router.refresh()
+    } catch {
+      setMessage({ type: 'error', text: 'Failed to upload picture' })
+    } finally {
+      setUploadingAvatar(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  async function handleAvatarRemove() {
+    setUploadingAvatar(true)
+    setMessage(null)
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        setMessage({ type: 'error', text: 'Not authenticated' })
+        return
+      }
+
+      const response = await fetch('/api/upload-profile-picture', {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${session.access_token}` },
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        setMessage({ type: 'error', text: result.error || 'Failed to remove picture' })
+        return
+      }
+
+      setAvatarUrl(null)
+      setMessage({ type: 'success', text: 'Profile picture removed' })
+      window.dispatchEvent(new CustomEvent('profile-updated', { detail: { avatarUrl: null } }))
+      router.refresh()
+    } catch {
+      setMessage({ type: 'error', text: 'Failed to remove picture' })
+    } finally {
+      setUploadingAvatar(false)
+    }
+  }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
@@ -110,6 +221,46 @@ export default function SettingsPage() {
                 {message.text}
               </div>
             )}
+
+            {/* Profile Picture */}
+            <div className="flex flex-col items-center gap-3 pb-2">
+              <Avatar className="h-24 w-24 text-2xl">
+                {avatarUrl && <AvatarImage src={avatarUrl} alt="Profile picture" />}
+                <AvatarFallback>
+                  {email.charAt(0).toUpperCase() || 'U'}
+                </AvatarFallback>
+              </Avatar>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                onChange={handleAvatarUpload}
+                className="hidden"
+              />
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingAvatar}
+                >
+                  {uploadingAvatar ? 'Uploading...' : avatarUrl ? 'Change picture' : 'Upload picture'}
+                </Button>
+                {avatarUrl && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleAvatarRemove}
+                    disabled={uploadingAvatar}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    Remove
+                  </Button>
+                )}
+              </div>
+            </div>
 
             <div className="space-y-2">
               <Label htmlFor="displayName">Display name</Label>

@@ -127,6 +127,12 @@ Supabase Storage bucket `recipe-images` for recipe image uploads.
 
 ---
 
+## Workflow
+
+- **NEVER commit and push without the user confirming the change works locally first.** Always let the user test before pushing.
+
+---
+
 ## Code Conventions
 
 - TypeScript strict mode
