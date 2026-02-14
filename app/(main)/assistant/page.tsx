@@ -128,7 +128,7 @@ export default function AssistantPage() {
                 <p className="font-medium text-primary truncate max-w-[150px]">{activePlan.name}</p>
               </div>
             )}
-            <Button variant="outline" size="sm" onClick={handleNewChat} className="hidden sm:flex">
+            <Button variant="outline" size="sm" onClick={handleNewChat} className="flex">
               <PlusIcon className="h-4 w-4 mr-1" />
               New Chat
             </Button>

@@ -164,7 +164,7 @@ export function useChatSessions() {
     setCurrentSession(null)
   }, [])
 
-  // Fetch sessions and auto-select the most recent one on mount
+  // Fetch sessions on mount (don't auto-select — let user choose or start fresh)
   useEffect(() => {
     async function init() {
       setLoading(true)
@@ -177,10 +177,6 @@ export function useChatSessions() {
         setError(error.message)
       } else {
         setSessions(data || [])
-        // Auto-select the most recent session if there is one
-        if (data && data.length > 0) {
-          setCurrentSession(data[0])
-        }
       }
       setLoading(false)
     }
