@@ -16,6 +16,7 @@ import {
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { usePreferences } from '@/hooks/use-preferences'
 import type { MealItem } from '@/types'
 
 interface AddRecipeToPlanProps {
@@ -26,6 +27,7 @@ interface AddRecipeToPlanProps {
 
 export function AddRecipeToPlan({ open, onOpenChange, onAdd }: AddRecipeToPlanProps) {
   const { recipes, loading } = useRecipes()
+  const { temperatureUnit: preferredTempUnit } = usePreferences()
   const [search, setSearch] = useState('')
   const [adding, setAdding] = useState(false)
   const [importerOpen, setImporterOpen] = useState(false)
@@ -50,7 +52,7 @@ export function AddRecipeToPlan({ open, onOpenChange, onAdd }: AddRecipeToPlanPr
         prep_time_minutes: recipe.prep_time_minutes || 0,
         rest_time_minutes: recipe.rest_time_minutes || 0,
         temperature: null,
-        temperature_unit: 'C',
+        temperature_unit: preferredTempUnit,
         cooking_method: 'oven',
         instructions: recipe.instructions || null,
         notes: `From recipe: ${recipe.title}`,
@@ -78,7 +80,7 @@ export function AddRecipeToPlan({ open, onOpenChange, onAdd }: AddRecipeToPlanPr
         prep_time_minutes: data.prep_time_minutes || 0,
         rest_time_minutes: data.rest_time_minutes || 0,
         temperature: null,
-        temperature_unit: 'C',
+        temperature_unit: preferredTempUnit,
         cooking_method: 'oven',
         instructions: data.instructions || null,
         notes: 'Imported from URL/image',

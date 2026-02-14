@@ -19,6 +19,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { LabelScanner } from './label-scanner'
+import { usePreferences } from '@/hooks/use-preferences'
 import type { MealItem } from '@/types'
 
 interface MealItemFormProps {
@@ -42,6 +43,7 @@ const COOKING_METHODS = [
 ]
 
 export function MealItemForm({ item, open, onOpenChange, onSubmit }: MealItemFormProps) {
+  const { temperatureUnit: preferredTempUnit } = usePreferences()
   const [loading, setLoading] = useState(false)
   const [scannerOpen, setScannerOpen] = useState(false)
   const [name, setName] = useState(item?.name || '')
@@ -49,7 +51,7 @@ export function MealItemForm({ item, open, onOpenChange, onSubmit }: MealItemFor
   const [prepTime, setPrepTime] = useState(item?.prep_time_minutes?.toString() || '')
   const [restTime, setRestTime] = useState(item?.rest_time_minutes?.toString() || '')
   const [temperature, setTemperature] = useState(item?.temperature?.toString() || '')
-  const [temperatureUnit, setTemperatureUnit] = useState<'C' | 'F'>(item?.temperature_unit || 'C')
+  const [temperatureUnit, setTemperatureUnit] = useState<'C' | 'F'>(item?.temperature_unit || preferredTempUnit)
   const [cookingMethod, setCookingMethod] = useState<string>(item?.cooking_method || 'oven')
   const [instructions, setInstructions] = useState(item?.instructions || '')
   const [notes, setNotes] = useState(item?.notes || '')
@@ -73,7 +75,7 @@ export function MealItemForm({ item, open, onOpenChange, onSubmit }: MealItemFor
       setPrepTime('')
       setRestTime('')
       setTemperature('')
-      setTemperatureUnit('C')
+      setTemperatureUnit(preferredTempUnit)
       setCookingMethod('oven')
       setInstructions('')
       setNotes('')

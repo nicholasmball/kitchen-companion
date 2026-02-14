@@ -10,12 +10,14 @@ interface ChatMessage {
 interface ChatRequest {
   messages: ChatMessage[]
   activeMealPlan?: ActiveMealPlanContext
+  temperatureUnit?: 'C' | 'F'
+  measurementSystem?: 'metric' | 'imperial'
 }
 
 export async function POST(request: Request) {
   try {
     const body: ChatRequest = await request.json()
-    const { messages, activeMealPlan } = body
+    const { messages, activeMealPlan, temperatureUnit, measurementSystem } = body
 
     if (!messages || messages.length === 0) {
       return new Response(JSON.stringify({ error: 'Messages are required' }), {
@@ -25,7 +27,10 @@ export async function POST(request: Request) {
     }
 
     const anthropic = createAnthropicClient()
-    const systemPrompt = buildSystemPrompt(activeMealPlan)
+    const systemPrompt = buildSystemPrompt(activeMealPlan, {
+      temperatureUnit: temperatureUnit || 'C',
+      measurementSystem: measurementSystem || 'metric',
+    })
 
     // Create streaming response
     const stream = await anthropic.messages.stream({

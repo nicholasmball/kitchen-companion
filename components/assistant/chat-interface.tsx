@@ -11,13 +11,17 @@ import type { ChatSession, ChatMessage as StoredMessage } from '@/hooks/use-chat
 
 interface ChatInterfaceProps {
   activeMealPlan?: ActiveMealPlanContext
+  temperatureUnit?: 'C' | 'F'
+  measurementSystem?: 'metric' | 'imperial'
   session?: ChatSession | null
   onMessagesChange?: (messages: StoredMessage[], title?: string) => void
 }
 
-export function ChatInterface({ activeMealPlan, session, onMessagesChange }: ChatInterfaceProps) {
+export function ChatInterface({ activeMealPlan, temperatureUnit, measurementSystem, session, onMessagesChange }: ChatInterfaceProps) {
   const { messages, isLoading, error, sendMessage, stopGeneration } = useChat({
     activeMealPlan,
+    temperatureUnit,
+    measurementSystem,
     session,
     onMessagesChange,
   })

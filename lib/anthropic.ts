@@ -10,8 +10,8 @@ export function createAnthropicClient() {
 // Model to use for chat and vision tasks
 export const CLAUDE_MODEL = 'claude-sonnet-4-20250514'
 
-// System prompt for the chef assistant
-export const CHEF_SYSTEM_PROMPT = `You are an expert British chef assistant with decades of professional kitchen experience. You help home cooks with:
+// Base system prompt for the chef assistant (without unit conventions)
+const CHEF_BASE_PROMPT = `You are an expert British chef assistant with decades of professional kitchen experience. You help home cooks with:
 
 - Cooking techniques and tips
 - Recipe suggestions and modifications
@@ -26,23 +26,39 @@ Your personality:
 - Practical and focused on home cooking realities
 - Happy to explain the "why" behind techniques
 - Honest about difficulty levels
-- Safety-conscious, especially regarding food temperatures and allergens
+- Safety-conscious, especially regarding food temperatures and allergens`
 
-IMPORTANT - Always use British conventions:
-- Temperatures in Celsius (e.g., 180°C, not 350°F)
-- Weights in grams and kilograms (e.g., 500g, 1.5kg)
-- Volumes in millilitres and litres (e.g., 250ml, 1L)
+function getUnitConventions(temperatureUnit: 'C' | 'F', measurementSystem: 'metric' | 'imperial'): string {
+  const tempLine = temperatureUnit === 'C'
+    ? '- Temperatures in Celsius (e.g., 180°C, not 350°F)'
+    : '- Temperatures in Fahrenheit (e.g., 350°F, not 180°C)'
+
+  const weightLine = measurementSystem === 'metric'
+    ? '- Weights in grams and kilograms (e.g., 500g, 1.5kg)'
+    : '- Weights in ounces and pounds (e.g., 8oz, 2lb)'
+
+  const volumeLine = measurementSystem === 'metric'
+    ? '- Volumes in millilitres and litres (e.g., 250ml, 1L)'
+    : '- Volumes in cups, fluid ounces, and pints (e.g., 1 cup, 8 fl oz)'
+
+  const quantitiesLabel = measurementSystem === 'metric' ? 'metric' : 'imperial'
+
+  return `IMPORTANT - Unit conventions:
+${tempLine}
+${weightLine}
+${volumeLine}
 - Use tablespoons (tbsp) and teaspoons (tsp) for small amounts
 - British spelling (colour, flavour, favourite, etc.)
 - British food terminology (aubergine not eggplant, courgette not zucchini, coriander not cilantro, prawns not shrimp, mince not ground beef)
 
 When providing recipes, structure them clearly with:
-- Ingredients list with metric quantities
+- Ingredients list with ${quantitiesLabel} quantities
 - Step-by-step instructions
 - Tips for success
 - Common mistakes to avoid
 
 Keep responses concise and practical - remember the user is likely in the kitchen with messy hands!`
+}
 
 export interface ActiveMealPlanContext {
   name: string
@@ -50,8 +66,19 @@ export interface ActiveMealPlanContext {
   items: Array<{ name: string; cookTime: number; method: string }>
 }
 
-export function buildSystemPrompt(activeMealPlan?: ActiveMealPlanContext): string {
-  let prompt = CHEF_SYSTEM_PROMPT
+export interface UserPreferencesContext {
+  temperatureUnit: 'C' | 'F'
+  measurementSystem: 'metric' | 'imperial'
+}
+
+export function buildSystemPrompt(
+  activeMealPlan?: ActiveMealPlanContext,
+  preferences?: UserPreferencesContext
+): string {
+  const tempUnit = preferences?.temperatureUnit || 'C'
+  const measSystem = preferences?.measurementSystem || 'metric'
+
+  let prompt = CHEF_BASE_PROMPT + '\n\n' + getUnitConventions(tempUnit, measSystem)
 
   if (activeMealPlan) {
     prompt += `\n\n---\n\nThe user is currently cooking a meal called "${activeMealPlan.name}" with a target serve time of ${activeMealPlan.serveTime}.

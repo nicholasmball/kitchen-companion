@@ -79,6 +79,7 @@ export interface ParsedRecipe {
 // User preferences (could be stored in local storage or user metadata)
 export interface UserPreferences {
   temperatureUnit: 'C' | 'F'
+  measurementSystem: 'metric' | 'imperial'
   notificationsEnabled: boolean
   soundEnabled: boolean
   darkMode: 'system' | 'light' | 'dark'

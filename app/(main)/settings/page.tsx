@@ -7,12 +7,21 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useRouter } from 'next/navigation'
 
 export default function SettingsPage() {
   const [displayName, setDisplayName] = useState('')
   const [email, setEmail] = useState('')
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [temperatureUnit, setTemperatureUnit] = useState<'C' | 'F'>('C')
+  const [measurementSystem, setMeasurementSystem] = useState<'metric' | 'imperial'>('metric')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
@@ -34,13 +43,15 @@ export default function SettingsPage() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('display_name, avatar_url')
+        .select('display_name, avatar_url, temperature_unit, measurement_system')
         .eq('id', user.id)
         .single()
 
       if (profile) {
         setDisplayName(profile.display_name || '')
         setAvatarUrl(profile.avatar_url || null)
+        setTemperatureUnit(profile.temperature_unit || 'C')
+        setMeasurementSystem(profile.measurement_system || 'metric')
       }
 
       setLoading(false)
@@ -173,6 +184,8 @@ export default function SettingsPage() {
       .upsert({
         id: user.id,
         display_name: displayName,
+        temperature_unit: temperatureUnit,
+        measurement_system: measurementSystem,
         updated_at: new Date().toISOString()
       })
 
@@ -288,6 +301,43 @@ export default function SettingsPage() {
               <p className="text-xs text-muted-foreground">
                 Email cannot be changed
               </p>
+            </div>
+
+            {/* Cooking Preferences */}
+            <div className="space-y-4 pt-4 border-t">
+              <h3 className="font-medium">Cooking Preferences</h3>
+
+              <div className="space-y-2">
+                <Label htmlFor="temperatureUnit">Temperature unit</Label>
+                <Select value={temperatureUnit} onValueChange={(v) => setTemperatureUnit(v as 'C' | 'F')}>
+                  <SelectTrigger id="temperatureUnit">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="C">Celsius (&deg;C)</SelectItem>
+                    <SelectItem value="F">Fahrenheit (&deg;F)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Used as default for meal plans and the chef assistant
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="measurementSystem">Measurement system</Label>
+                <Select value={measurementSystem} onValueChange={(v) => setMeasurementSystem(v as 'metric' | 'imperial')}>
+                  <SelectTrigger id="measurementSystem">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="metric">Metric (g, kg, ml, L)</SelectItem>
+                    <SelectItem value="imperial">Imperial (oz, lb, cups)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Used by the chef assistant and when importing recipes
+                </p>
+              </div>
             </div>
 
             <Button type="submit" disabled={saving}>

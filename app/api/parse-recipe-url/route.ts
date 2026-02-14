@@ -126,7 +126,7 @@ async function downloadAndUploadImage(imageUrl: string): Promise<string | null> 
 
 export async function POST(request: Request) {
   try {
-    const { url } = await request.json()
+    const { url, measurementSystem = 'metric' } = await request.json()
 
     if (!url) {
       return NextResponse.json({ error: 'URL is required' }, { status: 400 })
@@ -249,7 +249,7 @@ Return a JSON object with these fields (use null if not found):
 }
 
 Notes:
-- Convert all measurements to metric (grams, ml, etc.)
+- ${measurementSystem === 'imperial' ? 'Use imperial measurements (oz, lb, cups) - convert from metric if needed' : 'Convert all measurements to metric (grams, ml, etc.)'}
 - Extract ALL ingredients with their quantities
 - IMPORTANT: Extract ALL instruction steps - do not truncate or summarize
 - IMPORTANT: Put each instruction step on its own line with a newline character between steps

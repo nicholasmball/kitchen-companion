@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { usePreferences } from '@/hooks/use-preferences'
 import { ImageUpload } from '@/components/shared/image-upload'
 import { Button } from '@/components/ui/button'
 import {
@@ -28,6 +29,7 @@ interface LabelScannerProps {
 }
 
 export function LabelScanner({ open, onOpenChange, onResult }: LabelScannerProps) {
+  const { temperatureUnit } = usePreferences()
   const [image, setImage] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -43,7 +45,7 @@ export function LabelScanner({ open, onOpenChange, onResult }: LabelScannerProps
       const response = await fetch('/api/parse-label', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image }),
+        body: JSON.stringify({ image, temperatureUnit }),
       })
 
       const data = await response.json()

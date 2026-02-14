@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
   try {
-    const { image } = await request.json()
+    const { image, temperatureUnit = 'C' } = await request.json()
 
     if (!image) {
       return NextResponse.json({ error: 'Image is required' }, { status: 400 })
@@ -44,14 +44,14 @@ export async function POST(request: Request) {
   "cook_time_minutes": number or null,
   "prep_time_minutes": number or null,
   "temperature": number or null,
-  "temperature_unit": "C" or "F",
+  "temperature_unit": "${temperatureUnit}",
   "cooking_method": "oven" | "hob" | "grill" | "microwave" | "air_fryer" | "slow_cooker" | "steamer" | "bbq" | "other",
   "instructions": "Step by step cooking instructions as a single string"
 }
 
 Notes:
-- Convert all temperatures to Celsius if given in Fahrenheit
-- Always use temperature_unit: "C"
+- ${temperatureUnit === 'F' ? 'Convert all temperatures to Fahrenheit if given in Celsius' : 'Convert all temperatures to Celsius if given in Fahrenheit'}
+- Always use temperature_unit: "${temperatureUnit}"
 - Parse cooking times like "25-30 minutes" as the higher value (30)
 - For cooking method, choose the most appropriate from the list
 - Keep instructions concise but complete

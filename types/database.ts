@@ -183,6 +183,8 @@ export type Database = {
           id: string
           display_name: string | null
           avatar_url: string | null
+          temperature_unit: 'C' | 'F'
+          measurement_system: 'metric' | 'imperial'
           created_at: string
           updated_at: string
         }
@@ -190,6 +192,8 @@ export type Database = {
           id: string
           display_name?: string | null
           avatar_url?: string | null
+          temperature_unit?: 'C' | 'F'
+          measurement_system?: 'metric' | 'imperial'
           created_at?: string
           updated_at?: string
         }
@@ -197,6 +201,8 @@ export type Database = {
           id?: string
           display_name?: string | null
           avatar_url?: string | null
+          temperature_unit?: 'C' | 'F'
+          measurement_system?: 'metric' | 'imperial'
           created_at?: string
           updated_at?: string
         }

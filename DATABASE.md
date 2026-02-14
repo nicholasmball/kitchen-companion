@@ -16,6 +16,8 @@ create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   display_name text,
   avatar_url text,
+  temperature_unit text default 'C' check (temperature_unit in ('C', 'F')),
+  measurement_system text default 'metric' check (measurement_system in ('metric', 'imperial')),
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );

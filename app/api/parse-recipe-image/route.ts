@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     )
   }
   try {
-    const { image } = await request.json()
+    const { image, measurementSystem = 'metric' } = await request.json()
 
     if (!image) {
       return NextResponse.json({ error: 'Image is required' }, { status: 400 })
@@ -69,7 +69,7 @@ export async function POST(request: Request) {
 }
 
 Notes:
-- Use metric measurements (grams, ml) - convert from imperial if needed
+- ${measurementSystem === 'imperial' ? 'Use imperial measurements (oz, lb, cups) - convert from metric if needed' : 'Use metric measurements (grams, ml) - convert from imperial if needed'}
 - Extract ALL ingredients you can see, preserving quantities
 - IMPORTANT: Put each instruction step on its own line with a newline character between steps
 - Number each instruction step clearly (1. 2. 3. etc.)

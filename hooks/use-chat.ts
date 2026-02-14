@@ -13,6 +13,8 @@ export interface ChatMessage {
 
 interface UseChatOptions {
   activeMealPlan?: ActiveMealPlanContext
+  temperatureUnit?: 'C' | 'F'
+  measurementSystem?: 'metric' | 'imperial'
   session?: ChatSession | null
   onMessagesChange?: (messages: StoredMessage[], title?: string) => void
 }
@@ -116,6 +118,8 @@ export function useChat(options: UseChatOptions = {}) {
         body: JSON.stringify({
           messages: apiMessages,
           activeMealPlan: options.activeMealPlan,
+          temperatureUnit: options.temperatureUnit,
+          measurementSystem: options.measurementSystem,
         }),
         signal: abortControllerRef.current.signal,
       })
@@ -162,7 +166,7 @@ export function useChat(options: UseChatOptions = {}) {
       setIsLoading(false)
       abortControllerRef.current = null
     }
-  }, [messages, isLoading, options.activeMealPlan, persistMessages])
+  }, [messages, isLoading, options.activeMealPlan, options.temperatureUnit, options.measurementSystem, persistMessages])
 
   const clearMessages = useCallback(() => {
     setMessages([])

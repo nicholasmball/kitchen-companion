@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { usePreferences } from '@/hooks/use-preferences'
 import { ImageUpload } from '@/components/shared/image-upload'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -37,6 +38,7 @@ interface RecipeImporterProps {
 }
 
 export function RecipeImporter({ open, onOpenChange, onResult }: RecipeImporterProps) {
+  const { measurementSystem } = usePreferences()
   const [tab, setTab] = useState<'url' | 'image'>('url')
   const [url, setUrl] = useState('')
   const [image, setImage] = useState<string | null>(null)
@@ -54,7 +56,7 @@ export function RecipeImporter({ open, onOpenChange, onResult }: RecipeImporterP
       const response = await fetch('/api/parse-recipe-url', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({ url, measurementSystem }),
       })
 
       const data = await response.json()
@@ -81,7 +83,7 @@ export function RecipeImporter({ open, onOpenChange, onResult }: RecipeImporterP
       const response = await fetch('/api/parse-recipe-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image }),
+        body: JSON.stringify({ image, measurementSystem }),
       })
 
       // Handle non-JSON responses (like 413 from Vercel)

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useCallback, useState } from 'react'
 import { useMealPlans } from '@/hooks/use-meal-plan'
+import { usePreferences } from '@/hooks/use-preferences'
 import { useChatSessions, type ChatMessage } from '@/hooks/use-chat-sessions'
 import { ChatInterface } from '@/components/assistant/chat-interface'
 import { ChatHistory } from '@/components/assistant/chat-history'
@@ -11,6 +12,7 @@ import type { ActiveMealPlanContext } from '@/lib/anthropic'
 
 export default function AssistantPage() {
   const { activePlan, fetchActivePlan } = useMealPlans({ initialFetch: false })
+  const { temperatureUnit, measurementSystem } = usePreferences()
   const {
     sessions,
     currentSession,
@@ -137,6 +139,8 @@ export default function AssistantPage() {
         <div className="flex-1 min-h-0">
           <ChatInterface
             activeMealPlan={activeMealPlanContext}
+            temperatureUnit={temperatureUnit}
+            measurementSystem={measurementSystem}
             session={currentSession}
             onMessagesChange={handleMessagesChange}
           />
