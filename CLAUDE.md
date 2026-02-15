@@ -62,6 +62,7 @@ ANTHROPIC_API_KEY=
   /recipes/                       # Recipe components
   /assistant/                     # Chat components
   /shared/mascot.tsx, image-upload.tsx
+  /pwa-register.tsx                # Registers service worker on page load
 /lib
   /supabase/client.ts, server.ts
   /anthropic.ts
@@ -108,6 +109,13 @@ Supabase Storage bucket `recipe-images` for recipe image uploads.
 - Image upload to Supabase Storage
 - Servings adjuster (scales ingredients)
 - Cooking Mode (larger text, screen stays awake)
+
+### PWA (Progressive Web App)
+- Installable to home screen on mobile and desktop
+- Web app manifest (`/public/manifest.json`) with app identity, icons, and theme
+- PWA icons in `/public/icons/` (192x192, 512x512, standard + maskable variants)
+- Offline fallback page (`/public/offline.html`) served when network is unavailable
+- Service worker registers on page load via `<PWARegister />` component
 
 ### Authentication
 - Email/password via Supabase Auth
