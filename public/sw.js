@@ -1,10 +1,20 @@
 // Kitchen Companion Service Worker
-// Handles background notifications for cooking timers
+// Handles background notifications for cooking timers + PWA offline support
 
-const CACHE_NAME = 'kitchen-companion-v1'
+const CACHE_NAME = 'kitchen-companion-v2'
+const OFFLINE_URL = '/offline.html'
 
-// Install event - cache essential assets
+// Install event - cache essential assets including offline page
 self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll([
+        OFFLINE_URL,
+        '/icons/icon-192x192.png',
+        '/icons/icon-512x512.png',
+      ])
+    })
+  )
   self.skipWaiting()
 })
 
@@ -22,6 +32,17 @@ self.addEventListener('activate', (event) => {
   self.clients.claim()
 })
 
+// Fetch event - serve offline page when network is unavailable
+self.addEventListener('fetch', (event) => {
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).catch(() => {
+        return caches.match(OFFLINE_URL)
+      })
+    )
+  }
+})
+
 // Handle messages from the main thread
 self.addEventListener('message', (event) => {
   if (event.data.type === 'SCHEDULE_NOTIFICATION') {
@@ -35,7 +56,7 @@ self.addEventListener('message', (event) => {
           body,
           tag,
           icon: '/images/branding/mascot.png',
-          badge: '/images/branding/mascot.png',
+          badge: '/icons/icon-192x192.png',
           vibrate: [200, 100, 200],
           requireInteraction: true,
           actions: [
@@ -51,7 +72,7 @@ self.addEventListener('message', (event) => {
         body,
         tag,
         icon: '/images/branding/mascot.png',
-        badge: '/images/branding/mascot.png',
+        badge: '/icons/icon-192x192.png',
         vibrate: [200, 100, 200],
         requireInteraction: true,
         data: { id, timestamp }
