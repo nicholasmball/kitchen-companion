@@ -9,7 +9,7 @@ const supabaseAdmin = createClient(
 )
 
 // Validate URL to prevent SSRF attacks
-function isValidExternalUrl(urlString: string): boolean {
+export function isValidExternalUrl(urlString: string): boolean {
   try {
     const url = new URL(urlString)
 
