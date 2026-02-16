@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, useCallback } from 'react'
+import { useRef, useState, useCallback, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -9,6 +9,8 @@ interface ImageUploadProps {
   disabled?: boolean
   className?: string
   accept?: string
+  /** Show a prominent "Take Photo" button that opens the rear camera on mobile */
+  showCameraCapture?: boolean
 }
 
 export function ImageUpload({
@@ -16,10 +18,28 @@ export function ImageUpload({
   disabled,
   className,
   accept = 'image/*',
+  showCameraCapture = false,
 }: ImageUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [dragOver, setDragOver] = useState(false)
+  const [hasCamera, setHasCamera] = useState(false)
+
+  // Detect if device has a camera
+  useEffect(() => {
+    if (!showCameraCapture) return
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices?.enumerateDevices) {
+      // Fallback: assume mobile devices have cameras
+      setHasCamera(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent))
+      return
+    }
+    navigator.mediaDevices.enumerateDevices().then(devices => {
+      setHasCamera(devices.some(d => d.kind === 'videoinput'))
+    }).catch(() => {
+      setHasCamera(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent))
+    })
+  }, [showCameraCapture])
 
   const processFile = useCallback((file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -106,6 +126,19 @@ export function ImageUpload({
         className="hidden"
       />
 
+      {/* Separate input for camera capture — uses rear camera on mobile */}
+      {showCameraCapture && hasCamera && (
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={handleFileChange}
+          disabled={disabled}
+          className="hidden"
+        />
+      )}
+
       {preview ? (
         <div className="relative">
           <img
@@ -125,7 +158,14 @@ export function ImageUpload({
         </div>
       ) : (
         <div
-          onClick={() => fileInputRef.current?.click()}
+          onClick={() => {
+            // On devices with camera + capture enabled, default tap opens camera
+            if (showCameraCapture && hasCamera && cameraInputRef.current) {
+              cameraInputRef.current.click()
+            } else {
+              fileInputRef.current?.click()
+            }
+          }}
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -138,7 +178,11 @@ export function ImageUpload({
           )}
         >
           <CameraIcon className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-          <p className="font-medium">Click to upload or drag and drop</p>
+          <p className="font-medium">
+            {showCameraCapture && hasCamera
+              ? 'Tap to take a photo'
+              : 'Click to upload or drag and drop'}
+          </p>
           <p className="text-sm text-muted-foreground mt-1">
             PNG, JPG or WEBP
           </p>
@@ -146,6 +190,17 @@ export function ImageUpload({
       )}
 
       <div className="flex gap-2">
+        {showCameraCapture && hasCamera && (
+          <Button
+            variant="default"
+            className="flex-1"
+            onClick={() => cameraInputRef.current?.click()}
+            disabled={disabled}
+          >
+            <CameraIcon className="h-4 w-4 mr-2" />
+            Take Photo
+          </Button>
+        )}
         <Button
           variant="outline"
           className="flex-1"

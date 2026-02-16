@@ -180,6 +180,7 @@ export function RecipeImporter({ open, onOpenChange, onResult }: RecipeImporterP
               <ImageUpload
                 onImageSelect={setImage}
                 disabled={loading}
+                showCameraCapture
               />
 
               {error && <p className="text-sm text-destructive">{error}</p>}

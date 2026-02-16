@@ -92,6 +92,7 @@ export function LabelScanner({ open, onOpenChange, onResult }: LabelScannerProps
               <ImageUpload
                 onImageSelect={setImage}
                 disabled={loading}
+                showCameraCapture
               />
 
               {error && (
