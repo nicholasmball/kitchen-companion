@@ -21,26 +21,21 @@ describe('ImageUpload', () => {
     expect(screen.queryByText('Take Photo')).toBeNull()
   })
 
-  it('does not show Take Photo button when no camera is detected', () => {
-    // With no mediaDevices and a desktop user agent, hasCamera should be false
+  it('does not show Take Photo button on desktop', () => {
+    // happy-dom has no touch support and desktop UA, so isMobile should be false
     render(<ImageUpload onImageSelect={mockOnImageSelect} showCameraCapture />)
-    // No camera on test environment (happy-dom)
     expect(screen.queryByText('Take Photo')).toBeNull()
   })
 
-  it('shows Take Photo button on mobile devices with camera', async () => {
-    // Mock enumerateDevices to report a camera
-    const mockEnumerateDevices = vi.fn().mockResolvedValue([
-      { kind: 'videoinput', deviceId: 'cam1', label: 'Camera', groupId: 'g1' }
-    ])
-    Object.defineProperty(navigator, 'mediaDevices', {
-      value: { enumerateDevices: mockEnumerateDevices },
+  it('shows Take Photo button on mobile devices', async () => {
+    // Mock mobile user agent
+    Object.defineProperty(navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/120.0',
       configurable: true,
     })
 
     render(<ImageUpload onImageSelect={mockOnImageSelect} showCameraCapture />)
 
-    // Wait for async camera detection
     await vi.waitFor(() => {
       expect(screen.getByText('Take Photo')).toBeDefined()
     })
@@ -49,12 +44,9 @@ describe('ImageUpload', () => {
     expect(screen.getByText('Choose File')).toBeDefined()
   })
 
-  it('renders camera input with capture="environment" attribute when camera available', async () => {
-    const mockEnumerateDevices = vi.fn().mockResolvedValue([
-      { kind: 'videoinput', deviceId: 'cam1', label: 'Camera', groupId: 'g1' }
-    ])
-    Object.defineProperty(navigator, 'mediaDevices', {
-      value: { enumerateDevices: mockEnumerateDevices },
+  it('renders camera input with capture="environment" on mobile', async () => {
+    Object.defineProperty(navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/120.0',
       configurable: true,
     })
 

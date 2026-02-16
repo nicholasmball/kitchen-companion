@@ -24,22 +24,17 @@ export function ImageUpload({
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [dragOver, setDragOver] = useState(false)
-  const [hasCamera, setHasCamera] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
 
-  // Detect if device has a camera
+  // Detect mobile device (which will have a camera)
   useEffect(() => {
     if (!showCameraCapture) return
-    if (typeof navigator === 'undefined' || !navigator.mediaDevices?.enumerateDevices) {
-      // Fallback: assume mobile devices have cameras
-      setHasCamera(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent))
-      return
-    }
-    navigator.mediaDevices.enumerateDevices().then(devices => {
-      setHasCamera(devices.some(d => d.kind === 'videoinput'))
-    }).catch(() => {
-      setHasCamera(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent))
-    })
+    const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+      ('ontouchstart' in window && window.innerWidth < 1024)
+    setIsMobile(mobile)
   }, [showCameraCapture])
+
+  const hasCamera = showCameraCapture && isMobile
 
   const processFile = useCallback((file: File) => {
     if (!file.type.startsWith('image/')) {

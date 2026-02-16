@@ -23,7 +23,16 @@ export function RecipeImageUpload({
   const [error, setError] = useState<string | null>(null)
   const [imageLoadError, setImageLoadError] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
+  const [isMobile, setIsMobile] = useState(false)
   const supabase = createClient()
+
+  // Detect mobile device for camera capture
+  useEffect(() => {
+    const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+      ('ontouchstart' in window && window.innerWidth < 1024)
+    setIsMobile(mobile)
+  }, [])
 
   // Reset error state when preview changes
   useEffect(() => {
@@ -135,6 +144,19 @@ export function RecipeImageUpload({
         disabled={uploading}
       />
 
+      {/* Camera input — opens rear camera on mobile */}
+      {isMobile && (
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={handleFileSelect}
+          className="hidden"
+          disabled={uploading}
+        />
+      )}
+
       {preview ? (
         <div className="relative aspect-[4/3] rounded-lg overflow-hidden bg-muted">
           {imageLoadError ? (
@@ -187,11 +209,33 @@ export function RecipeImageUpload({
       ) : (
         <div
           className="aspect-[4/3] rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/30 flex flex-col items-center justify-center cursor-pointer hover:border-muted-foreground/50 hover:bg-muted/50 transition-colors"
-          onClick={() => fileInputRef.current?.click()}
+          onClick={() => {
+            if (isMobile && cameraInputRef.current) {
+              cameraInputRef.current.click()
+            } else {
+              fileInputRef.current?.click()
+            }
+          }}
         >
           <CameraIcon className="h-10 w-10 text-muted-foreground/50 mb-2" />
-          <p className="text-sm text-muted-foreground">Click to add a photo</p>
+          <p className="text-sm text-muted-foreground">
+            {isMobile ? 'Tap to take a photo' : 'Click to add a photo'}
+          </p>
           <p className="text-xs text-muted-foreground/70 mt-1">JPEG, PNG, WebP or GIF, max 5MB</p>
+          {isMobile && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mt-3"
+              onClick={(e) => {
+                e.stopPropagation()
+                fileInputRef.current?.click()
+              }}
+            >
+              Choose from gallery
+            </Button>
+          )}
         </div>
       )}
 
