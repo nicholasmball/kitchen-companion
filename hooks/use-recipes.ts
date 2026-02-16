@@ -22,19 +22,23 @@ export function useRecipes(options: UseRecipesOptions = { initialFetch: true }) 
     setLoading(true)
     setError(null)
 
-    const { data, error } = await supabase
-      .from('recipes')
-      .select('*')
-      .order('created_at', { ascending: false })
+    try {
+      const { data, error } = await supabase
+        .from('recipes')
+        .select('*')
+        .order('created_at', { ascending: false })
 
-    if (error) {
-      setError(error.message)
+      if (error) {
+        setError(error.message)
+        return
+      }
+
+      setRecipes(data || [])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load recipes')
+    } finally {
       setLoading(false)
-      return
     }
-
-    setRecipes(data || [])
-    setLoading(false)
   }, [supabase])
 
   const createRecipe = useCallback(async (recipe: RecipeInput): Promise<Recipe | null> => {

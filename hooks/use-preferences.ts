@@ -11,20 +11,25 @@ export function usePreferences() {
 
   useEffect(() => {
     async function load() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { setLoading(false); return }
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
 
-      const { data } = await supabase
-        .from('profiles')
-        .select('temperature_unit, measurement_system')
-        .eq('id', user.id)
-        .single()
+        const { data } = await supabase
+          .from('profiles')
+          .select('temperature_unit, measurement_system')
+          .eq('id', user.id)
+          .single()
 
-      if (data) {
-        setTemperatureUnit(data.temperature_unit || 'C')
-        setMeasurementSystem(data.measurement_system || 'metric')
+        if (data) {
+          setTemperatureUnit(data.temperature_unit || 'C')
+          setMeasurementSystem(data.measurement_system || 'metric')
+        }
+      } catch {
+        // Preferences will use defaults if fetch fails
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     }
     load()
   }, [supabase])

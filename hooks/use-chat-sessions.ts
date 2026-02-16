@@ -28,17 +28,22 @@ export function useChatSessions() {
   // Fetch all sessions
   const fetchSessions = useCallback(async () => {
     setLoading(true)
-    const { data, error } = await supabase
-      .from('chat_sessions')
-      .select('*')
-      .order('updated_at', { ascending: false })
+    try {
+      const { data, error } = await supabase
+        .from('chat_sessions')
+        .select('*')
+        .order('updated_at', { ascending: false })
 
-    if (error) {
-      setError(error.message)
-    } else {
-      setSessions(data || [])
+      if (error) {
+        setError(error.message)
+      } else {
+        setSessions(data || [])
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load chat sessions')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }, [supabase])
 
   // Create a new session
@@ -168,17 +173,22 @@ export function useChatSessions() {
   useEffect(() => {
     async function init() {
       setLoading(true)
-      const { data, error } = await supabase
-        .from('chat_sessions')
-        .select('*')
-        .order('updated_at', { ascending: false })
+      try {
+        const { data, error } = await supabase
+          .from('chat_sessions')
+          .select('*')
+          .order('updated_at', { ascending: false })
 
-      if (error) {
-        setError(error.message)
-      } else {
-        setSessions(data || [])
+        if (error) {
+          setError(error.message)
+        } else {
+          setSessions(data || [])
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load chat sessions')
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     }
     init()
   }, [supabase])

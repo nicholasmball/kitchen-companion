@@ -28,49 +28,59 @@ export function useMealPlans(options: UseMealPlansOptions = { initialFetch: true
     setLoading(true)
     setError(null)
 
-    const { data, error } = await supabase
-      .from('meal_plans')
-      .select('*')
-      .order('updated_at', { ascending: false })
+    try {
+      const { data, error } = await supabase
+        .from('meal_plans')
+        .select('*')
+        .order('updated_at', { ascending: false })
 
-    if (error) {
-      setError(error.message)
+      if (error) {
+        setError(error.message)
+        return
+      }
+
+      setMealPlans(data || [])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load meal plans')
+    } finally {
       setLoading(false)
-      return
     }
-
-    setMealPlans(data || [])
-    setLoading(false)
   }, [supabase])
 
   // Fetch active meal plan with items
   const fetchActivePlan = useCallback(async () => {
     setLoading(true)
-    const { data, error } = await supabase
-      .from('meal_plans')
-      .select(`
-        *,
-        meal_items (*)
-      `)
-      .eq('is_active', true)
-      .single()
 
-    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
-      setError(error.message)
-      setLoading(false)
+    try {
+      const { data, error } = await supabase
+        .from('meal_plans')
+        .select(`
+          *,
+          meal_items (*)
+        `)
+        .eq('is_active', true)
+        .single()
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
+        setError(error.message)
+        return null
+      }
+
+      if (data) {
+        // Sort meal items by sort_order
+        data.meal_items = (data.meal_items || []).sort((a: MealItem, b: MealItem) => a.sort_order - b.sort_order)
+        setActivePlan(data)
+      } else {
+        setActivePlan(null)
+      }
+
+      return data
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load active plan')
       return null
+    } finally {
+      setLoading(false)
     }
-
-    if (data) {
-      // Sort meal items by sort_order
-      data.meal_items = (data.meal_items || []).sort((a: MealItem, b: MealItem) => a.sort_order - b.sort_order)
-      setActivePlan(data)
-    } else {
-      setActivePlan(null)
-    }
-
-    setLoading(false)
-    return data
   }, [supabase])
 
   // Get a single meal plan with items
