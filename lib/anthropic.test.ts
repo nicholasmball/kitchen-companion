@@ -22,14 +22,12 @@ describe('buildSystemPrompt', () => {
     const prompt = buildSystemPrompt(undefined, prefs)
     expect(prompt).toContain('ounces and pounds')
     expect(prompt).toContain('cups, fluid ounces')
-    expect(prompt).toContain('imperial quantities')
   })
 
   it('uses metric measurements when measurementSystem is metric', () => {
     const prefs: UserPreferencesContext = { temperatureUnit: 'C', measurementSystem: 'metric' }
     const prompt = buildSystemPrompt(undefined, prefs)
     expect(prompt).toContain('grams and kilograms')
-    expect(prompt).toContain('metric quantities')
   })
 
   it('includes British terminology reminders', () => {
@@ -82,7 +80,7 @@ describe('buildSystemPrompt', () => {
     }
     const prompt = buildSystemPrompt(mealPlan, prefs)
     expect(prompt).toContain('Fahrenheit')
-    expect(prompt).toContain('imperial')
+    expect(prompt).toContain('ounces and pounds')
     expect(prompt).toContain('Dinner')
     expect(prompt).toContain('Steak')
   })

@@ -41,8 +41,6 @@ function getUnitConventions(temperatureUnit: 'C' | 'F', measurementSystem: 'metr
     ? '- Volumes in millilitres and litres (e.g., 250ml, 1L)'
     : '- Volumes in cups, fluid ounces, and pints (e.g., 1 cup, 8 fl oz)'
 
-  const quantitiesLabel = measurementSystem === 'metric' ? 'metric' : 'imperial'
-
   return `IMPORTANT - Unit conventions:
 ${tempLine}
 ${weightLine}
@@ -51,11 +49,22 @@ ${volumeLine}
 - British spelling (colour, flavour, favourite, etc.)
 - British food terminology (aubergine not eggplant, courgette not zucchini, coriander not cilantro, prawns not shrimp, mince not ground beef)
 
-When providing recipes, structure them clearly with:
-- Ingredients list with ${quantitiesLabel} quantities
-- Step-by-step instructions
-- Tips for success
-- Common mistakes to avoid
+When providing recipes, ALWAYS structure them with markdown headers exactly like this:
+## Recipe Title
+Brief description
+
+## Ingredients
+- 500g chicken breast
+- 2 tbsp olive oil
+
+## Method
+1. Step one
+2. Step two
+
+## Tips
+- Helpful tip
+
+Use ## headers for each section (Ingredients, Method). Use a bullet list for ingredients and a numbered list for method steps. This consistent format is required.
 
 Keep responses concise and practical - remember the user is likely in the kitchen with messy hands!`
 }
