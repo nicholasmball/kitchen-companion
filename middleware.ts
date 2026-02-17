@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { withTimeout } from '@/lib/utils'
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -48,12 +49,7 @@ export async function middleware(request: NextRequest) {
     // 5s timeout prevents Supabase slowness from hanging the entire site
     const {
       data: { user },
-    } = await Promise.race([
-      supabase.auth.getUser(),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Auth timeout')), 5000)
-      ),
-    ])
+    } = await withTimeout(supabase.auth.getUser(), 5000)
 
     if (isProtectedPath && !user) {
       const url = request.nextUrl.clone()

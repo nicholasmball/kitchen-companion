@@ -175,30 +175,8 @@ export function useChatSessions() {
 
   // Fetch sessions on mount (don't auto-select — let user choose or start fresh)
   useEffect(() => {
-    async function init() {
-      setLoading(true)
-      try {
-        const { data, error } = await withTimeout(
-          supabase
-            .from('chat_sessions')
-            .select('*')
-            .order('updated_at', { ascending: false }),
-          10000
-        )
-
-        if (error) {
-          setError(error.message)
-        } else {
-          setSessions(data || [])
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load chat sessions')
-      } finally {
-        setLoading(false)
-      }
-    }
-    init()
-  }, [supabase])
+    fetchSessions()
+  }, [fetchSessions])
 
   return {
     sessions,
