@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { withTimeout } from '@/lib/utils'
 import type { MealPlan, MealItem } from '@/types'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -29,10 +30,13 @@ export function useMealPlans(options: UseMealPlansOptions = { initialFetch: true
     setError(null)
 
     try {
-      const { data, error } = await supabase
-        .from('meal_plans')
-        .select('*')
-        .order('updated_at', { ascending: false })
+      const { data, error } = await withTimeout(
+        supabase
+          .from('meal_plans')
+          .select('*')
+          .order('updated_at', { ascending: false }),
+        10000
+      )
 
       if (error) {
         setError(error.message)
@@ -52,14 +56,17 @@ export function useMealPlans(options: UseMealPlansOptions = { initialFetch: true
     setLoading(true)
 
     try {
-      const { data, error } = await supabase
-        .from('meal_plans')
-        .select(`
-          *,
-          meal_items (*)
-        `)
-        .eq('is_active', true)
-        .single()
+      const { data, error } = await withTimeout(
+        supabase
+          .from('meal_plans')
+          .select(`
+            *,
+            meal_items (*)
+          `)
+          .eq('is_active', true)
+          .single(),
+        10000
+      )
 
       if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
         setError(error.message)

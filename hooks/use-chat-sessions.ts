@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { withTimeout } from '@/lib/utils'
 
 export interface ChatMessage {
   role: 'user' | 'assistant'
@@ -29,10 +30,13 @@ export function useChatSessions() {
   const fetchSessions = useCallback(async () => {
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('chat_sessions')
-        .select('*')
-        .order('updated_at', { ascending: false })
+      const { data, error } = await withTimeout(
+        supabase
+          .from('chat_sessions')
+          .select('*')
+          .order('updated_at', { ascending: false }),
+        10000
+      )
 
       if (error) {
         setError(error.message)
@@ -174,10 +178,13 @@ export function useChatSessions() {
     async function init() {
       setLoading(true)
       try {
-        const { data, error } = await supabase
-          .from('chat_sessions')
-          .select('*')
-          .order('updated_at', { ascending: false })
+        const { data, error } = await withTimeout(
+          supabase
+            .from('chat_sessions')
+            .select('*')
+            .order('updated_at', { ascending: false }),
+          10000
+        )
 
         if (error) {
           setError(error.message)

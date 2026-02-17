@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { withTimeout } from '@/lib/utils'
 
 export function usePreferences() {
   const [temperatureUnit, setTemperatureUnit] = useState<'C' | 'F'>('C')
@@ -12,14 +13,17 @@ export function usePreferences() {
   useEffect(() => {
     async function load() {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
+        const { data: { user } } = await withTimeout(supabase.auth.getUser(), 5000)
         if (!user) return
 
-        const { data } = await supabase
-          .from('profiles')
-          .select('temperature_unit, measurement_system')
-          .eq('id', user.id)
-          .single()
+        const { data } = await withTimeout(
+          supabase
+            .from('profiles')
+            .select('temperature_unit, measurement_system')
+            .eq('id', user.id)
+            .single(),
+          5000
+        )
 
         if (data) {
           setTemperatureUnit(data.temperature_unit || 'C')

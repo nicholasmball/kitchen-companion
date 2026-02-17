@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { withTimeout } from '@/lib/utils'
 import type { Recipe } from '@/types'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -23,10 +24,13 @@ export function useRecipes(options: UseRecipesOptions = { initialFetch: true }) 
     setError(null)
 
     try {
-      const { data, error } = await supabase
-        .from('recipes')
-        .select('*')
-        .order('created_at', { ascending: false })
+      const { data, error } = await withTimeout(
+        supabase
+          .from('recipes')
+          .select('*')
+          .order('created_at', { ascending: false }),
+        10000
+      )
 
       if (error) {
         setError(error.message)

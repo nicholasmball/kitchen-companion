@@ -45,9 +45,15 @@ export async function middleware(request: NextRequest) {
 
   try {
     // Refresh session if expired - required for Server Components
+    // 5s timeout prevents Supabase slowness from hanging the entire site
     const {
       data: { user },
-    } = await supabase.auth.getUser()
+    } = await Promise.race([
+      supabase.auth.getUser(),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Auth timeout')), 5000)
+      ),
+    ])
 
     if (isProtectedPath && !user) {
       const url = request.nextUrl.clone()

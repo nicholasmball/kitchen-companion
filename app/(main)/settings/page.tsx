@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { withTimeout } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -33,7 +34,7 @@ export default function SettingsPage() {
   useEffect(() => {
     async function loadProfile() {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
+        const { data: { user } } = await withTimeout(supabase.auth.getUser(), 5000)
 
         if (!user) {
           router.push('/login')
@@ -42,11 +43,14 @@ export default function SettingsPage() {
 
         setEmail(user.email || '')
 
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('display_name, avatar_url, temperature_unit, measurement_system')
-          .eq('id', user.id)
-          .single()
+        const { data: profile } = await withTimeout(
+          supabase
+            .from('profiles')
+            .select('display_name, avatar_url, temperature_unit, measurement_system')
+            .eq('id', user.id)
+            .single(),
+          5000
+        )
 
         if (profile) {
           setDisplayName(profile.display_name || '')

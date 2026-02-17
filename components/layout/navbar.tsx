@@ -15,6 +15,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { useEffect, useState } from 'react'
+import { withTimeout } from '@/lib/utils'
 import type { User } from '@supabase/supabase-js'
 
 export function Navbar() {
@@ -26,7 +27,7 @@ export function Navbar() {
   useEffect(() => {
     const getUser = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
+        const { data: { user } } = await withTimeout(supabase.auth.getUser(), 5000)
 
         // Check "remember me" preference
         if (user) {
@@ -53,11 +54,14 @@ export function Navbar() {
 
         if (user) {
           try {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('avatar_url')
-              .eq('id', user.id)
-              .single()
+            const { data: profile } = await withTimeout(
+              supabase
+                .from('profiles')
+                .select('avatar_url')
+                .eq('id', user.id)
+                .single(),
+              5000
+            )
             setAvatarUrl(profile?.avatar_url || null)
           } catch {
             // Profile fetch failed — avatar will show fallback initial
@@ -74,11 +78,14 @@ export function Navbar() {
       setUser(session?.user ?? null)
       if (session?.user) {
         try {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('avatar_url')
-            .eq('id', session.user.id)
-            .single()
+          const { data: profile } = await withTimeout(
+            supabase
+              .from('profiles')
+              .select('avatar_url')
+              .eq('id', session.user.id)
+              .single(),
+            5000
+          )
           setAvatarUrl(profile?.avatar_url || null)
         } catch {
           // Profile fetch failed — avatar will show fallback initial
