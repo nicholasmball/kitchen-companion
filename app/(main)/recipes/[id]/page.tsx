@@ -39,6 +39,7 @@ export default function RecipeDetailPage() {
   const [startingCooking, setStartingCooking] = useState(false)
   const [addToPlanOpen, setAddToPlanOpen] = useState(false)
   const [cookingMode, setCookingMode] = useState(false)
+  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set())
   const [serveTime, setServeTime] = useState(() => {
     // Default to 1 hour from now, rounded to nearest 15 minutes
     const now = new Date()
@@ -150,6 +151,28 @@ export default function RecipeDetailPage() {
     }
   }
 
+  // Cooking mode: compute non-empty steps for checkboxes
+  const steps = recipe?.instructions
+    ? recipe.instructions.split('\n').filter(line => line.trim())
+    : []
+
+  const toggleStep = useCallback((index: number) => {
+    setCompletedSteps(prev => {
+      const next = new Set(prev)
+      if (next.has(index)) {
+        next.delete(index)
+      } else {
+        next.add(index)
+      }
+      return next
+    })
+  }, [])
+
+  const exitCookingMode = useCallback(() => {
+    setCookingMode(false)
+    setCompletedSteps(new Set())
+  }, [])
+
   if (loading) {
     return (
       <div className="max-w-3xl mx-auto space-y-6">
@@ -189,7 +212,7 @@ export default function RecipeDetailPage() {
           <Button
             variant="secondary"
             size="sm"
-            onClick={() => setCookingMode(false)}
+            onClick={exitCookingMode}
           >
             Exit
           </Button>
@@ -347,21 +370,83 @@ export default function RecipeDetailPage() {
         <Card>
           <CardHeader>
             <CardTitle className={cookingMode ? "text-2xl" : ""}>Instructions</CardTitle>
+            {cookingMode && steps.length > 0 && (
+              <div className="space-y-2 mt-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className={cn(
+                    completedSteps.size === steps.length
+                      ? "text-primary font-medium"
+                      : "text-muted-foreground"
+                  )}>
+                    {completedSteps.size === steps.length
+                      ? "All steps done!"
+                      : `${completedSteps.size} of ${steps.length} steps done`
+                    }
+                  </span>
+                </div>
+                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-primary transition-all duration-300"
+                    style={{ width: `${(completedSteps.size / steps.length) * 100}%` }}
+                  />
+                </div>
+              </div>
+            )}
           </CardHeader>
           <CardContent>
-            <div className={cn(
-              "max-w-none",
-              cookingMode ? "text-xl leading-relaxed space-y-4" : "prose prose-sm"
-            )}>
-              {recipe.instructions.split('\n').map((line, i) => (
-                <p key={i} className={cn(
-                  line.trim() ? '' : 'h-4',
-                  cookingMode && line.trim() && "py-2 border-b border-muted last:border-0"
-                )}>
-                  {line}
-                </p>
-              ))}
-            </div>
+            {cookingMode ? (
+              <div className="space-y-1">
+                {steps.map((line, i) => {
+                  const isCompleted = completedSteps.has(i)
+                  return (
+                    <div
+                      key={i}
+                      role="checkbox"
+                      aria-checked={isCompleted}
+                      aria-label={`Step ${i + 1}: ${line.trim()}`}
+                      tabIndex={0}
+                      onClick={() => toggleStep(i)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          toggleStep(i)
+                        }
+                      }}
+                      className={cn(
+                        "flex items-start gap-3 py-3 px-3 rounded-xl cursor-pointer transition-all duration-200 border-b border-muted last:border-0",
+                        "active:bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+                        isCompleted && "bg-muted/30"
+                      )}
+                    >
+                      {/* Checkbox indicator */}
+                      <div className={cn(
+                        "shrink-0 mt-0.5 h-6 w-6 rounded-full border-2 flex items-center justify-center transition-all duration-200",
+                        isCompleted
+                          ? "bg-primary border-primary"
+                          : "border-muted-foreground/40"
+                      )}>
+                        {isCompleted && <CheckIcon className="h-3.5 w-3.5 text-primary-foreground" />}
+                      </div>
+                      {/* Step text */}
+                      <span className={cn(
+                        "text-xl leading-relaxed transition-all duration-200",
+                        isCompleted && "opacity-50 line-through"
+                      )}>
+                        {line}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="prose prose-sm max-w-none">
+                {recipe.instructions.split('\n').map((line, i) => (
+                  <p key={i} className={line.trim() ? '' : 'h-4'}>
+                    {line}
+                  </p>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -531,6 +616,14 @@ function CalendarPlusIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z" />
+    </svg>
+  )
+}
+
+function CheckIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
     </svg>
   )
 }
