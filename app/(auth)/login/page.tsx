@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useState } from 'react'
+import { Suspense, useState, useRef, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Turnstile, type TurnstileRef } from '@/components/auth/turnstile'
 
 function LoginForm() {
   const [email, setEmail] = useState('')
@@ -15,6 +16,9 @@ function LoginForm() {
   const [rememberMe, setRememberMe] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const turnstileRef = useRef<TurnstileRef>(null)
+  const handleCaptchaToken = useCallback((token: string) => setCaptchaToken(token), [])
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirect = searchParams.get('redirect') || '/'
@@ -28,10 +32,15 @@ function LoginForm() {
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
+      options: {
+        captchaToken: captchaToken ?? undefined,
+      },
     })
 
     if (error) {
       setError(error.message)
+      setCaptchaToken(null)
+      turnstileRef.current?.reset()
       setLoading(false)
       return
     }
@@ -100,9 +109,10 @@ function LoginForm() {
               Remember me
             </Label>
           </div>
+          <Turnstile ref={turnstileRef} onToken={handleCaptchaToken} />
         </CardContent>
         <CardFooter className="flex flex-col gap-4 pt-6">
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="w-full" disabled={loading || !captchaToken}>
             {loading ? 'Signing in...' : 'Sign in'}
           </Button>
           <p className="text-sm text-muted-foreground text-center">

@@ -12,6 +12,7 @@ A Next.js app for home cooks to plan meal timings, get AI chef assistance, and s
 - **Styling:** Tailwind CSS + shadcn/ui + Nunito font
 - **Database:** Supabase (Postgres + Auth + Row Level Security + Storage)
 - **AI:** Anthropic Claude API (claude-sonnet-4-20250514) for chat + vision
+- **Anti-abuse:** Cloudflare Turnstile (CAPTCHA on auth forms)
 - **Deployment:** Vercel
 
 ---
@@ -23,6 +24,7 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 ANTHROPIC_API_KEY=
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=
 ```
 
 ---
@@ -61,6 +63,7 @@ ANTHROPIC_API_KEY=
   /planner/                       # Meal plan components
   /recipes/                       # Recipe components
   /assistant/                     # Chat components
+  /auth/turnstile.tsx                # Cloudflare Turnstile CAPTCHA widget
   /shared/mascot.tsx, image-upload.tsx
   /pwa-register.tsx                # Registers service worker on page load
 /lib
@@ -122,6 +125,7 @@ Supabase Storage bucket `recipe-images` for recipe image uploads.
 - Password reset flow
 - User profiles with display name
 - "Remember me" option (unchecked = session ends when browser closes)
+- Cloudflare Turnstile CAPTCHA on signup, login, and forgot-password forms (invisible, no user friction)
 
 ---
 

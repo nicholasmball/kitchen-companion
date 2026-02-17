@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Turnstile, type TurnstileRef } from '@/components/auth/turnstile'
 
 export default function SignupPage() {
   const [name, setName] = useState('')
@@ -16,6 +17,9 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const turnstileRef = useRef<TurnstileRef>(null)
+  const handleCaptchaToken = useCallback((token: string) => setCaptchaToken(token), [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -39,6 +43,7 @@ export default function SignupPage() {
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/auth/callback`,
+        captchaToken: captchaToken ?? undefined,
         data: {
           display_name: name,
         },
@@ -47,6 +52,8 @@ export default function SignupPage() {
 
     if (error) {
       setError(error.message)
+      setCaptchaToken(null)
+      turnstileRef.current?.reset()
       setLoading(false)
       return
     }
@@ -138,9 +145,10 @@ export default function SignupPage() {
               autoComplete="new-password"
             />
           </div>
+          <Turnstile ref={turnstileRef} onToken={handleCaptchaToken} />
         </CardContent>
         <CardFooter className="flex flex-col gap-4 pt-6">
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="w-full" disabled={loading || !captchaToken}>
             {loading ? 'Creating account...' : 'Create account'}
           </Button>
           <p className="text-sm text-muted-foreground text-center">

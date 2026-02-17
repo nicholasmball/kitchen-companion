@@ -1,18 +1,22 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Turnstile, type TurnstileRef } from '@/components/auth/turnstile'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const turnstileRef = useRef<TurnstileRef>(null)
+  const handleCaptchaToken = useCallback((token: string) => setCaptchaToken(token), [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -22,10 +26,13 @@ export default function ForgotPasswordPage() {
     const supabase = createClient()
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
+      captchaToken: captchaToken ?? undefined,
     })
 
     if (error) {
       setError(error.message)
+      setCaptchaToken(null)
+      turnstileRef.current?.reset()
       setLoading(false)
       return
     }
@@ -83,9 +90,10 @@ export default function ForgotPasswordPage() {
               autoComplete="email"
             />
           </div>
+          <Turnstile ref={turnstileRef} onToken={handleCaptchaToken} />
         </CardContent>
         <CardFooter className="flex flex-col gap-4 pt-6">
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="w-full" disabled={loading || !captchaToken}>
             {loading ? 'Sending...' : 'Send reset link'}
           </Button>
           <Link href="/login" className="text-sm text-muted-foreground hover:text-primary">
