@@ -10,7 +10,7 @@ export function cn(...inputs: ClassValue[]) {
  * within the given milliseconds, it rejects with a timeout error.
  * Prevents hanging Supabase calls from freezing the UI or middleware.
  */
-export function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+export function withTimeout<T>(promise: PromiseLike<T>, ms: number): Promise<T> {
   return Promise.race([
     promise,
     new Promise<never>((_, reject) =>
