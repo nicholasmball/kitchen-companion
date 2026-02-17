@@ -25,38 +25,47 @@ export function Navbar() {
 
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
 
-      // Check "remember me" preference
-      if (user) {
-        const rememberMe = localStorage.getItem('rememberMe')
-        const sessionActive = document.cookie.includes('sessionActive=true')
+        // Check "remember me" preference
+        if (user) {
+          const rememberMe = localStorage.getItem('rememberMe')
+          const sessionActive = document.cookie.includes('sessionActive=true')
 
-        // If user didn't check "remember me" and this is a new browser session, sign out
-        if (rememberMe === 'false' && !sessionActive) {
-          await supabase.auth.signOut()
-          localStorage.removeItem('rememberMe')
-          setUser(null)
-          router.push('/login')
-          router.refresh()
-          return
+          // If user didn't check "remember me" and this is a new browser session, sign out
+          if (rememberMe === 'false' && !sessionActive) {
+            await supabase.auth.signOut()
+            localStorage.removeItem('rememberMe')
+            setUser(null)
+            router.push('/login')
+            router.refresh()
+            return
+          }
+
+          // Set a short-lived cookie (10 seconds) - will be refreshed by interval below
+          if (rememberMe === 'false') {
+            document.cookie = 'sessionActive=true; Max-Age=10; path=/'
+          }
         }
 
-        // Set a short-lived cookie (10 seconds) - will be refreshed by interval below
-        if (rememberMe === 'false') {
-          document.cookie = 'sessionActive=true; Max-Age=10; path=/'
+        setUser(user)
+
+        if (user) {
+          try {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('avatar_url')
+              .eq('id', user.id)
+              .single()
+            setAvatarUrl(profile?.avatar_url || null)
+          } catch {
+            // Profile fetch failed — avatar will show fallback initial
+          }
         }
-      }
-
-      setUser(user)
-
-      if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('avatar_url')
-          .eq('id', user.id)
-          .single()
-        setAvatarUrl(profile?.avatar_url || null)
+      } catch {
+        // Auth check failed — treat as logged out
+        setUser(null)
       }
     }
     getUser()
@@ -64,12 +73,16 @@ export function Navbar() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user ?? null)
       if (session?.user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('avatar_url')
-          .eq('id', session.user.id)
-          .single()
-        setAvatarUrl(profile?.avatar_url || null)
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('avatar_url')
+            .eq('id', session.user.id)
+            .single()
+          setAvatarUrl(profile?.avatar_url || null)
+        } catch {
+          // Profile fetch failed — avatar will show fallback initial
+        }
       } else {
         setAvatarUrl(null)
       }

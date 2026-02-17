@@ -32,29 +32,33 @@ export default function SettingsPage() {
 
   useEffect(() => {
     async function loadProfile() {
-      const { data: { user } } = await supabase.auth.getUser()
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
 
-      if (!user) {
-        router.push('/login')
-        return
+        if (!user) {
+          router.push('/login')
+          return
+        }
+
+        setEmail(user.email || '')
+
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('display_name, avatar_url, temperature_unit, measurement_system')
+          .eq('id', user.id)
+          .single()
+
+        if (profile) {
+          setDisplayName(profile.display_name || '')
+          setAvatarUrl(profile.avatar_url || null)
+          setTemperatureUnit(profile.temperature_unit || 'C')
+          setMeasurementSystem(profile.measurement_system || 'metric')
+        }
+      } catch {
+        // Auth or profile fetch failed — page will show with defaults
+      } finally {
+        setLoading(false)
       }
-
-      setEmail(user.email || '')
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('display_name, avatar_url, temperature_unit, measurement_system')
-        .eq('id', user.id)
-        .single()
-
-      if (profile) {
-        setDisplayName(profile.display_name || '')
-        setAvatarUrl(profile.avatar_url || null)
-        setTemperatureUnit(profile.temperature_unit || 'C')
-        setMeasurementSystem(profile.measurement_system || 'metric')
-      }
-
-      setLoading(false)
     }
 
     loadProfile()
