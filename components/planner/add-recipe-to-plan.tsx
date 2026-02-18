@@ -56,6 +56,8 @@ export function AddRecipeToPlan({ open, onOpenChange, onAdd }: AddRecipeToPlanPr
         cooking_method: 'oven',
         instructions: recipe.instructions || null,
         notes: `From recipe: ${recipe.title}`,
+        recipe_id: recipe.id,
+        ingredients: recipe.ingredients?.length ? recipe.ingredients : null,
       })
       onOpenChange(false)
     } catch (err) {
@@ -84,6 +86,8 @@ export function AddRecipeToPlan({ open, onOpenChange, onAdd }: AddRecipeToPlanPr
         cooking_method: 'oven',
         instructions: data.instructions || null,
         notes: 'Imported from URL/image',
+        recipe_id: null,
+        ingredients: null,
       })
       onOpenChange(false)
     } catch (err) {

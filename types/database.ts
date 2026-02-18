@@ -51,6 +51,8 @@ export type Database = {
           notes: string | null
           sort_order: number
           created_at: string
+          recipe_id: string | null
+          ingredients: Ingredient[] | null
         }
         Insert: {
           id?: string
@@ -66,6 +68,8 @@ export type Database = {
           notes?: string | null
           sort_order?: number
           created_at?: string
+          recipe_id?: string | null
+          ingredients?: Ingredient[] | null
         }
         Update: {
           id?: string
@@ -81,6 +85,8 @@ export type Database = {
           notes?: string | null
           sort_order?: number
           created_at?: string
+          recipe_id?: string | null
+          ingredients?: Ingredient[] | null
         }
       }
       recipes: {

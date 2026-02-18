@@ -43,6 +43,7 @@ NEXT_PUBLIC_TURNSTILE_SITE_KEY=
     /layout.tsx
     /page.tsx                     # Dashboard (authenticated) / Landing (public)
     /settings/page.tsx            # User profile settings
+    /help/page.tsx                # Help & FAQ page
     /planner/page.tsx             # Meal plans list
     /planner/[id]/page.tsx        # Meal plan detail
     /assistant/page.tsx           # Chef AI chat
@@ -83,7 +84,7 @@ NEXT_PUBLIC_TURNSTILE_SITE_KEY=
 See `DATABASE.md` for full schema. Tables:
 - **profiles** - User display names
 - **meal_plans** - Saved meal configurations
-- **meal_items** - Items within meal plans
+- **meal_items** - Items within meal plans (with optional `recipe_id` FK and `ingredients` JSONB snapshot)
 - **recipes** - User's recipe collection
 - **chat_sessions** - Persistent chat history
 
@@ -95,6 +96,9 @@ Supabase Storage bucket `recipe-images` for recipe image uploads.
 
 ### Meal Timing Planner (Core Feature)
 - Create meal plans with multiple items (name, cook time, prep time, rest time, temperature, method)
+- Adding a recipe to a plan copies ingredients + links via `recipe_id` (survives recipe deletion)
+- Meal item cards show ingredient count; dialog shows full ingredient list + "View full recipe" link
+- Cooking Mode with step checkboxes (interactive progress tracking per item)
 - Timeline calculates when to start each item based on serve time
 - Browser notifications + audio alerts at each step
 - Label scanning via Claude Vision to extract cooking info from food packaging
