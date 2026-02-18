@@ -102,6 +102,29 @@ export default function MealPlanDetailPage() {
     return calculateTimeline(plan.meal_items, new Date(plan.serve_time))
   }, [plan])
 
+  // Sort items by timeline start time (earliest first) when a serve time exists
+  const sortedItems = useMemo(() => {
+    if (!plan?.meal_items.length) return []
+    if (!timeline.length) return plan.meal_items
+
+    // Find each item's earliest event time
+    const earliestTimeByItemId = new Map<string, number>()
+    for (const event of timeline) {
+      if (event.mealItemId === 'all') continue
+      const existing = earliestTimeByItemId.get(event.mealItemId)
+      const eventMs = event.time.getTime()
+      if (existing === undefined || eventMs < existing) {
+        earliestTimeByItemId.set(event.mealItemId, eventMs)
+      }
+    }
+
+    return [...plan.meal_items].sort((a, b) => {
+      const aTime = earliestTimeByItemId.get(a.id) ?? Infinity
+      const bTime = earliestTimeByItemId.get(b.id) ?? Infinity
+      return aTime - bTime
+    })
+  }, [plan?.meal_items, timeline])
+
   // Handlers
   const handleUpdatePlan = useCallback(async (data: MealPlanInsert) => {
     const result = await updateMealPlan(id, data)
@@ -264,7 +287,7 @@ export default function MealPlanDetailPage() {
         {/* Items list */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Items ({plan.meal_items.length})</h2>
+            <h2 className="text-xl font-semibold">Items ({sortedItems.length})</h2>
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setAddRecipeOpen(true)}>
                 <BookIcon className="h-4 w-4 mr-2" />
@@ -277,7 +300,7 @@ export default function MealPlanDetailPage() {
             </div>
           </div>
 
-          {plan.meal_items.length === 0 ? (
+          {sortedItems.length === 0 ? (
             <Card className="border-dashed">
               <CardContent className="py-8 text-center">
                 <p className="text-muted-foreground mb-4">
@@ -291,7 +314,7 @@ export default function MealPlanDetailPage() {
             </Card>
           ) : (
             <div className="space-y-3">
-              {plan.meal_items.map((item) => (
+              {sortedItems.map((item) => (
                 <MealItemCard
                   key={item.id}
                   item={item}

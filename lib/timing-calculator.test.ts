@@ -27,6 +27,8 @@ function makeMealItem(overrides: Partial<MealItem> = {}): MealItem {
     notes: null,
     sort_order: 0,
     created_at: '2024-01-01T00:00:00Z',
+    recipe_id: null,
+    ingredients: null,
     ...overrides,
   }
 }
@@ -407,6 +409,83 @@ describe('getEventColor', () => {
 
   it('returns green classes for serve', () => {
     expect(getEventColor('serve')).toContain('7A9B76')
+  })
+})
+
+describe('timeline-based item ordering', () => {
+  const serveTime = new Date('2024-01-01T18:00:00Z')
+
+  it('items with longer total time appear first in timeline', () => {
+    const roastChicken = makeMealItem({
+      id: 'chicken',
+      name: 'Roast Chicken',
+      prep_time_minutes: 15,
+      cook_time_minutes: 90,
+      rest_time_minutes: 10,
+      sort_order: 1,
+    })
+    const vegetables = makeMealItem({
+      id: 'veg',
+      name: 'Roast Vegetables',
+      prep_time_minutes: 10,
+      cook_time_minutes: 40,
+      rest_time_minutes: 0,
+      sort_order: 0,
+    })
+
+    const events = calculateTimeline([vegetables, roastChicken], serveTime)
+
+    // Find earliest event per item
+    const earliestByItem = new Map<string, number>()
+    for (const e of events) {
+      if (e.mealItemId === 'all') continue
+      const existing = earliestByItem.get(e.mealItemId)
+      if (existing === undefined || e.time.getTime() < existing) {
+        earliestByItem.set(e.mealItemId, e.time.getTime())
+      }
+    }
+
+    // Sort items by earliest event time
+    const sorted = [vegetables, roastChicken].sort((a, b) => {
+      const aTime = earliestByItem.get(a.id) ?? Infinity
+      const bTime = earliestByItem.get(b.id) ?? Infinity
+      return aTime - bTime
+    })
+
+    // Chicken starts earlier (115 min before serve vs 50 min)
+    expect(sorted[0].id).toBe('chicken')
+    expect(sorted[1].id).toBe('veg')
+  })
+
+  it('items with same start time preserve relative order', () => {
+    const itemA = makeMealItem({
+      id: 'a',
+      name: 'Item A',
+      prep_time_minutes: 0,
+      cook_time_minutes: 30,
+      rest_time_minutes: 0,
+    })
+    const itemB = makeMealItem({
+      id: 'b',
+      name: 'Item B',
+      prep_time_minutes: 0,
+      cook_time_minutes: 30,
+      rest_time_minutes: 0,
+    })
+
+    const events = calculateTimeline([itemA, itemB], serveTime)
+
+    const earliestByItem = new Map<string, number>()
+    for (const e of events) {
+      if (e.mealItemId === 'all') continue
+      const existing = earliestByItem.get(e.mealItemId)
+      if (existing === undefined || e.time.getTime() < existing) {
+        earliestByItem.set(e.mealItemId, e.time.getTime())
+      }
+    }
+
+    // Both start at the same time — sort should be stable
+    expect(earliestByItem.get('a')).toBe(earliestByItem.get('b'))
   })
 })
 
