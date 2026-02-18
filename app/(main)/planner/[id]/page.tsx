@@ -56,6 +56,23 @@ export default function MealPlanDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Step completion state for all meal items (keyed by item ID)
+  const [completedPlanSteps, setCompletedPlanSteps] = useState<Map<string, Set<number>>>(new Map())
+
+  const togglePlanStep = useCallback((itemId: string, stepIndex: number) => {
+    setCompletedPlanSteps(prev => {
+      const next = new Map(prev)
+      const itemSteps = new Set(prev.get(itemId) || [])
+      if (itemSteps.has(stepIndex)) {
+        itemSteps.delete(stepIndex)
+      } else {
+        itemSteps.add(stepIndex)
+      }
+      next.set(itemId, itemSteps)
+      return next
+    })
+  }, [])
+
   // Dialog states
   const [editPlanOpen, setEditPlanOpen] = useState(false)
   const [itemFormOpen, setItemFormOpen] = useState(false)
@@ -283,6 +300,8 @@ export default function MealPlanDetailPage() {
                     setItemFormOpen(true)
                   }}
                   onDelete={(id) => setDeleteItemDialog(id)}
+                  completedSteps={completedPlanSteps.get(item.id) || new Set()}
+                  onToggleStep={(stepIndex) => togglePlanStep(item.id, stepIndex)}
                 />
               ))}
             </div>
