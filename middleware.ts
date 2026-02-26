@@ -7,20 +7,9 @@ export async function middleware(request: NextRequest) {
     request,
   })
 
-  // Only check auth for protected and auth routes — skip for everything else
-  const protectedPaths = ['/planner', '/assistant', '/recipes', '/settings']
-  const authPaths = ['/login', '/signup']
-  const isProtectedPath = protectedPaths.some((path) =>
-    request.nextUrl.pathname.startsWith(path)
-  )
-  const isAuthPath = authPaths.some((path) =>
-    request.nextUrl.pathname.startsWith(path)
-  )
-
-  if (!isProtectedPath && !isAuthPath) {
-    return supabaseResponse
-  }
-
+  // Always create the Supabase client and refresh the session.
+  // This keeps auth cookies fresh for ALL routes (including /)
+  // so Server Components get accurate auth state.
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -42,6 +31,16 @@ export async function middleware(request: NextRequest) {
         },
       },
     }
+  )
+
+  // Determine if this route needs redirect logic
+  const protectedPaths = ['/planner', '/assistant', '/recipes', '/settings']
+  const authPaths = ['/login', '/signup']
+  const isProtectedPath = protectedPaths.some((path) =>
+    request.nextUrl.pathname.startsWith(path)
+  )
+  const isAuthPath = authPaths.some((path) =>
+    request.nextUrl.pathname.startsWith(path)
   )
 
   try {
