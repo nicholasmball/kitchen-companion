@@ -25,7 +25,7 @@ import {
 import type { MealPlan } from '@/types'
 
 export default function PlannerPage() {
-  const { mealPlans, loading, error, createMealPlan, deleteMealPlan, setAsActive, deactivatePlan } = useMealPlans()
+  const { mealPlans, loading, error, fetchMealPlans, createMealPlan, deleteMealPlan, setAsActive, deactivatePlan } = useMealPlans()
   const [formOpen, setFormOpen] = useState(false)
   const [deleteDialog, setDeleteDialog] = useState<MealPlan | null>(null)
   const [deleting, setDeleting] = useState(false)
@@ -56,7 +56,10 @@ export default function PlannerPage() {
   if (error) {
     return (
       <div className="text-center py-12">
-        <p className="text-destructive">Error loading meal plans: {error}</p>
+        <p className="text-destructive">{error}</p>
+        <Button onClick={() => { fetchMealPlans() }} className="mt-4">
+          Try again
+        </Button>
       </div>
     )
   }

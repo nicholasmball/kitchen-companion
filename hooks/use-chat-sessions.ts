@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { withTimeout } from '@/lib/utils'
+import { withTimeout, withRetry, friendlyError } from '@/lib/utils'
 
 export interface ChatMessage {
   role: 'user' | 'assistant'
@@ -26,16 +26,18 @@ export function useChatSessions() {
   const [error, setError] = useState<string | null>(null)
   const supabase = useMemo(() => createClient(), [])
 
-  // Fetch all sessions
+  // Fetch all sessions (with automatic retry on transient failures)
   const fetchSessions = useCallback(async () => {
     setLoading(true)
     try {
-      const { data, error } = await withTimeout(
-        supabase
-          .from('chat_sessions')
-          .select('*')
-          .order('updated_at', { ascending: false }),
-        10000
+      const { data, error } = await withRetry(() =>
+        withTimeout(
+          supabase
+            .from('chat_sessions')
+            .select('*')
+            .order('updated_at', { ascending: false }),
+          10000
+        )
       )
 
       if (error) {
@@ -44,7 +46,7 @@ export function useChatSessions() {
         setSessions(data || [])
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load chat sessions')
+      setError(friendlyError(err))
     } finally {
       setLoading(false)
     }
@@ -52,7 +54,7 @@ export function useChatSessions() {
 
   // Create a new session
   const createSession = useCallback(async (title?: string): Promise<ChatSession | null> => {
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user } } = await withTimeout(supabase.auth.getUser(), 5000)
     if (!user) {
       setError('You must be logged in')
       return null

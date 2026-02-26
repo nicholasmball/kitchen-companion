@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { withTimeout } from '@/lib/utils'
+import { withTimeout, withRetry, friendlyError } from '@/lib/utils'
 import type { Recipe } from '@/types'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -24,12 +24,14 @@ export function useRecipes(options: UseRecipesOptions = { initialFetch: true }) 
     setError(null)
 
     try {
-      const { data, error } = await withTimeout(
-        supabase
-          .from('recipes')
-          .select('*')
-          .order('created_at', { ascending: false }),
-        10000
+      const { data, error } = await withRetry(() =>
+        withTimeout(
+          supabase
+            .from('recipes')
+            .select('*')
+            .order('created_at', { ascending: false }),
+          10000
+        )
       )
 
       if (error) {
@@ -39,14 +41,14 @@ export function useRecipes(options: UseRecipesOptions = { initialFetch: true }) 
 
       setRecipes(data || [])
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load recipes')
+      setError(friendlyError(err))
     } finally {
       setLoading(false)
     }
   }, [supabase])
 
   const createRecipe = useCallback(async (recipe: RecipeInput): Promise<Recipe | null> => {
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user } } = await withTimeout(supabase.auth.getUser(), 5000)
     if (!user) {
       setError('You must be logged in to create a recipe')
       return null

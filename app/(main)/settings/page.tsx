@@ -179,7 +179,15 @@ export default function SettingsPage() {
     setSaving(true)
     setMessage(null)
 
-    const { data: { user } } = await supabase.auth.getUser()
+    let user
+    try {
+      const result = await withTimeout(supabase.auth.getUser(), 5000)
+      user = result.data.user
+    } catch {
+      setMessage({ type: 'error', text: 'Connection is slow — please try again' })
+      setSaving(false)
+      return
+    }
 
     if (!user) {
       setMessage({ type: 'error', text: 'Not authenticated' })

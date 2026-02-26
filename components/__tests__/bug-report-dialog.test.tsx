@@ -23,6 +23,8 @@ vi.mock('@/lib/toast', () => ({
 vi.mock('@/lib/utils', () => ({
   cn: (...args: string[]) => args.filter(Boolean).join(' '),
   withTimeout: (promise: Promise<unknown>) => promise,
+  friendlyError: (err: unknown) => err instanceof Error ? err.message : 'Something went wrong',
+  withRetry: (fn: () => Promise<unknown>) => fn(),
 }))
 
 describe('BugReportDialog', () => {

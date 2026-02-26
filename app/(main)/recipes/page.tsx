@@ -19,7 +19,7 @@ import {
 
 export default function RecipesPage() {
   const router = useRouter()
-  const { recipes, loading, error, toggleFavourite, deleteRecipe, createRecipe } = useRecipes()
+  const { recipes, loading, error, fetchRecipes, toggleFavourite, deleteRecipe, createRecipe } = useRecipes()
   const [importerOpen, setImporterOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [filterFavourites, setFilterFavourites] = useState(false)
@@ -94,8 +94,8 @@ export default function RecipesPage() {
   if (error) {
     return (
       <div className="text-center py-12">
-        <p className="text-destructive">Error loading recipes: {error}</p>
-        <Button onClick={() => window.location.reload()} className="mt-4">
+        <p className="text-destructive">{error}</p>
+        <Button onClick={() => fetchRecipes()} className="mt-4">
           Try again
         </Button>
       </div>

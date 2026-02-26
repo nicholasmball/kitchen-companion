@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { withTimeout } from '@/lib/utils'
+import { withTimeout, withRetry, friendlyError } from '@/lib/utils'
 import type { MealPlan, MealItem } from '@/types'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -24,18 +24,20 @@ export function useMealPlans(options: UseMealPlansOptions = { initialFetch: true
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const supabase = useMemo(() => createClient(), [])
 
-  // Fetch all meal plans
+  // Fetch all meal plans (with automatic retry on transient failures)
   const fetchMealPlans = useCallback(async () => {
     setLoading(true)
     setError(null)
 
     try {
-      const { data, error } = await withTimeout(
-        supabase
-          .from('meal_plans')
-          .select('*')
-          .order('updated_at', { ascending: false }),
-        10000
+      const { data, error } = await withRetry(() =>
+        withTimeout(
+          supabase
+            .from('meal_plans')
+            .select('*')
+            .order('updated_at', { ascending: false }),
+          10000
+        )
       )
 
       if (error) {
@@ -45,27 +47,29 @@ export function useMealPlans(options: UseMealPlansOptions = { initialFetch: true
 
       setMealPlans(data || [])
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load meal plans')
+      setError(friendlyError(err))
     } finally {
       setLoading(false)
     }
   }, [supabase])
 
-  // Fetch active meal plan with items
+  // Fetch active meal plan with items (with automatic retry)
   const fetchActivePlan = useCallback(async () => {
     setLoading(true)
 
     try {
-      const { data, error } = await withTimeout(
-        supabase
-          .from('meal_plans')
-          .select(`
-            *,
-            meal_items (*)
-          `)
-          .eq('is_active', true)
-          .single(),
-        10000
+      const { data, error } = await withRetry(() =>
+        withTimeout(
+          supabase
+            .from('meal_plans')
+            .select(`
+              *,
+              meal_items (*)
+            `)
+            .eq('is_active', true)
+            .single(),
+          10000
+        )
       )
 
       if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
@@ -83,7 +87,7 @@ export function useMealPlans(options: UseMealPlansOptions = { initialFetch: true
 
       return data
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load active plan')
+      setError(friendlyError(err))
       return null
     } finally {
       setLoading(false)
@@ -92,14 +96,17 @@ export function useMealPlans(options: UseMealPlansOptions = { initialFetch: true
 
   // Get a single meal plan with items
   const getMealPlan = useCallback(async (id: string): Promise<MealPlanWithItems | null> => {
-    const { data, error } = await supabase
-      .from('meal_plans')
-      .select(`
-        *,
-        meal_items (*)
-      `)
-      .eq('id', id)
-      .single()
+    const { data, error } = await withTimeout(
+      supabase
+        .from('meal_plans')
+        .select(`
+          *,
+          meal_items (*)
+        `)
+        .eq('id', id)
+        .single(),
+      10000
+    )
 
     if (error) {
       setError(error.message)
@@ -113,7 +120,7 @@ export function useMealPlans(options: UseMealPlansOptions = { initialFetch: true
 
   // Create a new meal plan
   const createMealPlan = useCallback(async (plan: AnyInput): Promise<MealPlan | null> => {
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user } } = await withTimeout(supabase.auth.getUser(), 5000)
     if (!user) {
       setError('You must be logged in')
       return null

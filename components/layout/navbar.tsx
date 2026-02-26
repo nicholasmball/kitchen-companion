@@ -28,10 +28,10 @@ export function Navbar() {
   useEffect(() => {
     const getUser = async () => {
       try {
-        const { data: { user } } = await withTimeout(supabase.auth.getUser(), 5000)
+        const { data: { user: fetchedUser } } = await withTimeout(supabase.auth.getUser(), 5000)
 
         // Check "remember me" preference
-        if (user) {
+        if (fetchedUser) {
           const rememberMe = localStorage.getItem('rememberMe')
           const sessionActive = document.cookie.includes('sessionActive=true')
 
@@ -51,15 +51,15 @@ export function Navbar() {
           }
         }
 
-        setUser(user)
+        setUser(fetchedUser)
 
-        if (user) {
+        if (fetchedUser) {
           try {
             const { data: profile } = await withTimeout(
               supabase
                 .from('profiles')
                 .select('avatar_url')
-                .eq('id', user.id)
+                .eq('id', fetchedUser.id)
                 .single(),
               5000
             )
@@ -69,8 +69,11 @@ export function Navbar() {
           }
         }
       } catch {
-        // Auth check failed — treat as logged out
-        setUser(null)
+        // Auth check timed out or failed — keep existing user state.
+        // Don't set user to null here, as a timeout doesn't mean
+        // the user is logged out. The session cookies are still valid.
+        // Only a definitive auth state change (via onAuthStateChange)
+        // should clear the user.
       }
     }
     getUser()

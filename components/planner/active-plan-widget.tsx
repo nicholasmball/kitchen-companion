@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 
 export function ActivePlanWidget() {
-  const { activePlan, loading, fetchActivePlan } = useMealPlans({ initialFetch: false })
+  const { activePlan, loading, error, fetchActivePlan } = useMealPlans({ initialFetch: false })
 
   // Fetch active plan on mount
   useEffect(() => {
@@ -38,6 +38,19 @@ export function ActivePlanWidget() {
         <CardContent className="py-8">
           <div className="h-6 w-48 bg-muted animate-pulse rounded mb-2" />
           <div className="h-4 w-32 bg-muted animate-pulse rounded" />
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (error) {
+    return (
+      <Card className="border-dashed">
+        <CardContent className="py-6 text-center">
+          <p className="text-muted-foreground text-sm">{error}</p>
+          <Button variant="outline" size="sm" onClick={() => fetchActivePlan()} className="mt-2">
+            Try again
+          </Button>
         </CardContent>
       </Card>
     )

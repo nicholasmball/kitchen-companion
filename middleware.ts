@@ -63,13 +63,10 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(url)
     }
   } catch {
-    // If auth check fails, let the request through — client-side will handle auth
-    if (isProtectedPath) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/login'
-      url.searchParams.set('redirect', request.nextUrl.pathname)
-      return NextResponse.redirect(url)
-    }
+    // On timeout or network error, let the request through rather than
+    // redirecting to /login. The user likely IS authenticated — Supabase
+    // was just slow. Client-side code will handle auth state properly.
+    // Only a definitive "no user" response (handled above) should redirect.
   }
 
   return supabaseResponse
