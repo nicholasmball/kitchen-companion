@@ -133,6 +133,24 @@ create table public.chat_sessions (
 create index chat_sessions_user_id_idx on public.chat_sessions(user_id);
 ```
 
+-- ============================================
+-- BUG REPORTS TABLE
+-- In-app bug reports from users
+-- ============================================
+create table public.bug_reports (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete cascade not null,
+  description text not null,
+  page_url text,
+  user_agent text,
+  status text default 'new' check (status in ('new', 'reviewed', 'resolved')),
+  created_at timestamptz default now()
+);
+
+create index bug_reports_user_id_idx on public.bug_reports(user_id);
+create index bug_reports_status_idx on public.bug_reports(status);
+```
+
 ## Row Level Security Policies
 
 ```sql
@@ -189,6 +207,13 @@ create policy "Users can update own chat sessions" on public.chat_sessions
   for update using (auth.uid() = user_id);
 create policy "Users can delete own chat sessions" on public.chat_sessions
   for delete using (auth.uid() = user_id);
+
+-- Bug Reports
+alter table public.bug_reports enable row level security;
+create policy "Users can insert own bug reports" on public.bug_reports
+  for insert with check (auth.uid() = user_id);
+create policy "Users can view own bug reports" on public.bug_reports
+  for select using (auth.uid() = user_id);
 ```
 
 ## Triggers & Functions

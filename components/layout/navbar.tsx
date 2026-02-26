@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { BugReportDialog } from '@/components/shared/bug-report-dialog'
 import { useEffect, useState } from 'react'
 import { withTimeout } from '@/lib/utils'
 import type { User } from '@supabase/supabase-js'
@@ -189,6 +190,11 @@ export function Navbar() {
                 <DropdownMenuItem asChild>
                   <Link href="/help">Help</Link>
                 </DropdownMenuItem>
+                <BugReportDialog>
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                    Report a Bug
+                  </DropdownMenuItem>
+                </BugReportDialog>
                 <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
                   Sign out
                 </DropdownMenuItem>

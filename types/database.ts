@@ -184,6 +184,35 @@ export type Database = {
           updated_at?: string
         }
       }
+      bug_reports: {
+        Row: {
+          id: string
+          user_id: string
+          description: string
+          page_url: string | null
+          user_agent: string | null
+          status: 'new' | 'reviewed' | 'resolved'
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          description: string
+          page_url?: string | null
+          user_agent?: string | null
+          status?: 'new' | 'reviewed' | 'resolved'
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          description?: string
+          page_url?: string | null
+          user_agent?: string | null
+          status?: 'new' | 'reviewed' | 'resolved'
+          created_at?: string
+        }
+      }
       profiles: {
         Row: {
           id: string
@@ -265,3 +294,6 @@ export type ChatSessionUpdate = Database['public']['Tables']['chat_sessions']['U
 export type Profile = Database['public']['Tables']['profiles']['Row']
 export type ProfileInsert = Database['public']['Tables']['profiles']['Insert']
 export type ProfileUpdate = Database['public']['Tables']['profiles']['Update']
+
+export type BugReport = Database['public']['Tables']['bug_reports']['Row']
+export type BugReportInsert = Database['public']['Tables']['bug_reports']['Insert']

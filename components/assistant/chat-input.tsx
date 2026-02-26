@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react'
 import { Button } from '@/components/ui/button'
 
 interface ChatInputProps {
@@ -13,7 +13,11 @@ interface ChatInputProps {
   onChange?: (value: string) => void
 }
 
-export function ChatInput({
+export interface ChatInputHandle {
+  focus: () => void
+}
+
+export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function ChatInput({
   onSend,
   onStop,
   isLoading,
@@ -21,11 +25,18 @@ export function ChatInput({
   placeholder = 'Ask the chef anything...',
   value,
   onChange,
-}: ChatInputProps) {
+}, ref) {
   const [internalInput, setInternalInput] = useState('')
   const input = value !== undefined ? value : internalInput
   const setInput = onChange || setInternalInput
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  useImperativeHandle(ref, () => ({
+    focus: () => {
+      textareaRef.current?.focus()
+      textareaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    },
+  }))
 
   // Auto-resize textarea
   useEffect(() => {
@@ -86,7 +97,7 @@ export function ChatInput({
       )}
     </div>
   )
-}
+})
 
 function SendIcon({ className }: { className?: string }) {
   return (

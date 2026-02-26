@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { BugReportDialog } from '@/components/shared/bug-report-dialog'
 import { cn } from '@/lib/utils'
 
 interface HelpSection {
@@ -178,7 +180,7 @@ export default function HelpPage() {
       ))}
 
       <Card>
-        <CardContent className="py-6 text-center space-y-2">
+        <CardContent className="py-6 text-center space-y-4">
           <p className="text-muted-foreground">
             Still have a question? Ask the{' '}
             <Link href="/assistant" className="text-primary hover:underline font-medium">
@@ -186,6 +188,17 @@ export default function HelpPage() {
             </Link>
             {' '} — it knows all about cooking and how to use the app.
           </p>
+          <div className="border-t pt-4">
+            <p className="text-muted-foreground text-sm mb-2">
+              Found something that&apos;s not working right?
+            </p>
+            <BugReportDialog>
+              <Button variant="outline" size="sm">
+                <BugIcon className="h-4 w-4 mr-1" />
+                Report a Bug
+              </Button>
+            </BugReportDialog>
+          </div>
         </CardContent>
       </Card>
     </div>
@@ -229,6 +242,14 @@ function ChevronIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+    </svg>
+  )
+}
+
+function BugIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 12.75c1.148 0 2.278.08 3.383.237 1.037.146 1.866.966 1.866 2.013 0 3.728-2.35 6.75-5.25 6.75S6.75 18.728 6.75 15c0-1.046.83-1.867 1.866-2.013A24.204 24.204 0 0 1 12 12.75ZM12 12.75c2.883 0 5.647.508 8.207 1.44a23.91 23.91 0 0 1-1.152-6.135 23.342 23.342 0 0 0-2.783-.534M12 12.75c-2.883 0-5.647.508-8.208 1.44.125-2.104.52-4.136 1.153-6.135a23.342 23.342 0 0 1 2.783-.534M12 12.75V6.108m3.272.126a23.46 23.46 0 0 0-6.544 0M12 2.25c-1.892 0-3.758.12-5.592.35" />
     </svg>
   )
 }

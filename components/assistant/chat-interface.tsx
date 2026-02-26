@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import { useChat } from '@/hooks/use-chat'
 import { ChatMessageBubble } from './chat-message'
-import { ChatInput } from './chat-input'
+import { ChatInput, type ChatInputHandle } from './chat-input'
 import { QuickActions } from './quick-actions'
 import type { ActiveMealPlanContext } from '@/lib/anthropic'
 import type { ChatSession, ChatMessage as StoredMessage } from '@/hooks/use-chat-sessions'
@@ -26,6 +26,7 @@ export function ChatInterface({ activeMealPlan, temperatureUnit, measurementSyst
     onMessagesChange,
   })
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const chatInputRef = useRef<ChatInputHandle>(null)
   const [inputValue, setInputValue] = useState('')
 
   // Auto-scroll to bottom when new messages arrive
@@ -35,6 +36,8 @@ export function ChatInterface({ activeMealPlan, temperatureUnit, measurementSyst
 
   const handleQuickAction = (prompt: string) => {
     setInputValue(prompt)
+    // Focus the input and scroll it into view after quick action selection
+    setTimeout(() => chatInputRef.current?.focus(), 0)
   }
 
   const handleSend = (message: string) => {
@@ -104,6 +107,7 @@ export function ChatInterface({ activeMealPlan, temperatureUnit, measurementSyst
 
       {/* Input area */}
       <ChatInput
+        ref={chatInputRef}
         onSend={handleSend}
         onStop={stopGeneration}
         isLoading={isLoading}
