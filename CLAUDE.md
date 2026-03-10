@@ -51,11 +51,13 @@ NEXT_PUBLIC_TURNSTILE_SITE_KEY=
     /recipes/[id]/page.tsx        # Recipe detail
     /recipes/new/page.tsx         # Add recipe
     /recipes/[id]/edit/page.tsx   # Edit recipe
+    /admin/bug-reports/page.tsx   # Admin bug report dashboard
   /api
     /chat/route.ts                # Chef assistant (streaming)
     /parse-label/route.ts         # Claude Vision for food labels
     /parse-recipe-image/route.ts  # Claude Vision for recipe images
     /parse-recipe-url/route.ts    # Extract recipe from URL
+    /alexa/route.ts               # Alexa Custom Skill endpoint
     /upload-recipe-image/route.ts # Upload to Supabase Storage
   /auth/callback/route.ts         # Supabase auth callback
 /components
@@ -72,7 +74,7 @@ NEXT_PUBLIC_TURNSTILE_SITE_KEY=
   /anthropic.ts
   /utils.ts, timing-calculator.ts, notifications.ts, audio.ts
 /hooks
-  /use-meal-plan.ts, use-recipes.ts, use-timers.ts, use-notifications.ts, use-chat.ts, use-chat-sessions.ts
+  /use-meal-plan.ts, use-recipes.ts, use-timers.ts, use-notifications.ts, use-chat.ts, use-chat-sessions.ts, use-voice-input.ts
 /types
   /database.ts, index.ts
 ```
@@ -109,6 +111,8 @@ Supabase Storage bucket `recipe-images` for recipe image uploads.
 - British personality (Celsius, metric, British terminology)
 - Context-aware (knows about active meal plan)
 - "Save to Recipes" button when assistant provides a recipe
+- Voice input via microphone button (Web Speech API, hidden on unsupported browsers)
+- Alexa Custom Skill — "Alexa, ask Cat's Kitchen..." (see `alexa-skill/SETUP.md`)
 
 ### Recipe Collection
 - CRUD with search/filter (cuisine, course, difficulty, time, favourites)
@@ -130,6 +134,12 @@ Supabase Storage bucket `recipe-images` for recipe image uploads.
 - User profiles with display name
 - "Remember me" option (unchecked = session ends when browser closes)
 - Cloudflare Turnstile CAPTCHA on signup, login, and forgot-password forms (invisible, no user friction)
+
+### Admin
+- `is_admin` flag on profiles table (default false)
+- Admin users see "Bug Reports" link in navbar dropdown
+- `/admin/bug-reports` page: view all bug reports, filter by status, update status (new/reviewed/resolved)
+- Protected by RLS policies (admins can read all + update bug reports)
 
 ---
 

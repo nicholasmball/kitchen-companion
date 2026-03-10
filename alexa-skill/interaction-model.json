@@ -1,0 +1,69 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "cat's kitchen",
+      "intents": [
+        {
+          "name": "AMAZON.CancelIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.HelpIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.StopIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.FallbackIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.NavigateHomeIntent",
+          "samples": []
+        },
+        {
+          "name": "AskChefIntent",
+          "slots": [
+            {
+              "name": "question",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [
+            "ask the chef {question}",
+            "ask chef {question}",
+            "{question}",
+            "how do I {question}",
+            "how do you {question}",
+            "how to {question}",
+            "how long to {question}",
+            "how long do I {question}",
+            "how long does it take to {question}",
+            "what temperature for {question}",
+            "what temperature do I {question}",
+            "what temperature should I {question}",
+            "what is {question}",
+            "what's {question}",
+            "can you tell me {question}",
+            "I need help with {question}",
+            "help me with {question}",
+            "tell me how to {question}",
+            "tell me about {question}",
+            "what's the best way to {question}",
+            "how should I {question}",
+            "can I {question}",
+            "should I {question}",
+            "recipe for {question}",
+            "how to make {question}",
+            "how to cook {question}",
+            "substitute for {question}",
+            "what can I use instead of {question}"
+          ]
+        }
+      ],
+      "types": []
+    }
+  }
+}
