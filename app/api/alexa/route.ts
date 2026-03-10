@@ -1,6 +1,6 @@
 import { createAnthropicClient, CLAUDE_MODEL, buildSystemPrompt } from '@/lib/anthropic'
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const verifier = require('alexa-verifier')
+const { default: verifier } = require('alexa-verifier')
 
 // Use Node.js runtime (alexa-verifier needs crypto/http)
 export const runtime = 'nodejs'
@@ -218,6 +218,8 @@ export async function POST(request: Request) {
     const certUrl = request.headers.get('signaturecertchainurl')
     const signature = request.headers.get('signature-256') || request.headers.get('signature')
 
+    console.log('Alexa headers - certUrl:', certUrl ? 'present' : 'missing', 'signature:', signature ? 'present' : 'missing')
+
     if (certUrl && signature) {
       try {
         await verifier(certUrl, signature, rawBody)
@@ -230,6 +232,7 @@ export async function POST(request: Request) {
       }
     } else if (process.env.NODE_ENV === 'production') {
       // In production, reject unverified requests
+      console.error('Alexa missing verification headers. All headers:', JSON.stringify(Object.fromEntries(request.headers.entries())))
       return new Response(JSON.stringify({ error: 'Missing verification headers' }), {
         status: 403,
         headers: { 'Content-Type': 'application/json' },
