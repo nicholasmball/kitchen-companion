@@ -21,11 +21,13 @@ vi.mock('@/lib/anthropic', () => ({
 // Mock alexa-auth
 const mockResolveAlexaUser = vi.fn().mockResolvedValue(null)
 const mockGetActiveMealPlan = vi.fn().mockResolvedValue(null)
+const mockGetUserRecipes = vi.fn().mockResolvedValue([])
 const mockRedeemLinkingCode = vi.fn().mockResolvedValue(null)
 
 vi.mock('@/lib/alexa-auth', () => ({
   resolveAlexaUser: (...args: unknown[]) => mockResolveAlexaUser(...args),
   getActiveMealPlan: (...args: unknown[]) => mockGetActiveMealPlan(...args),
+  getUserRecipes: (...args: unknown[]) => mockGetUserRecipes(...args),
   redeemLinkingCode: (...args: unknown[]) => mockRedeemLinkingCode(...args),
 }))
 
@@ -77,6 +79,7 @@ describe('/api/alexa', () => {
     process.env.NODE_ENV = 'test'
     mockResolveAlexaUser.mockResolvedValue(null)
     mockGetActiveMealPlan.mockResolvedValue(null)
+    mockGetUserRecipes.mockResolvedValue([])
     mockRedeemLinkingCode.mockResolvedValue(null)
   })
 

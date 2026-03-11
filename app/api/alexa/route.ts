@@ -1,8 +1,8 @@
 import { createAnthropicClient, CLAUDE_MODEL, buildSystemPrompt } from '@/lib/anthropic'
-import { resolveAlexaUser, getActiveMealPlan, redeemLinkingCode } from '@/lib/alexa-auth'
+import { resolveAlexaUser, getActiveMealPlan, getUserRecipes, redeemLinkingCode } from '@/lib/alexa-auth'
 import { calculateTimeline, getNextEvent, formatTimeUntil } from '@/lib/timing-calculator'
 import type { ActiveMealPlanContext } from '@/lib/anthropic'
-import type { ActiveMealPlanWithItems } from '@/lib/alexa-auth'
+import type { ActiveMealPlanWithItems, AlexaUser } from '@/lib/alexa-auth'
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { default: verifier } = require('alexa-verifier')
 
@@ -385,12 +385,11 @@ async function handleGetIngredients(
 }
 
 async function handleAskChef(
-  intent: AlexaIntent,
+  question: string,
   sessionAttributes: Record<string, unknown>,
-  userId: string | null
+  userId: string | null,
+  alexaUser: AlexaUser | null
 ): Promise<AlexaResponse> {
-  const question = intent.slots?.question?.value
-
   if (!question) {
     return buildResponse(
       "I didn't catch that. What cooking question would you like to ask?",
@@ -404,23 +403,37 @@ async function handleAskChef(
   try {
     const anthropic = createAnthropicClient()
 
-    // If linked, fetch meal plan context and user preferences
+    // If linked, fetch meal plan context, recipes, and user preferences
     let mealPlanContext: ActiveMealPlanContext | undefined
-    let preferences: { temperatureUnit: 'C' | 'F'; measurementSystem: 'metric' | 'imperial' } | undefined
-
-    if (userId) {
-      const data = await getActiveMealPlan(userId)
-      if (data) {
-        mealPlanContext = buildMealPlanContext(data)
-      }
-      // Preferences are loaded via resolveAlexaUser profile
-      // but we already have them in session if linked — keep defaults for now
+    let recipesContext = ''
+    const preferences = {
+      temperatureUnit: (alexaUser?.profile.temperature_unit || 'C') as 'C' | 'F',
+      measurementSystem: (alexaUser?.profile.measurement_system || 'metric') as 'metric' | 'imperial',
     }
 
-    const systemPrompt = buildSystemPrompt(mealPlanContext, preferences ?? {
-      temperatureUnit: 'C',
-      measurementSystem: 'metric',
-    })
+    if (userId) {
+      const [mealPlanData, recipes] = await Promise.all([
+        getActiveMealPlan(userId),
+        getUserRecipes(userId),
+      ])
+
+      if (mealPlanData) {
+        mealPlanContext = buildMealPlanContext(mealPlanData)
+      }
+
+      if (recipes.length > 0) {
+        const recipeList = recipes.map((r) => {
+          const parts = [r.title]
+          if (r.cuisine) parts.push(`(${r.cuisine})`)
+          if (r.course) parts.push(`- ${r.course}`)
+          if (r.cook_time_minutes) parts.push(`${r.cook_time_minutes}min`)
+          return parts.join(' ')
+        }).join('\n')
+        recipesContext = `\n\n---\n\nThe user has ${recipes.length} saved recipe${recipes.length !== 1 ? 's' : ''} in their collection:\n${recipeList}\n\nYou can reference these recipes, suggest ones from their collection, or help with them.`
+      }
+    }
+
+    const systemPrompt = buildSystemPrompt(mealPlanContext, preferences)
 
     // Build conversation history from session if available
     const previousMessages = (sessionAttributes.messages as Array<{ role: 'user' | 'assistant'; content: string }>) || []
@@ -432,7 +445,7 @@ async function handleAskChef(
     const response = await anthropic.messages.create({
       model: CLAUDE_MODEL,
       max_tokens: 300,
-      system: systemPrompt + '\n\nIMPORTANT: You are responding via Alexa voice. Keep responses concise (2-3 sentences max). Do not use markdown, bullet points, or numbered lists. Speak naturally as if talking to someone in the kitchen. Do not use special characters or formatting.',
+      system: systemPrompt + recipesContext + '\n\nIMPORTANT: You are responding via Alexa voice. Keep responses concise (2-3 sentences max). Do not use markdown, bullet points, or numbered lists. Speak naturally as if talking to someone in the kitchen. Do not use special characters or formatting.',
       messages,
     })
 
@@ -577,7 +590,10 @@ export async function POST(request: Request) {
             response = await handleGetIngredients(userId, sessionAttributes)
             break
           case 'AskChefIntent':
-            response = await handleAskChef(alexaRequest.intent!, sessionAttributes, userId)
+            response = await handleAskChef(
+              alexaRequest.intent?.slots?.question?.value || '',
+              sessionAttributes, userId, alexaUser
+            )
             break
           case 'AMAZON.HelpIntent':
             response = handleHelp(isLinked)
@@ -587,10 +603,22 @@ export async function POST(request: Request) {
             response = handleStop()
             break
           case 'AMAZON.FallbackIntent':
-            response = handleFallback(sessionAttributes)
-            break
           default:
-            response = handleFallback(sessionAttributes)
+            // For linked users, route unrecognized speech to the chef
+            // so they can ask naturally without "ask the chef" prefix
+            if (isLinked) {
+              // Try to extract what the user said from any available slot
+              const spokenText = alexaRequest.intent?.slots?.question?.value
+                || alexaRequest.intent?.slots?.code?.value
+                || ''
+              if (spokenText) {
+                response = await handleAskChef(spokenText, sessionAttributes, userId, alexaUser)
+              } else {
+                response = handleFallback(sessionAttributes)
+              }
+            } else {
+              response = handleFallback(sessionAttributes)
+            }
         }
         break
       }

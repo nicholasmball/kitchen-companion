@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import type { MealPlan, MealItem, Profile } from '@/types/database'
+import type { MealPlan, MealItem, Profile, Recipe } from '@/types/database'
 
 // Service-role client that bypasses RLS (server-side only)
 function createServiceClient() {
@@ -71,6 +71,23 @@ export async function getActiveMealPlan(userId: string): Promise<ActiveMealPlanW
     plan: plan as MealPlan,
     items: (items || []) as MealItem[],
   }
+}
+
+/**
+ * Fetch the user's recipes (title, description, cuisine, course, ingredients count).
+ * Limited to 50 most recent to keep context manageable.
+ */
+export async function getUserRecipes(userId: string): Promise<Recipe[]> {
+  const supabase = createServiceClient()
+
+  const { data } = await supabase
+    .from('recipes')
+    .select('*')
+    .eq('user_id', userId)
+    .order('updated_at', { ascending: false })
+    .limit(50)
+
+  return (data || []) as Recipe[]
 }
 
 /**
