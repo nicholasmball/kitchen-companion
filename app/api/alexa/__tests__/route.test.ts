@@ -18,6 +18,17 @@ vi.mock('@/lib/anthropic', () => ({
   buildSystemPrompt: () => 'You are a chef assistant.',
 }))
 
+// Mock alexa-auth
+const mockResolveAlexaUser = vi.fn().mockResolvedValue(null)
+const mockGetActiveMealPlan = vi.fn().mockResolvedValue(null)
+const mockRedeemLinkingCode = vi.fn().mockResolvedValue(null)
+
+vi.mock('@/lib/alexa-auth', () => ({
+  resolveAlexaUser: (...args: unknown[]) => mockResolveAlexaUser(...args),
+  getActiveMealPlan: (...args: unknown[]) => mockGetActiveMealPlan(...args),
+  redeemLinkingCode: (...args: unknown[]) => mockRedeemLinkingCode(...args),
+}))
+
 function buildAlexaRequest(requestOverrides: Record<string, unknown> = {}, sessionAttributes: Record<string, unknown> = {}) {
   return {
     version: '1.0',
@@ -49,7 +60,6 @@ function createRequest(body: unknown) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      // Omit verification headers for testing (non-production)
     },
     body: JSON.stringify(body),
   })
@@ -64,8 +74,10 @@ async function getHandler() {
 describe('/api/alexa', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    // Ensure we're not in production for tests
     process.env.NODE_ENV = 'test'
+    mockResolveAlexaUser.mockResolvedValue(null)
+    mockGetActiveMealPlan.mockResolvedValue(null)
+    mockRedeemLinkingCode.mockResolvedValue(null)
   })
 
   it('handles LaunchRequest with greeting', async () => {
@@ -78,6 +90,20 @@ describe('/api/alexa', () => {
     expect(json.response.outputSpeech.text).toContain("Cat's Kitchen")
     expect(json.response.shouldEndSession).toBe(false)
     expect(json.response.reprompt).toBeDefined()
+  })
+
+  it('mentions meal plans in launch when linked', async () => {
+    mockResolveAlexaUser.mockResolvedValue({
+      userId: 'user-123',
+      profile: { display_name: 'Cat' },
+    })
+
+    const POST = await getHandler()
+    const body = buildAlexaRequest({ type: 'LaunchRequest' })
+    const response = await POST(createRequest(body))
+    const json = await response.json()
+
+    expect(json.response.outputSpeech.text).toContain("what's cooking")
   })
 
   it('handles AskChefIntent and forwards to Claude', async () => {
@@ -99,7 +125,6 @@ describe('/api/alexa', () => {
     expect(json.response.shouldEndSession).toBe(false)
     expect(mockCreate).toHaveBeenCalledTimes(1)
 
-    // Verify system prompt includes voice instructions
     const callArgs = mockCreate.mock.calls[0][0]
     expect(callArgs.system).toContain('Alexa voice')
     expect(callArgs.max_tokens).toBe(300)
@@ -202,9 +227,8 @@ describe('/api/alexa', () => {
     const response = await POST(createRequest(body))
     const json = await response.json()
 
-    // Should store messages in session attributes for follow-ups
     expect(json.sessionAttributes.messages).toBeDefined()
-    expect(json.sessionAttributes.messages).toHaveLength(2) // user + assistant
+    expect(json.sessionAttributes.messages).toHaveLength(2)
     expect(json.sessionAttributes.messages[0].role).toBe('user')
     expect(json.sessionAttributes.messages[1].role).toBe('assistant')
   })
@@ -226,5 +250,217 @@ describe('/api/alexa', () => {
     expect(json.response.card).toBeDefined()
     expect(json.response.card.title).toBe("Cat's Kitchen")
     expect(json.response.card.content).toContain('how long to roast a chicken')
+  })
+
+  // --- New intent tests ---
+
+  describe('LinkAccountIntent (two-step flow)', () => {
+    it('prompts for code on LinkAccountIntent', async () => {
+      const POST = await getHandler()
+      const body = buildAlexaRequest({
+        type: 'IntentRequest',
+        intent: { name: 'LinkAccountIntent' },
+      })
+      const response = await POST(createRequest(body))
+      const json = await response.json()
+
+      expect(json.response.outputSpeech.text).toContain('six character')
+      expect(json.sessionAttributes.awaitingLinkCode).toBe(true)
+    })
+
+    it('processes code via LinkAccountCodeIntent', async () => {
+      mockRedeemLinkingCode.mockResolvedValue('user-123')
+
+      const POST = await getHandler()
+      const body = buildAlexaRequest({
+        type: 'IntentRequest',
+        intent: {
+          name: 'LinkAccountCodeIntent',
+          slots: { code: { name: 'code', value: 'A B C D E F' } },
+        },
+      })
+      const response = await POST(createRequest(body))
+      const json = await response.json()
+
+      expect(json.response.outputSpeech.text).toContain('now linked')
+      expect(mockRedeemLinkingCode).toHaveBeenCalledWith('ABCDEF', 'amzn1.ask.account.test')
+    })
+
+    it('intercepts AskChefIntent as code when awaitingLinkCode', async () => {
+      mockRedeemLinkingCode.mockResolvedValue('user-123')
+
+      const POST = await getHandler()
+      const body = buildAlexaRequest(
+        {
+          type: 'IntentRequest',
+          intent: {
+            name: 'AskChefIntent',
+            slots: { question: { name: 'question', value: 'A B C D E F' } },
+          },
+        },
+        { awaitingLinkCode: true }
+      )
+      const response = await POST(createRequest(body))
+      const json = await response.json()
+
+      expect(json.response.outputSpeech.text).toContain('now linked')
+      expect(mockCreate).not.toHaveBeenCalled() // Should NOT call Claude
+    })
+
+    it('rejects invalid code via LinkAccountCodeIntent', async () => {
+      mockRedeemLinkingCode.mockResolvedValue(null)
+
+      const POST = await getHandler()
+      const body = buildAlexaRequest({
+        type: 'IntentRequest',
+        intent: {
+          name: 'LinkAccountCodeIntent',
+          slots: { code: { name: 'code', value: 'A B C D E F' } },
+        },
+      })
+      const response = await POST(createRequest(body))
+      const json = await response.json()
+
+      expect(json.response.outputSpeech.text).toContain('invalid or has expired')
+    })
+  })
+
+  describe('GetMealPlanIntent', () => {
+    it('tells unlinked user to link', async () => {
+      const POST = await getHandler()
+      const body = buildAlexaRequest({
+        type: 'IntentRequest',
+        intent: { name: 'GetMealPlanIntent' },
+      })
+      const response = await POST(createRequest(body))
+      const json = await response.json()
+
+      expect(json.response.outputSpeech.text).toContain("haven't linked")
+    })
+
+    it('tells user when no active plan', async () => {
+      mockResolveAlexaUser.mockResolvedValue({ userId: 'user-123', profile: {} })
+      mockGetActiveMealPlan.mockResolvedValue(null)
+
+      const POST = await getHandler()
+      const body = buildAlexaRequest({
+        type: 'IntentRequest',
+        intent: { name: 'GetMealPlanIntent' },
+      })
+      const response = await POST(createRequest(body))
+      const json = await response.json()
+
+      expect(json.response.outputSpeech.text).toContain("don't have an active meal plan")
+    })
+
+    it('reads out the meal plan', async () => {
+      mockResolveAlexaUser.mockResolvedValue({ userId: 'user-123', profile: {} })
+      mockGetActiveMealPlan.mockResolvedValue({
+        plan: { name: 'Sunday Roast', serve_time: '2024-01-01T18:00:00Z' },
+        items: [
+          { name: 'Roast Chicken', cook_time_minutes: 90 },
+          { name: 'Roast Potatoes', cook_time_minutes: 45 },
+        ],
+      })
+
+      const POST = await getHandler()
+      const body = buildAlexaRequest({
+        type: 'IntentRequest',
+        intent: { name: 'GetMealPlanIntent' },
+      })
+      const response = await POST(createRequest(body))
+      const json = await response.json()
+
+      expect(json.response.outputSpeech.text).toContain('Sunday Roast')
+      expect(json.response.outputSpeech.text).toContain('Roast Chicken')
+      expect(json.response.outputSpeech.text).toContain('Roast Potatoes')
+    })
+  })
+
+  describe('GetNextEventIntent', () => {
+    it('tells unlinked user to link', async () => {
+      const POST = await getHandler()
+      const body = buildAlexaRequest({
+        type: 'IntentRequest',
+        intent: { name: 'GetNextEventIntent' },
+      })
+      const response = await POST(createRequest(body))
+      const json = await response.json()
+
+      expect(json.response.outputSpeech.text).toContain("haven't linked")
+    })
+  })
+
+  describe('GetServeTimeIntent', () => {
+    it('tells unlinked user to link', async () => {
+      const POST = await getHandler()
+      const body = buildAlexaRequest({
+        type: 'IntentRequest',
+        intent: { name: 'GetServeTimeIntent' },
+      })
+      const response = await POST(createRequest(body))
+      const json = await response.json()
+
+      expect(json.response.outputSpeech.text).toContain("haven't linked")
+    })
+
+    it('reads serve time when linked', async () => {
+      mockResolveAlexaUser.mockResolvedValue({ userId: 'user-123', profile: {} })
+      mockGetActiveMealPlan.mockResolvedValue({
+        plan: { name: 'Dinner', serve_time: '2024-01-01T18:00:00Z' },
+        items: [],
+      })
+
+      const POST = await getHandler()
+      const body = buildAlexaRequest({
+        type: 'IntentRequest',
+        intent: { name: 'GetServeTimeIntent' },
+      })
+      const response = await POST(createRequest(body))
+      const json = await response.json()
+
+      expect(json.response.outputSpeech.text).toContain('18:00')
+    })
+  })
+
+  describe('GetIngredientsIntent', () => {
+    it('tells unlinked user to link', async () => {
+      const POST = await getHandler()
+      const body = buildAlexaRequest({
+        type: 'IntentRequest',
+        intent: { name: 'GetIngredientsIntent' },
+      })
+      const response = await POST(createRequest(body))
+      const json = await response.json()
+
+      expect(json.response.outputSpeech.text).toContain("haven't linked")
+    })
+
+    it('reads ingredients when available', async () => {
+      mockResolveAlexaUser.mockResolvedValue({ userId: 'user-123', profile: {} })
+      mockGetActiveMealPlan.mockResolvedValue({
+        plan: { name: 'Dinner' },
+        items: [
+          {
+            name: 'Pasta',
+            ingredients: [
+              { amount: '500', unit: 'g', item: 'spaghetti' },
+              { amount: '2', unit: 'tbsp', item: 'olive oil' },
+            ],
+          },
+        ],
+      })
+
+      const POST = await getHandler()
+      const body = buildAlexaRequest({
+        type: 'IntentRequest',
+        intent: { name: 'GetIngredientsIntent' },
+      })
+      const response = await POST(createRequest(body))
+      const json = await response.json()
+
+      expect(json.response.outputSpeech.text).toContain('spaghetti')
+      expect(json.response.outputSpeech.text).toContain('olive oil')
+    })
   })
 })

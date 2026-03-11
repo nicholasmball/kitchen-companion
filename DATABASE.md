@@ -18,6 +18,7 @@ create table public.profiles (
   avatar_url text,
   temperature_unit text default 'C' check (temperature_unit in ('C', 'F')),
   measurement_system text default 'metric' check (measurement_system in ('metric', 'imperial')),
+  is_admin boolean default false not null,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -214,6 +215,39 @@ create policy "Users can insert own bug reports" on public.bug_reports
   for insert with check (auth.uid() = user_id);
 create policy "Users can view own bug reports" on public.bug_reports
   for select using (auth.uid() = user_id);
+create policy "Admins can view all bug reports" on public.bug_reports
+  for select using (
+    exists (select 1 from public.profiles where profiles.id = auth.uid() and profiles.is_admin = true)
+  );
+create policy "Admins can update bug reports" on public.bug_reports
+  for update using (
+    exists (select 1 from public.profiles where profiles.id = auth.uid() and profiles.is_admin = true)
+  );
+```
+
+## Alexa Account Linking
+
+```sql
+-- ============================================
+-- ALEXA LINKS TABLE
+-- Maps Amazon Alexa user IDs to Cat's Kitchen users
+-- ============================================
+create table public.alexa_links (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete cascade not null unique,
+  amazon_user_id text unique,
+  linking_code text unique,
+  linking_code_expires_at timestamptz,
+  created_at timestamptz default now()
+);
+
+create index alexa_links_amazon_user_id_idx on public.alexa_links(amazon_user_id);
+create index alexa_links_linking_code_idx on public.alexa_links(linking_code);
+
+alter table public.alexa_links enable row level security;
+
+create policy "Users can manage own alexa link" on public.alexa_links
+  for all using (auth.uid() = user_id);
 ```
 
 ## Triggers & Functions

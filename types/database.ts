@@ -213,6 +213,32 @@ export type Database = {
           created_at?: string
         }
       }
+      alexa_links: {
+        Row: {
+          id: string
+          user_id: string
+          amazon_user_id: string | null
+          linking_code: string | null
+          linking_code_expires_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          amazon_user_id?: string | null
+          linking_code?: string | null
+          linking_code_expires_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          amazon_user_id?: string | null
+          linking_code?: string | null
+          linking_code_expires_at?: string | null
+          created_at?: string
+        }
+      }
       profiles: {
         Row: {
           id: string
@@ -220,6 +246,7 @@ export type Database = {
           avatar_url: string | null
           temperature_unit: 'C' | 'F'
           measurement_system: 'metric' | 'imperial'
+          is_admin: boolean
           created_at: string
           updated_at: string
         }
@@ -229,6 +256,7 @@ export type Database = {
           avatar_url?: string | null
           temperature_unit?: 'C' | 'F'
           measurement_system?: 'metric' | 'imperial'
+          is_admin?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -238,6 +266,7 @@ export type Database = {
           avatar_url?: string | null
           temperature_unit?: 'C' | 'F'
           measurement_system?: 'metric' | 'imperial'
+          is_admin?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -297,3 +326,7 @@ export type ProfileUpdate = Database['public']['Tables']['profiles']['Update']
 
 export type BugReport = Database['public']['Tables']['bug_reports']['Row']
 export type BugReportInsert = Database['public']['Tables']['bug_reports']['Insert']
+
+export type AlexaLink = Database['public']['Tables']['alexa_links']['Row']
+export type AlexaLinkInsert = Database['public']['Tables']['alexa_links']['Insert']
+export type AlexaLinkUpdate = Database['public']['Tables']['alexa_links']['Update']

@@ -34,7 +34,6 @@
           "samples": [
             "ask the chef {question}",
             "ask chef {question}",
-            "{question}",
             "how do I {question}",
             "how do you {question}",
             "how to {question}",
@@ -60,6 +59,99 @@
             "how to cook {question}",
             "substitute for {question}",
             "what can I use instead of {question}"
+          ]
+        },
+        {
+          "name": "LinkAccountIntent",
+          "slots": [],
+          "samples": [
+            "link my account",
+            "link account",
+            "connect my account",
+            "connect account",
+            "link my alexa",
+            "pair my account",
+            "set up account linking"
+          ]
+        },
+        {
+          "name": "LinkAccountCodeIntent",
+          "slots": [
+            {
+              "name": "code",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [
+            "my code is {code}",
+            "the code is {code}",
+            "enter code {code}",
+            "use code {code}",
+            "code is {code}",
+            "it's {code}",
+            "try {code}"
+          ]
+        },
+        {
+          "name": "GetMealPlanIntent",
+          "slots": [],
+          "samples": [
+            "what's cooking",
+            "what is cooking",
+            "what's my meal plan",
+            "what is my meal plan",
+            "tell me my meal plan",
+            "what am I cooking",
+            "what am I making",
+            "what's for dinner",
+            "what is for dinner",
+            "what's on the menu",
+            "show me my meal plan"
+          ]
+        },
+        {
+          "name": "GetNextEventIntent",
+          "slots": [],
+          "samples": [
+            "what's next",
+            "what is next",
+            "what should I do next",
+            "what do I do next",
+            "what's coming up",
+            "what should I do",
+            "what needs doing",
+            "what's the next step",
+            "next step",
+            "what now"
+          ]
+        },
+        {
+          "name": "GetServeTimeIntent",
+          "slots": [],
+          "samples": [
+            "when do I serve",
+            "when is dinner",
+            "when is dinner ready",
+            "what time is dinner",
+            "what time do I serve",
+            "when should I serve",
+            "when is serve time",
+            "what's the serve time",
+            "when will dinner be ready"
+          ]
+        },
+        {
+          "name": "GetIngredientsIntent",
+          "slots": [],
+          "samples": [
+            "what ingredients do I need",
+            "what are the ingredients",
+            "tell me the ingredients",
+            "list the ingredients",
+            "what do I need",
+            "ingredients list",
+            "what ingredients",
+            "read me the ingredients"
           ]
         }
       ],

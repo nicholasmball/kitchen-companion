@@ -48,9 +48,32 @@ Once testing works in the console, the skill is automatically available on any E
 - **"Alexa, ask Cat's Kitchen what temperature for Yorkshire puddings"**
 - **"Alexa, ask Cat's Kitchen how to make a roux"**
 
+## Step 6: Update the Interaction Model (After Account Linking)
+
+If you've updated the interaction model with new intents (LinkAccountIntent, GetMealPlanIntent, etc.):
+
+1. Go to **Interaction Model** → **JSON Editor**
+2. Delete everything and paste the updated `interaction-model.json`
+3. Click **Save Model** then **Build Model**
+
+## Account Linking
+
+The skill supports a simple code-based account linking flow (no OAuth required):
+
+1. In Cat's Kitchen → **Settings** → scroll to "Alexa Integration"
+2. Click **Generate Linking Code** — you get a 6-character code valid for 10 minutes
+3. Say to Alexa: **"Alexa, tell Cat's Kitchen to link my account"** then speak the code
+4. Once linked, you can use these commands:
+   - **"What's cooking?"** — hear your active meal plan
+   - **"What's next?"** — next timeline event and countdown
+   - **"When is dinner?"** — serve time
+   - **"What ingredients do I need?"** — ingredient list
+   - **"Ask the chef..."** — context-aware answers (the chef knows your meal plan)
+5. To unlink, go to Settings and click **Unlink Alexa**
+
 ## Notes
 
 - The skill keeps conversation context within a session, so you can ask follow-up questions
 - Responses are kept concise (2-3 sentences) for voice
 - The card in the Alexa app shows the full Q&A text
-- No account linking yet — the skill doesn't access your personal meal plans (future enhancement)
+- When linked, the chef assistant knows about your active meal plan and can give specific advice

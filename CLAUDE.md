@@ -57,7 +57,8 @@ NEXT_PUBLIC_TURNSTILE_SITE_KEY=
     /parse-label/route.ts         # Claude Vision for food labels
     /parse-recipe-image/route.ts  # Claude Vision for recipe images
     /parse-recipe-url/route.ts    # Extract recipe from URL
-    /alexa/route.ts               # Alexa Custom Skill endpoint
+    /alexa/route.ts               # Alexa Custom Skill endpoint (with account linking intents)
+    /alexa/link/route.ts          # Alexa account linking code API
     /upload-recipe-image/route.ts # Upload to Supabase Storage
   /auth/callback/route.ts         # Supabase auth callback
 /components
@@ -72,6 +73,7 @@ NEXT_PUBLIC_TURNSTILE_SITE_KEY=
 /lib
   /supabase/client.ts, server.ts
   /anthropic.ts
+  /alexa-auth.ts                    # Alexa user resolution + meal plan data helpers
   /utils.ts, timing-calculator.ts, notifications.ts, audio.ts
 /hooks
   /use-meal-plan.ts, use-recipes.ts, use-timers.ts, use-notifications.ts, use-chat.ts, use-chat-sessions.ts, use-voice-input.ts
@@ -89,6 +91,7 @@ See `DATABASE.md` for full schema. Tables:
 - **meal_items** - Items within meal plans (with optional `recipe_id` FK and `ingredients` JSONB snapshot)
 - **recipes** - User's recipe collection
 - **chat_sessions** - Persistent chat history
+- **alexa_links** - Maps Amazon Alexa user IDs to Cat's Kitchen users (code-based account linking)
 
 Supabase Storage bucket `recipe-images` for recipe image uploads.
 
@@ -113,6 +116,8 @@ Supabase Storage bucket `recipe-images` for recipe image uploads.
 - "Save to Recipes" button when assistant provides a recipe
 - Voice input via microphone button (Web Speech API, hidden on unsupported browsers)
 - Alexa Custom Skill — "Alexa, ask Cat's Kitchen..." (see `alexa-skill/SETUP.md`)
+- Alexa account linking via 6-character code (generated in Settings, spoken to Alexa)
+- When linked: meal plan queries, next event, serve time, ingredients, and context-aware chef
 
 ### Recipe Collection
 - CRUD with search/filter (cuisine, course, difficulty, time, favourites)

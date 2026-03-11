@@ -31,6 +31,87 @@ export default function SettingsPage() {
   const router = useRouter()
   const supabase = createClient()
 
+  // Alexa linking state
+  const [alexaLinked, setAlexaLinked] = useState(false)
+  const [alexaCode, setAlexaCode] = useState<string | null>(null)
+  const [alexaCodeExpiresAt, setAlexaCodeExpiresAt] = useState<string | null>(null)
+  const [alexaLoading, setAlexaLoading] = useState(false)
+  const [alexaCountdown, setAlexaCountdown] = useState('')
+
+  // Load Alexa link status
+  useEffect(() => {
+    async function loadAlexaStatus() {
+      try {
+        const res = await fetch('/api/alexa/link')
+        const json = await res.json()
+        if (json.success) {
+          setAlexaLinked(json.data.linked)
+          setAlexaCode(json.data.pendingCode)
+          setAlexaCodeExpiresAt(json.data.codeExpiresAt)
+        }
+      } catch {
+        // Silent fail — Alexa section will show default state
+      }
+    }
+    loadAlexaStatus()
+  }, [])
+
+  // Countdown timer for Alexa code expiry
+  useEffect(() => {
+    if (!alexaCodeExpiresAt) {
+      setAlexaCountdown('')
+      return
+    }
+    const update = () => {
+      const remaining = new Date(alexaCodeExpiresAt).getTime() - Date.now()
+      if (remaining <= 0) {
+        setAlexaCode(null)
+        setAlexaCodeExpiresAt(null)
+        setAlexaCountdown('')
+        return
+      }
+      const mins = Math.floor(remaining / 60000)
+      const secs = Math.floor((remaining % 60000) / 1000)
+      setAlexaCountdown(`${mins}:${secs.toString().padStart(2, '0')}`)
+    }
+    update()
+    const interval = setInterval(update, 1000)
+    return () => clearInterval(interval)
+  }, [alexaCodeExpiresAt])
+
+  async function handleGenerateAlexaCode() {
+    setAlexaLoading(true)
+    try {
+      const res = await fetch('/api/alexa/link', { method: 'POST' })
+      const json = await res.json()
+      if (json.success) {
+        setAlexaCode(json.data.code)
+        setAlexaCodeExpiresAt(json.data.expiresAt)
+      }
+    } catch {
+      setMessage({ type: 'error', text: 'Failed to generate linking code' })
+    } finally {
+      setAlexaLoading(false)
+    }
+  }
+
+  async function handleUnlinkAlexa() {
+    setAlexaLoading(true)
+    try {
+      const res = await fetch('/api/alexa/link', { method: 'DELETE' })
+      const json = await res.json()
+      if (json.success) {
+        setAlexaLinked(false)
+        setAlexaCode(null)
+        setAlexaCodeExpiresAt(null)
+      }
+    } catch {
+      setMessage({ type: 'error', text: 'Failed to unlink Alexa' })
+    } finally {
+      setAlexaLoading(false)
+    }
+  }
+
   useEffect(() => {
     async function loadProfile() {
       try {
@@ -361,6 +442,76 @@ export default function SettingsPage() {
             </Button>
           </CardContent>
         </form>
+      </Card>
+
+      {/* Alexa Account Linking */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Alexa Integration</CardTitle>
+          <CardDescription>
+            Connect your Alexa device to access meal plans and get cooking help hands-free
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {alexaLinked ? (
+            <>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200">
+                  <span className="h-2 w-2 rounded-full bg-green-500" />
+                  Linked
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Your Alexa is connected. Try saying: &quot;Alexa, ask Cat&apos;s Kitchen what&apos;s cooking&quot;
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleUnlinkAlexa}
+                disabled={alexaLoading}
+                className="text-destructive hover:text-destructive"
+              >
+                {alexaLoading ? 'Unlinking...' : 'Unlink Alexa'}
+              </Button>
+            </>
+          ) : alexaCode ? (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Say to Alexa: &quot;Alexa, tell Cat&apos;s Kitchen to link my account&quot; then speak this code:
+              </p>
+              <div className="flex items-center justify-center py-4">
+                <span className="text-4xl font-mono font-bold tracking-[0.3em] text-foreground">
+                  {alexaCode}
+                </span>
+              </div>
+              {alexaCountdown && (
+                <p className="text-center text-sm text-muted-foreground">
+                  Expires in {alexaCountdown}
+                </p>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleGenerateAlexaCode}
+                disabled={alexaLoading}
+              >
+                {alexaLoading ? 'Generating...' : 'Generate new code'}
+              </Button>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Link your Alexa to ask about meal plans, get cooking timings, and chat with the chef — all hands-free.
+              </p>
+              <Button
+                onClick={handleGenerateAlexaCode}
+                disabled={alexaLoading}
+              >
+                {alexaLoading ? 'Generating...' : 'Generate Linking Code'}
+              </Button>
+            </>
+          )}
+        </CardContent>
       </Card>
     </div>
   )
