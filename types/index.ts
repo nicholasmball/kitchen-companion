@@ -19,6 +19,9 @@ export interface TimelineEvent {
   temperature?: number
   temperatureUnit?: 'C' | 'F'
   cookingMethod?: string
+  ingredients?: Ingredient[] | null
+  instructions?: string | null
+  recipeId?: string | null
 }
 
 // Notification types

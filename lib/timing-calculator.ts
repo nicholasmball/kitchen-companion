@@ -29,6 +29,13 @@ export function calculateTimeline(
     const cookStartTime = cookEndTime - cookMs
     const prepStartTime = cookStartTime - prepMs
 
+    // Shared recipe data for all events from this item
+    const recipeData = {
+      ingredients: item.ingredients || null,
+      instructions: item.instructions || null,
+      recipeId: item.recipe_id || null,
+    }
+
     // Add prep event if there's prep time
     if (item.prep_time_minutes && item.prep_time_minutes > 0) {
       events.push({
@@ -38,6 +45,7 @@ export function calculateTimeline(
         type: 'prep_start',
         time: new Date(prepStartTime),
         description: `Start prepping ${item.name}`,
+        ...recipeData,
       })
     }
 
@@ -52,6 +60,7 @@ export function calculateTimeline(
       temperature: item.temperature || undefined,
       temperatureUnit: item.temperature_unit,
       cookingMethod: item.cooking_method,
+      ...recipeData,
     })
 
     // Add cook end event
@@ -62,6 +71,7 @@ export function calculateTimeline(
       type: 'cook_end',
       time: new Date(cookEndTime),
       description: `Take ${item.name} out`,
+      ...recipeData,
     })
 
     // Add rest event if there's rest time
@@ -73,6 +83,7 @@ export function calculateTimeline(
         type: 'rest_start',
         time: new Date(cookEndTime),
         description: `Rest ${item.name} for ${item.rest_time_minutes} minutes`,
+        ...recipeData,
       })
     }
   }

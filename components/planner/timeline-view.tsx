@@ -3,7 +3,9 @@
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import type { TimelineEvent } from '@/types'
+import { TimelineRecipeSheet } from '@/components/planner/timeline-recipe-sheet'
+import { cn } from '@/lib/utils'
+import type { TimelineEvent, TimelineEventType } from '@/types'
 import { getTimeUntil, formatTimeUntil, getEventColor } from '@/lib/timing-calculator'
 
 interface TimelineViewProps {
@@ -11,8 +13,13 @@ interface TimelineViewProps {
   serveTime: Date
 }
 
+function isClickableEvent(event: TimelineEvent): boolean {
+  return event.type !== 'serve' && !!event.instructions
+}
+
 export function TimelineView({ events, serveTime }: TimelineViewProps) {
   const [now, setNow] = useState(new Date())
+  const [selectedEvent, setSelectedEvent] = useState<TimelineEvent | null>(null)
 
   // Update current time every second
   useEffect(() => {
@@ -34,74 +41,109 @@ export function TimelineView({ events, serveTime }: TimelineViewProps) {
   const nextEventIndex = events.findIndex((e) => e.time.getTime() > now.getTime())
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <span>Cooking Timeline</span>
-          <Badge variant="outline" className="font-normal">
-            Serving at {serveTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          </Badge>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="relative">
-          {/* Timeline line */}
-          <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary/30 via-primary/20 to-primary/30" />
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span>Cooking Timeline</span>
+            <Badge variant="outline" className="font-normal">
+              Serving at {serveTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="relative">
+            {/* Timeline line */}
+            <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary/30 via-primary/20 to-primary/30" />
 
-          {/* Events */}
-          <div className="space-y-4">
-            {events.map((event, index) => {
-              const isPast = event.time.getTime() <= now.getTime()
-              const isNext = index === nextEventIndex
-              const timeUntil = getTimeUntil(event.time)
+            {/* Events */}
+            <div className="space-y-4">
+              {events.map((event, index) => {
+                const isPast = event.time.getTime() <= now.getTime()
+                const isNext = index === nextEventIndex
+                const clickable = isClickableEvent(event)
 
-              return (
-                <div
-                  key={event.id}
-                  className={`relative pl-10 ${isPast ? 'opacity-50' : ''}`}
-                >
-                  {/* Timeline dot */}
+                return (
                   <div
-                    className={`absolute left-2 w-5 h-5 rounded-full border-2 flex items-center justify-center
-                      ${isNext ? 'bg-primary border-primary animate-pulse' : isPast ? 'bg-muted border-muted-foreground' : 'bg-background border-border'}
-                    `}
+                    key={event.id}
+                    className={`relative pl-10 ${isPast ? 'opacity-50' : ''}`}
                   >
-                    {isPast && <CheckIcon className="h-3 w-3 text-muted-foreground" />}
-                  </div>
+                    {/* Timeline dot */}
+                    <div
+                      className={`absolute left-2 w-5 h-5 rounded-full border-2 flex items-center justify-center
+                        ${isNext ? 'bg-primary border-primary animate-pulse' : isPast ? 'bg-muted border-muted-foreground' : 'bg-background border-border'}
+                      `}
+                    >
+                      {isPast && <CheckIcon className="h-3 w-3 text-muted-foreground" />}
+                    </div>
 
-                  {/* Event card */}
-                  <div
-                    className={`p-3 rounded-lg border ${isNext ? 'border-primary bg-primary/5' : ''} ${getEventColor(event.type)}`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <EventIcon type={event.type} className="h-4 w-4" />
-                          <span className="font-medium">{event.description}</span>
+                    {/* Event card */}
+                    <div
+                      role={clickable ? 'button' : undefined}
+                      tabIndex={clickable ? 0 : undefined}
+                      aria-label={clickable ? `View recipe details for ${event.description}` : undefined}
+                      onClick={clickable ? () => setSelectedEvent(event) : undefined}
+                      onKeyDown={clickable ? (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          setSelectedEvent(event)
+                        }
+                      } : undefined}
+                      className={cn(
+                        "p-3 rounded-lg border",
+                        isNext ? 'border-primary bg-primary/5' : '',
+                        getEventColor(event.type),
+                        clickable && "cursor-pointer transition-all duration-150 hover:border-primary hover:shadow-soft hover:translate-x-0.5",
+                        clickable && "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <EventIcon type={event.type} className="h-4 w-4" />
+                            <span className="font-medium">{event.description}</span>
+                          </div>
+                          {event.temperature && (
+                            <p className="text-sm mt-1">
+                              {event.temperature}°{event.temperatureUnit}
+                            </p>
+                          )}
                         </div>
-                        {event.temperature && (
-                          <p className="text-sm mt-1">
-                            {event.temperature}°{event.temperatureUnit}
-                          </p>
-                        )}
-                      </div>
-                      <div className="text-right shrink-0">
-                        <div className="font-medium">
-                          {event.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </div>
-                        <div className={`text-sm ${isNext ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
-                          {isPast ? 'Done' : formatTimeUntil(event.time)}
+                        <div className="flex items-center gap-1.5">
+                          <div className="text-right shrink-0">
+                            <div className="font-medium">
+                              {event.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                            <div className={`text-sm ${isNext ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
+                              {isPast ? 'Done' : formatTimeUntil(event.time)}
+                            </div>
+                          </div>
+                          {clickable && (
+                            <ChevronRightIcon className="h-4 w-4 text-muted-foreground/60" />
+                          )}
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              )
-            })}
+                )
+              })}
+            </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      {/* Recipe detail sheet */}
+      <TimelineRecipeSheet
+        open={!!selectedEvent}
+        onOpenChange={(open) => {
+          if (!open) setSelectedEvent(null)
+        }}
+        mealItemName={selectedEvent?.mealItemName || ''}
+        eventType={selectedEvent?.type || 'prep_start'}
+        ingredients={selectedEvent?.ingredients || null}
+        instructions={selectedEvent?.instructions || null}
+      />
+    </>
   )
 }
 
@@ -175,6 +217,14 @@ function UtensilsIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" d="M12 8.25v-1.5m0 1.5c-1.355 0-2.697.056-4.024.166C6.845 8.51 6 9.473 6 10.608v2.513c0 1.135.845 2.098 1.976 2.192 1.327.11 2.669.166 4.024.166 1.355 0 2.697-.056 4.024-.166C17.155 15.22 18 14.257 18 13.122v-2.513c0-1.135-.845-2.098-1.976-2.192A48.424 48.424 0 0 0 12 8.25Zm0 0V6.75m0 0a2.25 2.25 0 0 0-2.25-2.25H9A2.25 2.25 0 0 0 6.75 6.75v1.5m5.25-1.5a2.25 2.25 0 0 1 2.25-2.25H15a2.25 2.25 0 0 1 2.25 2.25v1.5m-10.5 0v8.25a2.25 2.25 0 0 0 2.25 2.25h6a2.25 2.25 0 0 0 2.25-2.25V6.75" />
+    </svg>
+  )
+}
+
+function ChevronRightIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
     </svg>
   )
 }

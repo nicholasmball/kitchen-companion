@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clickable Timeline Steps - UX Design</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #FAF6F1;
+      --card: #F5E6D3;
+      --card-nested: #EDD9C4;
+      --border: #EDD9C4;
+      --text: #3D2914;
+      --text-heading: #5C3D1E;
+      --text-muted: #8B5A2B;
+      --primary: #D97B4A;
+      --primary-hover: #C46A3A;
+      --primary-fg: #FFFFFF;
+      --success: #40916C;
+      --shadow-soft: 0 4px 16px rgba(139, 90, 43, 0.12);
+      --radius: 1rem;
+    }
+
+    body {
+      font-family: 'Nunito', sans-serif;
+      background: #1a1a2e;
+      color: var(--text);
+      padding: 2rem;
+    }
+
+    h1.page-title { color: white; text-align: center; font-size: 2rem; margin-bottom: 0.5rem; }
+    p.page-subtitle { color: #aaa; text-align: center; margin-bottom: 2rem; font-size: 0.95rem; }
+
+    .section-label {
+      color: white; font-size: 1.3rem; font-weight: 700;
+      margin: 3rem 0 1rem; padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--primary); display: inline-block;
+    }
+
+    .design-notes {
+      background: #2a2a4a; color: #ccc; padding: 1rem 1.5rem;
+      border-radius: 0.75rem; margin-bottom: 1.5rem; font-size: 0.9rem; line-height: 1.6;
+    }
+    .design-notes strong { color: var(--primary); }
+    .design-notes code { background: #3a3a5a; padding: 2px 6px; border-radius: 4px; font-size: 0.85rem; }
+
+    .mockup-frame {
+      background: var(--bg); border-radius: 1rem; overflow: hidden;
+      box-shadow: 0 8px 24px rgba(139, 90, 43, 0.15); margin-bottom: 2rem;
+    }
+    .mockup-frame.desktop { max-width: 960px; margin-left: auto; margin-right: auto; }
+    .mockup-frame.mobile { max-width: 390px; margin-left: auto; margin-right: auto; }
+    .mockup-label { color: #aaa; text-align: center; font-size: 0.85rem; margin-top: 0.5rem; margin-bottom: 1.5rem; }
+
+    /* ===== TIMELINE MOCKUP ===== */
+    .timeline-card {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1rem; margin: 1rem;
+    }
+    .timeline-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border);
+    }
+    .timeline-header h3 { font-size: 1.1rem; font-weight: 700; color: var(--text-heading); }
+    .serve-badge {
+      background: var(--card); border: 1px solid var(--border);
+      padding: 0.25rem 0.6rem; border-radius: 0.5rem;
+      font-size: 0.8rem; color: var(--text-muted);
+    }
+
+    .timeline-container { position: relative; padding-left: 2rem; }
+    .timeline-line {
+      position: absolute; left: 0.9rem; top: 0; bottom: 0;
+      width: 2px; background: linear-gradient(180deg, rgba(217,123,74,0.3), rgba(217,123,74,0.1));
+    }
+
+    .timeline-event {
+      position: relative; margin-bottom: 0.75rem;
+    }
+    .timeline-dot {
+      position: absolute; left: -1.55rem; top: 0.65rem;
+      width: 14px; height: 14px; border-radius: 50%;
+      border: 2px solid var(--border); background: var(--bg);
+    }
+    .timeline-dot.past { background: var(--card-nested); border-color: var(--text-muted); }
+    .timeline-dot.next { background: var(--primary); border-color: var(--primary); }
+
+    /* Event card — base */
+    .event-card {
+      padding: 0.65rem 0.85rem; border-radius: 0.75rem;
+      border: 1px solid var(--border); background: var(--bg);
+      display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem;
+    }
+    .event-card.next { border-color: var(--primary); background: rgba(217,123,74,0.05); }
+    .event-card.past { opacity: 0.5; }
+
+    /* Clickable event card */
+    .event-card.clickable {
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .event-card.clickable:hover {
+      border-color: var(--primary);
+      background: rgba(217,123,74,0.06);
+      box-shadow: 0 2px 8px rgba(139, 90, 43, 0.1);
+      transform: translateX(2px);
+    }
+    .event-card.clickable .chevron-hint {
+      display: flex;
+      align-items: center;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      opacity: 0.6;
+      transition: opacity 0.15s;
+    }
+    .event-card.clickable:hover .chevron-hint {
+      opacity: 1;
+      color: var(--primary);
+    }
+
+    /* Non-clickable */
+    .event-card:not(.clickable) .chevron-hint { display: none; }
+
+    .event-name { font-weight: 600; font-size: 0.95rem; color: var(--text); }
+    .event-temp { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.15rem; }
+    .event-time { font-weight: 600; font-size: 0.9rem; text-align: right; }
+    .event-countdown { font-size: 0.8rem; color: var(--text-muted); }
+    .event-countdown.next { color: var(--primary); font-weight: 600; }
+
+    /* ===== SHEET OVERLAY ===== */
+    .sheet-backdrop {
+      position: relative;
+      background: rgba(0,0,0,0.3);
+      border-radius: 0 0 1rem 1rem;
+      padding: 1rem;
+      min-height: 420px;
+      display: flex;
+      align-items: flex-end;
+    }
+    .sheet-panel {
+      background: var(--bg);
+      border-radius: 1rem 1rem 0 0;
+      width: 100%;
+      max-height: 85%;
+      overflow: hidden;
+    }
+
+    .sheet-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1rem 1.25rem; border-bottom: 1px solid var(--border);
+    }
+    .sheet-header h3 { font-size: 1.1rem; font-weight: 700; color: var(--text-heading); }
+    .sheet-header .event-badge {
+      background: rgba(217,123,74,0.1); color: var(--primary);
+      padding: 0.2rem 0.6rem; border-radius: 0.4rem; font-size: 0.75rem; font-weight: 600;
+    }
+    .sheet-close {
+      background: var(--card); border: none; width: 32px; height: 32px;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 1rem; color: var(--text-muted);
+    }
+
+    /* Split layout inside sheet */
+    .sheet-split {
+      display: flex; height: 340px; overflow: hidden;
+    }
+
+    .sheet-ingredients {
+      width: 35%; min-width: 220px; border-right: 1px solid var(--border);
+      background: var(--card); background: linear-gradient(180deg, rgba(245,230,211,0.5), var(--bg));
+      overflow-y: auto; padding: 1rem;
+    }
+    .sheet-instructions {
+      flex: 1; overflow-y: auto; padding: 1rem;
+    }
+
+    .panel-title { font-size: 0.95rem; font-weight: 700; color: var(--text-heading); margin-bottom: 0.5rem; }
+
+    /* Ingredient items (with checkboxes) */
+    .ing-item {
+      display: flex; align-items: center; gap: 0.4rem;
+      padding: 0.4rem 0.3rem; border-bottom: 1px solid var(--border);
+      font-size: 0.9rem; cursor: pointer; border-radius: 0.4rem;
+      transition: background 0.15s;
+    }
+    .ing-item:last-child { border-bottom: none; }
+    .ing-item:hover { background: rgba(237,217,196,0.3); }
+    .ing-item.checked { opacity: 0.45; }
+    .ing-check {
+      width: 18px; height: 18px; border-radius: 5px;
+      border: 2px solid var(--text-muted); flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .ing-item.checked .ing-check { background: var(--success); border-color: var(--success); }
+    .ing-check .tick { display: none; color: white; font-size: 0.6rem; font-weight: 700; }
+    .ing-item.checked .ing-check .tick { display: block; }
+    .ing-item.checked .ing-text { text-decoration: line-through; }
+    .ing-amount { font-weight: 700; min-width: 3.5rem; flex-shrink: 0; font-size: 0.85rem; }
+    .ing-text { font-size: 0.85rem; }
+
+    /* Step items */
+    .step-item {
+      display: flex; align-items: flex-start; gap: 0.5rem;
+      padding: 0.5rem 0.4rem; border-bottom: 1px solid var(--border);
+      font-size: 0.9rem; border-radius: 0.5rem;
+    }
+    .step-item:last-child { border-bottom: none; }
+    .step-item.highlighted {
+      background: rgba(217,123,74,0.08);
+      border-left: 3px solid var(--primary);
+      margin-left: -3px;
+    }
+    .step-num {
+      font-size: 0.7rem; font-weight: 700; color: var(--text-muted);
+      min-width: 1.5rem; padding-top: 0.1rem;
+    }
+    .step-item.highlighted .step-num { color: var(--primary); }
+    .step-text { line-height: 1.4; }
+
+    /* Flow diagram */
+    .flow-container {
+      display: flex; gap: 1.5rem; flex-wrap: wrap; justify-content: center; margin: 1.5rem 0;
+    }
+    .flow-step {
+      background: #2a2a4a; border-radius: 0.75rem; padding: 1rem 1.25rem;
+      width: 180px; text-align: center;
+    }
+    .flow-step .num {
+      background: var(--primary); color: white; width: 28px; height: 28px;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 0.85rem; margin: 0 auto 0.5rem;
+    }
+    .flow-step .title { color: white; font-weight: 700; font-size: 0.9rem; margin-bottom: 0.25rem; }
+    .flow-step .desc { color: #aaa; font-size: 0.8rem; line-height: 1.4; }
+    .flow-arrow { color: var(--primary); font-size: 1.5rem; align-self: center; }
+
+    .annotation {
+      display: inline-block; background: #2a2a4a; color: #ccc;
+      padding: 0.3rem 0.7rem; border-radius: 0.5rem; font-size: 0.75rem;
+      margin: 0.25rem; border: 1px solid #3a3a5a;
+    }
+    .annotation.highlight { border-color: var(--primary); color: var(--primary); }
+  </style>
+</head>
+<body>
+
+  <h1 class="page-title">Clickable Timeline Steps</h1>
+  <p class="page-subtitle">UX Design Document &mdash; Building on Requirements & Acceptance Criteria (Step 1)</p>
+
+  <!-- ===== DESIGN RATIONALE ===== -->
+  <div class="section-label">Design Rationale</div>
+  <div class="design-notes">
+    <strong>Problem:</strong> Timeline events ("Start prepping potatoes") are display-only. Cooks must navigate away to the recipe page to check ingredients or instructions.<br><br>
+    <strong>Solution:</strong> Make event cards clickable (R1). Tap opens a bottom Sheet overlay (R2) with the side-by-side ingredient/instruction layout, consistent with the cooking mode we just built. The sheet slides up from the bottom — the user stays on the timeline and can dismiss to return.<br><br>
+    <strong>Key decisions:</strong><br>
+    &bull; <strong>Sheet, not modal:</strong> A bottom sheet preserves timeline context (user can see the top of the timeline behind the overlay). Modals feel more disruptive on mobile.<br>
+    &bull; <strong>Chevron hint on clickable events:</strong> A small <code>&rsaquo;</code> chevron on the right side signals interactivity without cluttering the card. Only shown on events with recipe data.<br>
+    &bull; <strong>Hover state:</strong> Clickable cards get a subtle border colour change + shadow + slight translate on hover (R1).<br>
+    &bull; <strong>Event type badge in sheet header:</strong> e.g. "Prep" or "Cook" — gives context for which phase this is (R2).<br>
+    &bull; <strong>Highlighted instruction:</strong> The relevant step is auto-scrolled to and highlighted with a left border accent (R3), matching the active step pattern from cooking mode.<br>
+    &bull; <strong>Ingredient checkboxes:</strong> Green checkboxes, consistent with cooking mode (R5). Session-only state, reset when sheet closes.
+  </div>
+
+  <!-- ===== USER FLOW ===== -->
+  <div class="section-label">User Flow</div>
+  <div class="flow-container">
+    <div class="flow-step">
+      <div class="num">1</div>
+      <div class="title">View Timeline</div>
+      <div class="desc">Cook sees timeline events with clickable cards</div>
+    </div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">
+      <div class="num">2</div>
+      <div class="title">Tap Event</div>
+      <div class="desc">Bottom sheet slides up with recipe details</div>
+    </div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">
+      <div class="num">3</div>
+      <div class="title">Check Recipe</div>
+      <div class="desc">Ingredients left, instructions right. Relevant step highlighted.</div>
+    </div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">
+      <div class="num">4</div>
+      <div class="title">Dismiss</div>
+      <div class="desc">Close sheet, back to timeline</div>
+    </div>
+  </div>
+
+  <!-- ===== TIMELINE WITH CLICKABLE EVENTS ===== -->
+  <div class="section-label">Timeline: Clickable Events</div>
+  <div class="design-notes">
+    <strong>Clickable cards:</strong> Events where the meal item has <code>instructions</code> get <code>cursor: pointer</code>, hover border/shadow, and a chevron hint. Events without recipe data (e.g. custom items with no instructions) remain non-interactive.<br>
+    <strong>"Serve!" event:</strong> Always non-clickable (it's a status event, not a recipe step).
+  </div>
+
+  <div class="mockup-frame desktop">
+    <div class="timeline-card">
+      <div class="timeline-header">
+        <h3>Cooking Timeline</h3>
+        <span class="serve-badge">Serving at 6:30 PM</span>
+      </div>
+
+      <div class="timeline-container">
+        <div class="timeline-line"></div>
+
+        <!-- Past event - clickable -->
+        <div class="timeline-event">
+          <div class="timeline-dot past"></div>
+          <div class="event-card past clickable">
+            <div>
+              <div class="event-name">&#x1F52A; Start prepping Roast Potatoes</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+              <div>
+                <div class="event-time">4:30 PM</div>
+                <div class="event-countdown">Done</div>
+              </div>
+              <div class="chevron-hint">&rsaquo;</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Past event - clickable -->
+        <div class="timeline-event">
+          <div class="timeline-dot past"></div>
+          <div class="event-card past clickable">
+            <div>
+              <div class="event-name">&#x1F525; Put in oven: Roast Chicken</div>
+              <div class="event-temp">180&deg;C</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+              <div>
+                <div class="event-time">4:45 PM</div>
+                <div class="event-countdown">Done</div>
+              </div>
+              <div class="chevron-hint">&rsaquo;</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Next event - clickable -->
+        <div class="timeline-event">
+          <div class="timeline-dot next"></div>
+          <div class="event-card next clickable">
+            <div>
+              <div class="event-name">&#x1F525; Put in oven: Roast Potatoes</div>
+              <div class="event-temp">220&deg;C</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+              <div>
+                <div class="event-time">5:15 PM</div>
+                <div class="event-countdown next">In 12 min</div>
+              </div>
+              <div class="chevron-hint">&rsaquo;</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Future event - NOT clickable (no recipe) -->
+        <div class="timeline-event">
+          <div class="timeline-dot"></div>
+          <div class="event-card">
+            <div>
+              <div class="event-name">&#x23F8; Rest Roast Chicken for 20 min</div>
+            </div>
+            <div>
+              <div class="event-time">5:45 PM</div>
+              <div class="event-countdown">In 42 min</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Future event - clickable -->
+        <div class="timeline-event">
+          <div class="timeline-dot"></div>
+          <div class="event-card clickable">
+            <div>
+              <div class="event-name">&#x1F52A; Start prepping Gravy</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+              <div>
+                <div class="event-time">6:00 PM</div>
+                <div class="event-countdown">In 57 min</div>
+              </div>
+              <div class="chevron-hint">&rsaquo;</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Serve - never clickable -->
+        <div class="timeline-event">
+          <div class="timeline-dot"></div>
+          <div class="event-card">
+            <div>
+              <div class="event-name">&#x1F37D; Serve!</div>
+            </div>
+            <div>
+              <div class="event-time">6:30 PM</div>
+              <div class="event-countdown">In 1h 27min</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="mockup-label">Timeline with clickable events &mdash; note chevron hint on right side of interactive cards</p>
+
+  <div style="text-align: center; margin-bottom: 2rem;">
+    <span class="annotation highlight">clickable: cursor + hover + chevron</span>
+    <span class="annotation">non-clickable: no affordance</span>
+    <span class="annotation highlight">serve event: always non-clickable</span>
+  </div>
+
+  <!-- ===== SHEET OVERLAY — DESKTOP ===== -->
+  <div class="section-label">Sheet Overlay &mdash; Desktop</div>
+  <div class="design-notes">
+    <strong>Trigger:</strong> Clicking a clickable event opens a shadcn Sheet (<code>side="bottom"</code>) that takes ~75% of viewport height.<br>
+    <strong>Layout:</strong> Reuses the 35/65 split from cooking mode. Ingredients on left with green checkboxes, instructions on right with the relevant step highlighted.<br>
+    <strong>Header:</strong> Shows meal item name + event type badge (e.g. "Cook") + close button.
+  </div>
+
+  <div class="mockup-frame desktop">
+    <!-- Dimmed timeline behind -->
+    <div style="opacity: 0.3; pointer-events: none;">
+      <div class="timeline-card" style="margin-bottom: 0;">
+        <div class="timeline-header">
+          <h3>Cooking Timeline</h3>
+          <span class="serve-badge">Serving at 6:30 PM</span>
+        </div>
+        <div class="timeline-container">
+          <div class="timeline-line"></div>
+          <div class="timeline-event">
+            <div class="timeline-dot past"></div>
+            <div class="event-card past"><div><div class="event-name">&#x1F52A; Start prepping Roast Potatoes</div></div><div><div class="event-time">4:30 PM</div></div></div>
+          </div>
+          <div class="timeline-event">
+            <div class="timeline-dot next"></div>
+            <div class="event-card next"><div><div class="event-name">&#x1F525; Put in oven: Roast Potatoes</div></div><div><div class="event-time">5:15 PM</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sheet panel -->
+    <div class="sheet-panel" style="border-top: 2px solid var(--border);">
+      <div class="sheet-header">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <h3>Roast Potatoes</h3>
+          <span class="event-badge">Cook</span>
+        </div>
+        <button class="sheet-close">&times;</button>
+      </div>
+
+      <div class="sheet-split">
+        <!-- Left: Ingredients -->
+        <div class="sheet-ingredients">
+          <div class="panel-title">Ingredients</div>
+          <div class="ing-item checked">
+            <div class="ing-check"><span class="tick">&#10003;</span></div>
+            <span class="ing-amount">1 kg</span>
+            <span class="ing-text">Maris Piper potatoes</span>
+          </div>
+          <div class="ing-item">
+            <div class="ing-check"></div>
+            <span class="ing-amount">3 tbsp</span>
+            <span class="ing-text">goose fat</span>
+          </div>
+          <div class="ing-item">
+            <div class="ing-check"></div>
+            <span class="ing-amount">1 tsp</span>
+            <span class="ing-text">sea salt flakes</span>
+          </div>
+          <div class="ing-item">
+            <div class="ing-check"></div>
+            <span class="ing-amount">1/2 tsp</span>
+            <span class="ing-text">garlic granules</span>
+          </div>
+          <div class="ing-item">
+            <div class="ing-check"></div>
+            <span class="ing-amount">2 sprigs</span>
+            <span class="ing-text">fresh rosemary</span>
+          </div>
+        </div>
+
+        <!-- Right: Instructions -->
+        <div class="sheet-instructions">
+          <div class="panel-title">Instructions</div>
+
+          <div class="step-item">
+            <span class="step-num">1</span>
+            <span class="step-text">Peel and quarter the potatoes. Place in a large pan of salted water.</span>
+          </div>
+          <div class="step-item">
+            <span class="step-num">2</span>
+            <span class="step-text">Bring to the boil and parboil for 8 minutes. Drain and shake in the colander to roughen edges.</span>
+          </div>
+          <div class="step-item highlighted">
+            <span class="step-num">3</span>
+            <span class="step-text">Heat goose fat in a roasting tin at 220&deg;C for 5 minutes until smoking hot.</span>
+          </div>
+          <div class="step-item">
+            <span class="step-num">4</span>
+            <span class="step-text">Carefully add potatoes to the hot fat, turning to coat. Sprinkle with salt and garlic granules.</span>
+          </div>
+          <div class="step-item">
+            <span class="step-num">5</span>
+            <span class="step-text">Roast for 45-50 minutes, turning halfway through. Add rosemary sprigs for the last 15 minutes.</span>
+          </div>
+          <div class="step-item">
+            <span class="step-num">6</span>
+            <span class="step-text">Remove when golden and crispy. Drain on kitchen paper and serve immediately.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="mockup-label">Desktop sheet &mdash; 35/65 split, step 3 highlighted (cook_start event), ingredient checkboxes</p>
+
+  <div style="text-align: center; margin-bottom: 2rem;">
+    <span class="annotation highlight">event badge: "Cook"</span>
+    <span class="annotation highlight">highlighted step (auto-scroll)</span>
+    <span class="annotation">green ingredient checkboxes</span>
+    <span class="annotation">close button</span>
+    <span class="annotation highlight">timeline visible behind</span>
+  </div>
+
+  <!-- ===== SHEET OVERLAY — MOBILE ===== -->
+  <div class="section-label">Sheet Overlay &mdash; Mobile</div>
+  <div class="design-notes">
+    <strong>Mobile:</strong> Sheet takes ~85% height. Stacked layout — collapsible ingredients at top (same pattern as cooking mode mobile), instructions scroll below. The highlighted step auto-scrolls into view.
+  </div>
+
+  <div class="mockup-frame mobile">
+    <div class="sheet-panel" style="border-radius: 1rem 1rem 0 0;">
+      <div class="sheet-header" style="padding: 0.75rem 1rem;">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <h3 style="font-size: 1rem;">Roast Potatoes</h3>
+          <span class="event-badge">Prep</span>
+        </div>
+        <button class="sheet-close" style="width: 28px; height: 28px; font-size: 0.9rem;">&times;</button>
+      </div>
+
+      <!-- Collapsible ingredients (expanded) -->
+      <div style="background: var(--card); border-bottom: 1px solid var(--border); padding: 0.5rem 1rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <span style="font-weight: 700; font-size: 0.9rem;">Ingredients &mdash; 0/5 used</span>
+          <span style="color: var(--text-muted); font-size: 0.8rem;">&#9650;</span>
+        </div>
+        <div class="ing-item" style="font-size: 0.85rem;">
+          <div class="ing-check" style="width: 16px; height: 16px;"></div>
+          <span class="ing-amount" style="min-width: 3rem;">1 kg</span>
+          <span class="ing-text">Maris Piper potatoes</span>
+        </div>
+        <div class="ing-item" style="font-size: 0.85rem;">
+          <div class="ing-check" style="width: 16px; height: 16px;"></div>
+          <span class="ing-amount" style="min-width: 3rem;">3 tbsp</span>
+          <span class="ing-text">goose fat</span>
+        </div>
+        <div class="ing-item" style="font-size: 0.85rem;">
+          <div class="ing-check" style="width: 16px; height: 16px;"></div>
+          <span class="ing-amount" style="min-width: 3rem;">1 tsp</span>
+          <span class="ing-text">sea salt flakes</span>
+        </div>
+      </div>
+
+      <!-- Instructions -->
+      <div style="padding: 0.75rem 1rem; max-height: 260px; overflow-y: auto;">
+        <div class="panel-title" style="font-size: 0.9rem;">Instructions</div>
+
+        <div class="step-item highlighted" style="font-size: 0.85rem;">
+          <span class="step-num">1</span>
+          <span class="step-text">Peel and quarter the potatoes. Place in a large pan of salted water.</span>
+        </div>
+        <div class="step-item" style="font-size: 0.85rem;">
+          <span class="step-num">2</span>
+          <span class="step-text">Bring to the boil and parboil for 8 minutes. Drain and shake to roughen.</span>
+        </div>
+        <div class="step-item" style="font-size: 0.85rem;">
+          <span class="step-num">3</span>
+          <span class="step-text">Heat goose fat in roasting tin at 220&deg;C for 5 min until smoking hot.</span>
+        </div>
+        <div class="step-item" style="font-size: 0.85rem;">
+          <span class="step-num">4</span>
+          <span class="step-text">Add potatoes to hot fat, turn to coat. Sprinkle with salt and garlic.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="mockup-label">Mobile sheet &mdash; prep_start event highlights step 1, collapsible ingredients expanded</p>
+
+  <!-- ===== COMPONENT ARCHITECTURE ===== -->
+  <div class="section-label">Component Architecture</div>
+  <div class="design-notes">
+    <strong>Modified:</strong> <code>components/planner/timeline-view.tsx</code> &mdash; add click handler + hover styles + chevron to event cards<br>
+    <strong>New:</strong> <code>components/planner/timeline-recipe-sheet.tsx</code> &mdash; the Sheet overlay component<br><br>
+    <strong>Props for TimelineRecipeSheet:</strong><br>
+    <code>open: boolean</code><br>
+    <code>onOpenChange: (open: boolean) => void</code><br>
+    <code>mealItemName: string</code><br>
+    <code>eventType: TimelineEventType</code><br>
+    <code>ingredients: Ingredient[] | null</code><br>
+    <code>instructions: string | null</code><br><br>
+    <strong>Data flow:</strong> Extend <code>TimelineEvent</code> type with <code>ingredients?: Ingredient[]</code> and <code>instructions?: string</code>. The <code>calculateTimeline()</code> function already receives <code>MealItem[]</code> which has both fields &mdash; just pass them through to the events.<br><br>
+    <strong>Step highlighting heuristic:</strong><br>
+    &bull; <code>prep_start</code> &rarr; highlight step index 0<br>
+    &bull; <code>cook_start</code> &rarr; find first step containing "oven", "hob", "heat", "fry", "bake", "roast", "grill"; fallback to middle step<br>
+    &bull; <code>cook_end</code> / <code>rest_start</code> &rarr; highlight last step<br>
+    &bull; <code>serve</code> &rarr; not clickable
+  </div>
+
+  <!-- ===== ACCESSIBILITY ===== -->
+  <div class="section-label">Accessibility</div>
+  <div class="design-notes">
+    &bull; Clickable event cards: <code>role="button"</code>, <code>tabIndex={0}</code>, <code>aria-label="View recipe details for {description}"</code><br>
+    &bull; Keyboard: Enter/Space opens the sheet<br>
+    &bull; Sheet: uses shadcn Sheet component which handles focus trap, Escape to close, aria-describedby<br>
+    &bull; Ingredient checkboxes: <code>role="checkbox"</code>, <code>aria-checked</code>, <code>aria-label</code> (same as cooking mode)<br>
+    &bull; Non-clickable events: no role/tabIndex — they remain plain divs<br>
+    &bull; Highlighted step: <code>aria-current="step"</code> for screen readers
+  </div>
+
+</body>
+</html>
