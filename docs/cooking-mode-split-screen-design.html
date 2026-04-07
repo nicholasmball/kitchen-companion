@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Split-Screen Cooking Mode - UX Design</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #FAF6F1;
+      --card: #F5E6D3;
+      --card-nested: #EDD9C4;
+      --border: #EDD9C4;
+      --text: #3D2914;
+      --text-heading: #5C3D1E;
+      --text-muted: #8B5A2B;
+      --primary: #D97B4A;
+      --primary-hover: #C46A3A;
+      --primary-fg: #FFFFFF;
+      --success: #40916C;
+      --shadow-soft: 0 4px 16px rgba(139, 90, 43, 0.12);
+      --shadow-lg: 0 8px 24px rgba(139, 90, 43, 0.15);
+      --radius: 1rem;
+    }
+
+    body {
+      font-family: 'Nunito', sans-serif;
+      background: #1a1a2e;
+      color: var(--text);
+      padding: 2rem;
+    }
+
+    h1.page-title {
+      color: white;
+      text-align: center;
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+    p.page-subtitle {
+      color: #aaa;
+      text-align: center;
+      margin-bottom: 2rem;
+      font-size: 0.95rem;
+    }
+
+    .section-label {
+      color: white;
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin: 3rem 0 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--primary);
+      display: inline-block;
+    }
+
+    .design-notes {
+      background: #2a2a4a;
+      color: #ccc;
+      padding: 1rem 1.5rem;
+      border-radius: 0.75rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+    .design-notes strong { color: var(--primary); }
+    .design-notes code {
+      background: #3a3a5a;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+    }
+
+    /* ===== DESKTOP MOCKUP ===== */
+    .mockup-frame {
+      background: var(--bg);
+      border-radius: 1rem;
+      overflow: hidden;
+      box-shadow: var(--shadow-lg);
+      margin-bottom: 2rem;
+    }
+
+    .mockup-frame.desktop {
+      max-width: 960px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .mockup-frame.mobile {
+      max-width: 390px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* Banner */
+    .cooking-banner {
+      background: var(--primary);
+      color: var(--primary-fg);
+      padding: 0.75rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .cooking-banner .left {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 700;
+      font-size: 1rem;
+    }
+    .cooking-banner .exit-btn {
+      background: var(--card);
+      color: var(--text);
+      border: none;
+      padding: 0.4rem 1rem;
+      border-radius: 0.5rem;
+      font-family: 'Nunito', sans-serif;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+
+    /* Title row */
+    .title-row {
+      padding: 1rem 1.25rem 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .title-row h2 {
+      font-size: 1.5rem;
+      color: var(--text-heading);
+      font-weight: 800;
+    }
+    .timer-btn {
+      background: transparent;
+      border: 2px solid var(--border);
+      color: var(--text-muted);
+      padding: 0.4rem 0.9rem;
+      border-radius: 0.5rem;
+      font-family: 'Nunito', sans-serif;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    /* ===== SPLIT LAYOUT ===== */
+    .split-container {
+      display: flex;
+      height: 520px;
+      overflow: hidden;
+    }
+
+    /* Left: Ingredients (sticky) */
+    .ingredients-panel {
+      width: 35%;
+      min-width: 280px;
+      border-right: 1px solid var(--border);
+      background: linear-gradient(180deg, #F5E6D3 0%, #FAF6F1 100%);
+      overflow-y: auto;
+      padding: 1rem 1.25rem;
+      flex-shrink: 0;
+    }
+    .ingredients-panel::-webkit-scrollbar {
+      width: 4px;
+    }
+    .ingredients-panel::-webkit-scrollbar-thumb {
+      background: var(--card-nested);
+      border-radius: 2px;
+    }
+
+    .panel-header {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-heading);
+      margin-bottom: 0.75rem;
+    }
+
+    /* Servings adjuster */
+    .servings-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--card);
+      padding: 0.5rem 0.75rem;
+      border-radius: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .servings-row span {
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: var(--text-heading);
+    }
+    .servings-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .servings-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: 2px solid var(--border);
+      background: var(--bg);
+      font-size: 1.1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text);
+      font-weight: 700;
+    }
+    .servings-count {
+      font-weight: 700;
+      font-size: 1rem;
+      min-width: 1.5rem;
+      text-align: center;
+    }
+
+    /* Ingredient list */
+    .ingredient-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      padding: 0.55rem 0.4rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 1.05rem;
+      line-height: 1.4;
+      cursor: pointer;
+      border-radius: 0.5rem;
+      transition: background 0.15s ease;
+    }
+    .ingredient-item:last-child { border-bottom: none; }
+    .ingredient-item:hover { background: rgba(237, 217, 196, 0.3); }
+    .ingredient-item.checked { background: rgba(237, 217, 196, 0.15); }
+    .ing-checkbox {
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      border: 2px solid var(--text-muted);
+      flex-shrink: 0;
+      margin-top: 1px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+    .ingredient-item.checked .ing-checkbox {
+      background: var(--success);
+      border-color: var(--success);
+    }
+    .ing-checkbox .check {
+      display: none;
+      color: white;
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+    .ingredient-item.checked .ing-checkbox .check { display: block; }
+    .ingredient-amount {
+      font-weight: 700;
+      min-width: 4.5rem;
+      color: var(--text-heading);
+      flex-shrink: 0;
+      transition: all 0.2s ease;
+    }
+    .ingredient-item.checked .ingredient-amount {
+      opacity: 0.45;
+    }
+    .ingredient-name {
+      color: var(--text);
+      transition: all 0.2s ease;
+    }
+    .ingredient-item.checked .ingredient-name {
+      text-decoration: line-through;
+      opacity: 0.45;
+    }
+
+    /* Ingredient progress */
+    .ing-progress {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+    .ing-progress.done { color: var(--success); font-weight: 600; }
+
+    /* Right: Instructions (scrollable) */
+    .instructions-panel {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem 1.25rem;
+      scroll-behavior: smooth;
+    }
+    .instructions-panel::-webkit-scrollbar {
+      width: 6px;
+    }
+    .instructions-panel::-webkit-scrollbar-thumb {
+      background: var(--card-nested);
+      border-radius: 3px;
+    }
+
+    /* Progress bar */
+    .progress-section {
+      margin-bottom: 1rem;
+    }
+    .progress-text {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+    }
+    .progress-text.done { color: var(--primary); font-weight: 600; }
+    .progress-bar {
+      height: 6px;
+      background: var(--card-nested);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--primary);
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+
+    /* Step items */
+    .step-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.85rem 0.75rem;
+      border-radius: 0.75rem;
+      cursor: pointer;
+      transition: background 0.15s ease;
+      border-bottom: 1px solid var(--border);
+    }
+    .step-item:last-child { border-bottom: none; }
+    .step-item:hover { background: rgba(237, 217, 196, 0.3); }
+    .step-item.active {
+      background: rgba(217, 123, 74, 0.08);
+      border-left: 3px solid var(--primary);
+      margin-left: -3px;
+    }
+    .step-item.completed { background: rgba(237, 217, 196, 0.2); }
+
+    .step-checkbox {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid var(--text-muted);
+      flex-shrink: 0;
+      margin-top: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+    .step-item.completed .step-checkbox {
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+    .step-checkbox .check {
+      display: none;
+      color: white;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+    .step-item.completed .step-checkbox .check { display: block; }
+
+    .step-number {
+      color: var(--text-muted);
+      font-weight: 700;
+      font-size: 0.8rem;
+      margin-bottom: 0.15rem;
+    }
+    .step-text {
+      font-size: 1.15rem;
+      line-height: 1.5;
+      color: var(--text);
+      transition: all 0.2s ease;
+    }
+    .step-item.completed .step-text {
+      text-decoration: line-through;
+      opacity: 0.5;
+    }
+    .step-item.active .step-number { color: var(--primary); }
+
+    /* ===== MOBILE: Collapsible ingredients ===== */
+    .mobile-ingredients-sticky {
+      background: linear-gradient(180deg, #F5E6D3, #FAF6F1);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 44px; /* below banner */
+      z-index: 5;
+    }
+    .ingredients-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1rem;
+      cursor: pointer;
+      user-select: none;
+    }
+    .ingredients-toggle .label {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--text-heading);
+    }
+    .ingredients-toggle .count {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+    .chevron {
+      color: var(--text-muted);
+      transition: transform 0.2s ease;
+      font-size: 0.85rem;
+    }
+    .chevron.open { transform: rotate(180deg); }
+
+    .ingredients-expanded {
+      padding: 0 1rem 1rem;
+      max-height: 280px;
+      overflow-y: auto;
+    }
+
+    .mobile-instructions {
+      padding: 1rem;
+    }
+
+    /* ===== INTERACTION FLOW ===== */
+    .flow-container {
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin: 1.5rem 0;
+    }
+    .flow-step {
+      background: #2a2a4a;
+      border-radius: 0.75rem;
+      padding: 1rem 1.25rem;
+      width: 200px;
+      text-align: center;
+      position: relative;
+    }
+    .flow-step .num {
+      background: var(--primary);
+      color: white;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+      margin: 0 auto 0.5rem;
+    }
+    .flow-step .title {
+      color: white;
+      font-weight: 700;
+      font-size: 0.9rem;
+      margin-bottom: 0.25rem;
+    }
+    .flow-step .desc {
+      color: #aaa;
+      font-size: 0.8rem;
+      line-height: 1.4;
+    }
+    .flow-arrow {
+      color: var(--primary);
+      font-size: 1.5rem;
+      align-self: center;
+    }
+
+    /* Annotation callouts */
+    .annotation {
+      display: inline-block;
+      background: #2a2a4a;
+      color: #ccc;
+      padding: 0.3rem 0.7rem;
+      border-radius: 0.5rem;
+      font-size: 0.75rem;
+      margin: 0.25rem;
+      border: 1px solid #3a3a5a;
+    }
+    .annotation.highlight {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .mockup-label {
+      color: #aaa;
+      text-align: center;
+      font-size: 0.85rem;
+      margin-top: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    /* Dark mode variant */
+    .dark-mockup {
+      --bg: #1C1917;
+      --card: #292524;
+      --card-nested: #3a3530;
+      --border: #3a3530;
+      --text: #F5E6D3;
+      --text-heading: #EDD9C4;
+      --text-muted: #A89279;
+    }
+  </style>
+</head>
+<body>
+
+  <h1 class="page-title">Split-Screen Cooking Mode</h1>
+  <p class="page-subtitle">UX Design Document &mdash; Building on Requirements & Acceptance Criteria (Step 1)</p>
+
+  <!-- ===== DESIGN RATIONALE ===== -->
+  <div class="section-label">Design Rationale</div>
+  <div class="design-notes">
+    <strong>Problem:</strong> Currently, cooking mode renders ingredients and instructions sequentially. Users must scroll back up to check ingredients while following steps &mdash; frustrating with messy hands.<br><br>
+    <strong>Solution:</strong> A split-screen layout (per R1) with sticky ingredients on the left and scrollable step checklist on the right. This follows the proven pattern noted in the Design Guide: <em>"Recipe views work best with two columns on tablets (ingredients left, steps right)"</em>.<br><br>
+    <strong>Key decisions:</strong><br>
+    &bull; <strong>35/65 split</strong> (R1) &mdash; ingredients need less width; instructions benefit from more reading space<br>
+    &bull; <strong>Left panel scrolls independently</strong> if ingredients overflow, but stays fixed in position<br>
+    &bull; <strong>Ingredient checkboxes</strong> &mdash; tap to tick off ingredients as you use them. Green checkbox (distinct from orange step checkboxes). Checked items get strikethrough + fade. Progress counter "4 of 12 ingredients used" shown above the list.<br>
+    &bull; <strong>Subtle background gradient</strong> on ingredients panel (R5) differentiates the two zones without a heavy visual border<br>
+    &bull; <strong>Active step highlight</strong> (R5 nice-to-have) &mdash; included as it helps users track position after looking away<br>
+    &bull; <strong>Mobile collapsed bar</strong> (R2) shows ingredient progress "4/12 used" when collapsed<br>
+    &bull; <strong>Component extraction</strong> (R4) into <code>components/recipes/cooking-mode.tsx</code>
+  </div>
+
+  <!-- ===== INTERACTION FLOW ===== -->
+  <div class="section-label">User Flow</div>
+  <div class="flow-container">
+    <div class="flow-step">
+      <div class="num">1</div>
+      <div class="title">Enter Cooking Mode</div>
+      <div class="desc">Tap "Cooking Mode" button on recipe page</div>
+    </div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">
+      <div class="num">2</div>
+      <div class="title">Split Layout Loads</div>
+      <div class="desc">Ingredients left, steps right. Wake lock activates.</div>
+    </div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">
+      <div class="num">3</div>
+      <div class="title">Cook & Check Off</div>
+      <div class="desc">Scroll steps, tap to check off. Ingredients always visible.</div>
+    </div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">
+      <div class="num">4</div>
+      <div class="title">Complete / Exit</div>
+      <div class="desc">All steps done! Exit returns to normal view.</div>
+    </div>
+  </div>
+
+  <!-- ===== DESKTOP MOCKUP ===== -->
+  <div class="section-label">Desktop / Tablet Layout (&ge;768px)</div>
+  <div class="design-notes">
+    <strong>Layout:</strong> <code>display: flex</code> container below the banner. Left panel has <code>position: sticky</code> behavior via flex + independent <code>overflow-y: auto</code>. Right panel scrolls independently.<br>
+    <strong>Tailwind classes:</strong> <code>flex h-[calc(100vh-8rem)] md:flex-row flex-col</code><br>
+    <strong>Breakpoint:</strong> <code>md:</code> (768px) &mdash; below this, switches to stacked mobile layout.
+  </div>
+
+  <div class="mockup-frame desktop">
+    <!-- Banner -->
+    <div class="cooking-banner">
+      <div class="left">&#x1F468;&#x200D;&#x1F373; Cooking Mode</div>
+      <button class="exit-btn">Exit</button>
+    </div>
+
+    <!-- Title -->
+    <div class="title-row">
+      <h2>Classic Sunday Roast</h2>
+      <button class="timer-btn">&#9654; Start Timer</button>
+    </div>
+
+    <!-- Split container -->
+    <div class="split-container">
+      <!-- LEFT: Ingredients -->
+      <div class="ingredients-panel">
+        <div class="panel-header">Ingredients</div>
+
+        <div class="servings-row">
+          <span>Servings</span>
+          <div class="servings-controls">
+            <button class="servings-btn">&minus;</button>
+            <span class="servings-count">4</span>
+            <button class="servings-btn">+</button>
+          </div>
+        </div>
+
+        <div class="ing-progress">4 of 12 ingredients used</div>
+
+        <div class="ingredient-item checked">
+          <div class="ing-checkbox"><span class="check">&#10003;</span></div>
+          <span class="ingredient-amount">1.5 kg</span>
+          <span class="ingredient-name">beef topside joint</span>
+        </div>
+        <div class="ingredient-item checked">
+          <div class="ing-checkbox"><span class="check">&#10003;</span></div>
+          <span class="ingredient-amount">2 tbsp</span>
+          <span class="ingredient-name">olive oil</span>
+        </div>
+        <div class="ingredient-item checked">
+          <div class="ing-checkbox"><span class="check">&#10003;</span></div>
+          <span class="ingredient-amount">3 cloves</span>
+          <span class="ingredient-name">garlic, crushed</span>
+        </div>
+        <div class="ingredient-item checked">
+          <div class="ing-checkbox"><span class="check">&#10003;</span></div>
+          <span class="ingredient-amount">2 sprigs</span>
+          <span class="ingredient-name">fresh rosemary</span>
+        </div>
+        <div class="ingredient-item">
+          <div class="ing-checkbox"></div>
+          <span class="ingredient-amount">1 kg</span>
+          <span class="ingredient-name">Maris Piper potatoes, peeled and quartered</span>
+        </div>
+        <div class="ingredient-item">
+          <div class="ing-checkbox"></div>
+          <span class="ingredient-amount">500 g</span>
+          <span class="ingredient-name">carrots, peeled and cut into chunks</span>
+        </div>
+        <div class="ingredient-item">
+          <div class="ing-checkbox"></div>
+          <span class="ingredient-amount">300 g</span>
+          <span class="ingredient-name">parsnips, peeled and halved</span>
+        </div>
+        <div class="ingredient-item">
+          <div class="ing-checkbox"></div>
+          <span class="ingredient-amount">200 g</span>
+          <span class="ingredient-name">Yorkshire pudding batter</span>
+        </div>
+        <div class="ingredient-item">
+          <div class="ing-checkbox"></div>
+          <span class="ingredient-amount">4 tbsp</span>
+          <span class="ingredient-name">goose fat</span>
+        </div>
+        <div class="ingredient-item">
+          <div class="ing-checkbox"></div>
+          <span class="ingredient-amount">500 ml</span>
+          <span class="ingredient-name">beef stock</span>
+        </div>
+        <div class="ingredient-item">
+          <div class="ing-checkbox"></div>
+          <span class="ingredient-amount">2 tbsp</span>
+          <span class="ingredient-name">plain flour</span>
+        </div>
+        <div class="ingredient-item">
+          <div class="ing-checkbox"></div>
+          <span class="ingredient-amount">to taste</span>
+          <span class="ingredient-name">salt and pepper</span>
+        </div>
+      </div>
+
+      <!-- RIGHT: Instructions -->
+      <div class="instructions-panel">
+        <div class="panel-header">Instructions</div>
+
+        <div class="progress-section">
+          <div class="progress-text">3 of 8 steps done</div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 37.5%"></div>
+          </div>
+        </div>
+
+        <!-- Completed steps -->
+        <div class="step-item completed">
+          <div class="step-checkbox"><span class="check">&#10003;</span></div>
+          <div>
+            <div class="step-number">Step 1</div>
+            <div class="step-text">Preheat the oven to 220&deg;C (200&deg;C fan). Take the beef out of the fridge 30 minutes before cooking to bring to room temperature.</div>
+          </div>
+        </div>
+
+        <div class="step-item completed">
+          <div class="step-checkbox"><span class="check">&#10003;</span></div>
+          <div>
+            <div class="step-number">Step 2</div>
+            <div class="step-text">Rub the beef with olive oil, salt, pepper, and crushed garlic. Place rosemary sprigs on top and put in a roasting tin.</div>
+          </div>
+        </div>
+
+        <div class="step-item completed">
+          <div class="step-checkbox"><span class="check">&#10003;</span></div>
+          <div>
+            <div class="step-number">Step 3</div>
+            <div class="step-text">Roast for 20 minutes at 220&deg;C, then reduce to 170&deg;C (150&deg;C fan) for 1 hour for medium. Baste every 20 minutes.</div>
+          </div>
+        </div>
+
+        <!-- Active step -->
+        <div class="step-item active">
+          <div class="step-checkbox"></div>
+          <div>
+            <div class="step-number">Step 4</div>
+            <div class="step-text">Meanwhile, parboil the potatoes for 8 minutes. Drain and shake in the colander to roughen the edges. Toss with 2 tbsp goose fat.</div>
+          </div>
+        </div>
+
+        <!-- Future steps -->
+        <div class="step-item">
+          <div class="step-checkbox"></div>
+          <div>
+            <div class="step-number">Step 5</div>
+            <div class="step-text">Heat remaining goose fat in a separate roasting tin at 220&deg;C. Add potatoes carefully, turning to coat. Roast for 45-50 minutes, turning halfway.</div>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-checkbox"></div>
+          <div>
+            <div class="step-number">Step 6</div>
+            <div class="step-text">Toss carrots and parsnips with olive oil, salt and pepper. Add to oven 35 minutes before the beef is done.</div>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-checkbox"></div>
+          <div>
+            <div class="step-number">Step 7</div>
+            <div class="step-text">Remove beef from oven, cover loosely with foil, and rest for 20 minutes. Increase oven to 220&deg;C and cook Yorkshire puddings for 15-18 minutes.</div>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-checkbox"></div>
+          <div>
+            <div class="step-number">Step 8</div>
+            <div class="step-text">Make gravy: place roasting tin on hob, add flour and stir for 1 minute. Gradually add beef stock, stirring to deglaze. Simmer until thickened. Season to taste.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="mockup-label">Desktop view &mdash; 35/65 split, both panels scroll independently, ingredients always in view</p>
+
+  <!-- Annotations -->
+  <div style="text-align: center; margin-bottom: 2rem;">
+    <span class="annotation highlight">sticky ingredients</span>
+    <span class="annotation highlight">ingredient checkboxes (green)</span>
+    <span class="annotation">border-right separator</span>
+    <span class="annotation highlight">active step highlight</span>
+    <span class="annotation">progress counters on both panels</span>
+    <span class="annotation">independent scroll</span>
+    <span class="annotation highlight">large tap targets (44px+ rows)</span>
+  </div>
+
+  <!-- ===== MOBILE MOCKUP ===== -->
+  <div class="section-label">Mobile Layout (&lt;768px)</div>
+  <div class="design-notes">
+    <strong>Stacked layout:</strong> Collapsible ingredients bar sticks below the cooking banner. Tap to expand/collapse.<br>
+    <strong>Collapsed state:</strong> Shows "12 ingredients &mdash; tap to view" with a chevron. Minimal height (~44px) to maximise step visibility.<br>
+    <strong>Expanded state:</strong> Ingredients list with servings adjuster, max-height 50vh with its own scroll, overlays instructions.<br>
+    <strong>Tailwind:</strong> <code>md:hidden</code> for mobile-only panel, <code>hidden md:flex</code> for desktop split.
+  </div>
+
+  <!-- Mobile: Collapsed -->
+  <div class="mockup-frame mobile">
+    <div class="cooking-banner">
+      <div class="left" style="font-size: 0.9rem;">&#x1F468;&#x200D;&#x1F373; Cooking Mode</div>
+      <button class="exit-btn" style="font-size: 0.8rem; padding: 0.3rem 0.75rem;">Exit</button>
+    </div>
+
+    <div class="title-row" style="padding: 0.75rem 1rem 0.5rem;">
+      <h2 style="font-size: 1.2rem;">Classic Sunday Roast</h2>
+      <button class="timer-btn" style="font-size: 0.8rem; padding: 0.3rem 0.7rem;">&#9654; Timer</button>
+    </div>
+
+    <!-- Collapsed ingredients -->
+    <div class="mobile-ingredients-sticky">
+      <div class="ingredients-toggle">
+        <div>
+          <span class="label">Ingredients</span>
+          <span class="count"> &mdash; 4/12 used</span>
+        </div>
+        <span class="chevron">&#9660;</span>
+      </div>
+    </div>
+
+    <!-- Instructions -->
+    <div class="mobile-instructions">
+      <div class="progress-section">
+        <div class="progress-text">3 of 8 steps done</div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: 37.5%"></div>
+        </div>
+      </div>
+
+      <div class="step-item completed" style="padding: 0.7rem 0.5rem;">
+        <div class="step-checkbox" style="width: 24px; height: 24px;"><span class="check" style="font-size: 0.75rem;">&#10003;</span></div>
+        <div>
+          <div class="step-number">Step 1</div>
+          <div class="step-text" style="font-size: 1rem;">Preheat oven to 220&deg;C. Take beef out 30 min before cooking.</div>
+        </div>
+      </div>
+
+      <div class="step-item completed" style="padding: 0.7rem 0.5rem;">
+        <div class="step-checkbox" style="width: 24px; height: 24px;"><span class="check" style="font-size: 0.75rem;">&#10003;</span></div>
+        <div>
+          <div class="step-number">Step 2</div>
+          <div class="step-text" style="font-size: 1rem;">Rub beef with oil, salt, pepper, garlic. Add rosemary. Roast.</div>
+        </div>
+      </div>
+
+      <div class="step-item completed" style="padding: 0.7rem 0.5rem;">
+        <div class="step-checkbox" style="width: 24px; height: 24px;"><span class="check" style="font-size: 0.75rem;">&#10003;</span></div>
+        <div>
+          <div class="step-number">Step 3</div>
+          <div class="step-text" style="font-size: 1rem;">Roast 20 min at 220&deg;C, then reduce to 170&deg;C for 1 hour.</div>
+        </div>
+      </div>
+
+      <div class="step-item active" style="padding: 0.7rem 0.5rem;">
+        <div class="step-checkbox" style="width: 24px; height: 24px;"></div>
+        <div>
+          <div class="step-number">Step 4</div>
+          <div class="step-text" style="font-size: 1rem;">Parboil potatoes 8 min. Drain, roughen edges. Toss with goose fat.</div>
+        </div>
+      </div>
+
+      <div class="step-item" style="padding: 0.7rem 0.5rem;">
+        <div class="step-checkbox" style="width: 24px; height: 24px;"></div>
+        <div>
+          <div class="step-number">Step 5</div>
+          <div class="step-text" style="font-size: 1rem;">Heat goose fat at 220&deg;C. Add potatoes, roast 45-50 min.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="mockup-label">Mobile &mdash; collapsed ingredients bar (tap to expand)</p>
+
+  <!-- Mobile: Expanded -->
+  <div class="mockup-frame mobile" style="margin-top: 1.5rem;">
+    <div class="cooking-banner">
+      <div class="left" style="font-size: 0.9rem;">&#x1F468;&#x200D;&#x1F373; Cooking Mode</div>
+      <button class="exit-btn" style="font-size: 0.8rem; padding: 0.3rem 0.75rem;">Exit</button>
+    </div>
+
+    <div class="title-row" style="padding: 0.75rem 1rem 0.5rem;">
+      <h2 style="font-size: 1.2rem;">Classic Sunday Roast</h2>
+      <button class="timer-btn" style="font-size: 0.8rem; padding: 0.3rem 0.7rem;">&#9654; Timer</button>
+    </div>
+
+    <!-- Expanded ingredients -->
+    <div class="mobile-ingredients-sticky">
+      <div class="ingredients-toggle">
+        <div>
+          <span class="label">Ingredients</span>
+          <span class="count"> &mdash; 12 items</span>
+        </div>
+        <span class="chevron open">&#9660;</span>
+      </div>
+      <div class="ingredients-expanded">
+        <div class="servings-row">
+          <span>Servings</span>
+          <div class="servings-controls">
+            <button class="servings-btn" style="width: 28px; height: 28px;">&minus;</button>
+            <span class="servings-count">4</span>
+            <button class="servings-btn" style="width: 28px; height: 28px;">+</button>
+          </div>
+        </div>
+        <div class="ing-progress">4 of 12 used</div>
+        <div class="ingredient-item checked" style="font-size: 0.95rem;">
+          <div class="ing-checkbox" style="width: 20px; height: 20px;"><span class="check" style="font-size: 0.6rem;">&#10003;</span></div>
+          <span class="ingredient-amount" style="min-width: 3.5rem;">1.5 kg</span>
+          <span class="ingredient-name">beef topside joint</span>
+        </div>
+        <div class="ingredient-item checked" style="font-size: 0.95rem;">
+          <div class="ing-checkbox" style="width: 20px; height: 20px;"><span class="check" style="font-size: 0.6rem;">&#10003;</span></div>
+          <span class="ingredient-amount" style="min-width: 3.5rem;">2 tbsp</span>
+          <span class="ingredient-name">olive oil</span>
+        </div>
+        <div class="ingredient-item" style="font-size: 0.95rem;">
+          <div class="ing-checkbox" style="width: 20px; height: 20px;"></div>
+          <span class="ingredient-amount" style="min-width: 3.5rem;">1 kg</span>
+          <span class="ingredient-name">Maris Piper potatoes</span>
+        </div>
+        <div class="ingredient-item" style="font-size: 0.95rem;">
+          <div class="ing-checkbox" style="width: 20px; height: 20px;"></div>
+          <span class="ingredient-amount" style="min-width: 3.5rem;">500 g</span>
+          <span class="ingredient-name">carrots, chunked</span>
+        </div>
+        <div class="ingredient-item" style="font-size: 0.95rem;">
+          <div class="ing-checkbox" style="width: 20px; height: 20px;"></div>
+          <span class="ingredient-amount" style="min-width: 3.5rem;">300 g</span>
+          <span class="ingredient-name">parsnips, halved</span>
+        </div>
+        <div class="ingredient-item" style="font-size: 0.95rem;">
+          <div class="ing-checkbox" style="width: 20px; height: 20px;"></div>
+          <span class="ingredient-amount" style="min-width: 3.5rem;">4 tbsp</span>
+          <span class="ingredient-name">goose fat</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="mockup-label">Mobile &mdash; expanded ingredients panel (scrollable, max 50vh)</p>
+
+  <!-- ===== DARK MODE ===== -->
+  <div class="section-label">Dark Mode Variant</div>
+  <div class="design-notes">
+    Same layout, using the project's warm brown dark mode tones. <code>--bg: #1C1917</code>, <code>--card: #292524</code>. The primary orange accent remains the same for consistency.
+  </div>
+
+  <div class="mockup-frame desktop dark-mockup">
+    <div class="cooking-banner">
+      <div class="left">&#x1F468;&#x200D;&#x1F373; Cooking Mode</div>
+      <button class="exit-btn" style="background: #292524; color: #EDD9C4;">Exit</button>
+    </div>
+    <div class="title-row">
+      <h2 style="font-size: 1.5rem;">Classic Sunday Roast</h2>
+      <button class="timer-btn">&#9654; Start Timer</button>
+    </div>
+    <div class="split-container" style="height: 320px;">
+      <div class="ingredients-panel" style="background: linear-gradient(180deg, #292524 0%, #1C1917 100%);">
+        <div class="panel-header">Ingredients</div>
+        <div class="servings-row" style="background: #3a3530;">
+          <span>Servings</span>
+          <div class="servings-controls">
+            <button class="servings-btn" style="background: #292524; border-color: #3a3530; color: #EDD9C4;">&minus;</button>
+            <span class="servings-count">4</span>
+            <button class="servings-btn" style="background: #292524; border-color: #3a3530; color: #EDD9C4;">+</button>
+          </div>
+        </div>
+        <div class="ing-progress">1 of 12 used</div>
+        <div class="ingredient-item checked"><div class="ing-checkbox"><span class="check">&#10003;</span></div><span class="ingredient-amount">2 tbsp</span><span class="ingredient-name">olive oil</span></div>
+        <div class="ingredient-item"><div class="ing-checkbox"></div><span class="ingredient-amount">1.5 kg</span><span class="ingredient-name">beef topside joint</span></div>
+        <div class="ingredient-item"><div class="ing-checkbox"></div><span class="ingredient-amount">1 kg</span><span class="ingredient-name">Maris Piper potatoes</span></div>
+        <div class="ingredient-item"><div class="ing-checkbox"></div><span class="ingredient-amount">500 g</span><span class="ingredient-name">carrots, chunked</span></div>
+      </div>
+      <div class="instructions-panel">
+        <div class="panel-header">Instructions</div>
+        <div class="progress-section">
+          <div class="progress-text">1 of 8 steps done</div>
+          <div class="progress-bar"><div class="progress-fill" style="width: 12.5%"></div></div>
+        </div>
+        <div class="step-item completed">
+          <div class="step-checkbox"><span class="check">&#10003;</span></div>
+          <div>
+            <div class="step-number">Step 1</div>
+            <div class="step-text">Preheat oven to 220&deg;C. Take beef out 30 min before cooking.</div>
+          </div>
+        </div>
+        <div class="step-item active">
+          <div class="step-checkbox"></div>
+          <div>
+            <div class="step-number">Step 2</div>
+            <div class="step-text">Rub beef with oil, salt, pepper, garlic. Add rosemary. Place in roasting tin.</div>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-checkbox"></div>
+          <div>
+            <div class="step-number">Step 3</div>
+            <div class="step-text">Roast 20 min at 220&deg;C, then reduce to 170&deg;C for 1 hour. Baste every 20 min.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="mockup-label">Dark mode variant &mdash; warm brown tones</p>
+
+  <!-- ===== COMPONENT ARCHITECTURE ===== -->
+  <div class="section-label">Component Architecture</div>
+  <div class="design-notes">
+    <strong>New component:</strong> <code>components/recipes/cooking-mode.tsx</code><br><br>
+    <strong>Props interface:</strong><br>
+    <code>recipe: Recipe</code> &mdash; full recipe data<br>
+    <code>servings: number</code> &mdash; current adjusted servings<br>
+    <code>onServingsChange: (n: number) => void</code><br>
+    <code>completedSteps: Set&lt;number&gt;</code><br>
+    <code>onToggleStep: (index: number) => void</code><br>
+    <code>checkedIngredients: Set&lt;number&gt;</code><br>
+    <code>onToggleIngredient: (index: number) => void</code><br>
+    <code>onExit: () => void</code><br><br>
+    <strong>Internal state:</strong><br>
+    <code>ingredientsExpanded: boolean</code> &mdash; mobile collapsible panel (default: false)<br><br>
+    <strong>Responsive strategy:</strong><br>
+    &bull; Use <code>md:flex-row</code> / <code>flex-col</code> for the split &mdash; single component, responsive via Tailwind<br>
+    &bull; Mobile collapsible panel rendered with <code>md:hidden</code><br>
+    &bull; Desktop side panel rendered with <code>hidden md:block</code><br>
+    &bull; Height: <code>h-[calc(100vh-10rem)]</code> accounting for navbar + banner + title
+  </div>
+
+  <!-- ===== ACCESSIBILITY ===== -->
+  <div class="section-label">Accessibility Notes</div>
+  <div class="design-notes">
+    &bull; All existing ARIA attributes preserved: <code>role="checkbox"</code>, <code>aria-checked</code>, <code>aria-label</code> on steps<br>
+    &bull; Ingredient checkboxes: <code>role="checkbox"</code>, <code>aria-checked</code>, <code>aria-label="1.5 kg beef topside joint"</code><br>
+    &bull; Collapsible ingredients panel: <code>role="region"</code>, <code>aria-expanded</code>, <code>aria-controls</code><br>
+    &bull; Toggle button: <code>aria-label="Show ingredients"</code> / <code>"Hide ingredients"</code><br>
+    &bull; Keyboard: Enter/Space toggles ingredients panel on mobile, step checkboxes unchanged<br>
+    &bull; Focus management: after collapsing panel, focus returns to toggle button<br>
+    &bull; Minimum touch targets: 44x44px maintained for all interactive elements<br>
+    &bull; Contrast: all text/background combinations verified against project palette (WCAG AA)
+  </div>
+
+</body>
+</html>

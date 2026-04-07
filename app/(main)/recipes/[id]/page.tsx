@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useRecipes } from '@/hooks/use-recipes'
 import { useMealPlans } from '@/hooks/use-meal-plan'
 import { AddToPlanDialog } from '@/components/planner/add-to-plan-dialog'
+import { CookingMode } from '@/components/recipes/cooking-mode'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -40,6 +41,7 @@ export default function RecipeDetailPage() {
   const [addToPlanOpen, setAddToPlanOpen] = useState(false)
   const [cookingMode, setCookingMode] = useState(false)
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set())
+  const [checkedIngredients, setCheckedIngredients] = useState<Set<number>>(new Set())
   const [serveTime, setServeTime] = useState(() => {
     // Default to 1 hour from now, rounded to nearest 15 minutes
     const now = new Date()
@@ -151,13 +153,20 @@ export default function RecipeDetailPage() {
     }
   }
 
-  // Cooking mode: compute non-empty steps for checkboxes
-  const steps = recipe?.instructions
-    ? recipe.instructions.split('\n').filter(line => line.trim())
-    : []
-
   const toggleStep = useCallback((index: number) => {
     setCompletedSteps(prev => {
+      const next = new Set(prev)
+      if (next.has(index)) {
+        next.delete(index)
+      } else {
+        next.add(index)
+      }
+      return next
+    })
+  }, [])
+
+  const toggleIngredient = useCallback((index: number) => {
+    setCheckedIngredients(prev => {
       const next = new Set(prev)
       if (next.has(index)) {
         next.delete(index)
@@ -171,6 +180,7 @@ export default function RecipeDetailPage() {
   const exitCookingMode = useCallback(() => {
     setCookingMode(false)
     setCompletedSteps(new Set())
+    setCheckedIngredients(new Set())
   }, [])
 
   if (loading) {
@@ -197,115 +207,136 @@ export default function RecipeDetailPage() {
     )
   }
 
-  return (
-    <div className={cn(
-      "max-w-3xl mx-auto space-y-6",
-      cookingMode && "text-lg"
-    )}>
-      {/* Cooking Mode Banner */}
-      {cookingMode && (
-        <div className="bg-primary text-primary-foreground p-4 rounded-2xl flex items-center justify-between sticky top-16 z-10 shadow-warm-lg">
-          <div className="flex items-center gap-2">
-            <ChefHatIcon className="h-5 w-5" />
-            <span className="font-medium">Cooking Mode</span>
-          </div>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={exitCookingMode}
-          >
-            Exit
-          </Button>
-        </div>
-      )}
+  if (cookingMode && recipe) {
+    return (
+      <div className="max-w-5xl mx-auto">
+        <CookingMode
+          recipe={recipe}
+          servings={servings}
+          onServingsChange={setServings}
+          completedSteps={completedSteps}
+          onToggleStep={toggleStep}
+          checkedIngredients={checkedIngredients}
+          onToggleIngredient={toggleIngredient}
+          onExit={exitCookingMode}
+          onStartTimer={() => setStartCookingOpen(true)}
+          scaleAmount={scaleAmount}
+        />
 
+        {/* Start Cooking Dialog (needed in cooking mode too) */}
+        <Dialog open={startCookingOpen} onOpenChange={setStartCookingOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Start Cooking</DialogTitle>
+              <DialogDescription>
+                When do you want to serve this meal? We&apos;ll create a cooking timeline with notifications.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="serveTime">Serve Time</Label>
+                <Input
+                  id="serveTime"
+                  type="datetime-local"
+                  value={serveTime}
+                  onChange={(e) => setServeTime(e.target.value)}
+                />
+              </div>
+              {recipe.cook_time_minutes && (
+                <p className="text-sm text-muted-foreground">
+                  This recipe takes {recipe.prep_time_minutes ? `${recipe.prep_time_minutes} min prep + ` : ''}
+                  {recipe.cook_time_minutes} min to cook
+                  {recipe.rest_time_minutes ? ` + ${recipe.rest_time_minutes} min rest` : ''}.
+                </p>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setStartCookingOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleStartCooking} disabled={startingCooking}>
+                {startingCooking ? 'Creating Plan...' : 'Let\'s Cook!'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    )
+  }
+
+  return (
+    <div className="max-w-3xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className={cn(
-              "font-bold",
-              cookingMode ? "text-4xl" : "text-3xl"
-            )}>
+            <h1 className="font-bold text-3xl">
               {recipe.title}
             </h1>
-            {recipe.description && !cookingMode && (
+            {recipe.description && (
               <p className="text-muted-foreground mt-2">{recipe.description}</p>
             )}
           </div>
-          {!cookingMode && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleToggleFavourite}
-              className="shrink-0"
-            >
-              <HeartIcon
-                className={`h-6 w-6 ${recipe.is_favourite ? 'fill-[#C4897A] text-[#C4897A]' : ''}`}
-              />
-            </Button>
-          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleToggleFavourite}
+            className="shrink-0"
+          >
+            <HeartIcon
+              className={`h-6 w-6 ${recipe.is_favourite ? 'fill-[#C4897A] text-[#C4897A]' : ''}`}
+            />
+          </Button>
         </div>
 
-        {/* Meta badges - hidden in cooking mode */}
-        {!cookingMode && (
-          <div className="flex flex-wrap gap-2">
-            {recipe.total_time_minutes && (
-              <Badge variant="secondary">
-                <ClockIcon className="h-3 w-3 mr-1" />
-                {recipe.total_time_minutes} min total
-              </Badge>
-            )}
-            {recipe.prep_time_minutes && (
-              <Badge variant="outline">{recipe.prep_time_minutes} min prep</Badge>
-            )}
-            {recipe.cook_time_minutes && (
-              <Badge variant="outline">{recipe.cook_time_minutes} min cook</Badge>
-            )}
-            {recipe.rest_time_minutes && (
-              <Badge variant="outline">{recipe.rest_time_minutes} min rest</Badge>
-            )}
-            {recipe.difficulty && (
-              <Badge variant="secondary" className="capitalize">{recipe.difficulty}</Badge>
-            )}
-            {recipe.cuisine && <Badge variant="outline">{recipe.cuisine}</Badge>}
-            {recipe.course && <Badge variant="outline" className="capitalize">{recipe.course}</Badge>}
-          </div>
-        )}
+        {/* Meta badges */}
+        <div className="flex flex-wrap gap-2">
+          {recipe.total_time_minutes && (
+            <Badge variant="secondary">
+              <ClockIcon className="h-3 w-3 mr-1" />
+              {recipe.total_time_minutes} min total
+            </Badge>
+          )}
+          {recipe.prep_time_minutes && (
+            <Badge variant="outline">{recipe.prep_time_minutes} min prep</Badge>
+          )}
+          {recipe.cook_time_minutes && (
+            <Badge variant="outline">{recipe.cook_time_minutes} min cook</Badge>
+          )}
+          {recipe.rest_time_minutes && (
+            <Badge variant="outline">{recipe.rest_time_minutes} min rest</Badge>
+          )}
+          {recipe.difficulty && (
+            <Badge variant="secondary" className="capitalize">{recipe.difficulty}</Badge>
+          )}
+          {recipe.cuisine && <Badge variant="outline">{recipe.cuisine}</Badge>}
+          {recipe.course && <Badge variant="outline" className="capitalize">{recipe.course}</Badge>}
+        </div>
 
         {/* Action buttons */}
         <div className="flex flex-wrap gap-2">
-          {!cookingMode ? (
-            <>
-              <Button onClick={() => setCookingMode(true)}>
-                <ChefHatIcon className="h-4 w-4 mr-2" />
-                Cooking Mode
-              </Button>
-              <Button variant="outline" onClick={() => setStartCookingOpen(true)}>
-                <PlayIcon className="h-4 w-4 mr-2" />
-                Start Timer
-              </Button>
-              <Button variant="outline" onClick={() => setAddToPlanOpen(true)}>
-                <CalendarPlusIcon className="h-4 w-4 mr-2" />
-                Add to Plan
-              </Button>
-              <Link href={`/recipes/${id}/edit`}>
-                <Button variant="outline">
-                  <EditIcon className="h-4 w-4 mr-2" />
-                  Edit
-                </Button>
-              </Link>
-              <Button variant="outline" onClick={() => setDeleteDialogOpen(true)}>
-                <TrashIcon className="h-4 w-4 mr-2" />
-                Delete
-              </Button>
-            </>
-          ) : (
-            <Button variant="outline" onClick={() => setStartCookingOpen(true)}>
-              <PlayIcon className="h-4 w-4 mr-2" />
-              Start Timer
+          <Button onClick={() => setCookingMode(true)}>
+            <ChefHatIcon className="h-4 w-4 mr-2" />
+            Cooking Mode
+          </Button>
+          <Button variant="outline" onClick={() => setStartCookingOpen(true)}>
+            <PlayIcon className="h-4 w-4 mr-2" />
+            Start Timer
+          </Button>
+          <Button variant="outline" onClick={() => setAddToPlanOpen(true)}>
+            <CalendarPlusIcon className="h-4 w-4 mr-2" />
+            Add to Plan
+          </Button>
+          <Link href={`/recipes/${id}/edit`}>
+            <Button variant="outline">
+              <EditIcon className="h-4 w-4 mr-2" />
+              Edit
             </Button>
-          )}
+          </Link>
+          <Button variant="outline" onClick={() => setDeleteDialogOpen(true)}>
+            <TrashIcon className="h-4 w-4 mr-2" />
+            Delete
+          </Button>
         </div>
       </div>
 
@@ -340,21 +371,18 @@ export default function RecipeDetailPage() {
       {recipe.ingredients && recipe.ingredients.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className={cookingMode ? "text-2xl" : ""}>Ingredients</CardTitle>
+            <CardTitle>Ingredients</CardTitle>
           </CardHeader>
           <CardContent>
-            <ul className={cn("space-y-2", cookingMode && "space-y-3")}>
+            <ul className="space-y-2">
               {recipe.ingredients.map((ing, i) => (
-                <li key={i} className={cn(
-                  "flex gap-2",
-                  cookingMode && "text-xl py-1 border-b border-muted last:border-0"
-                )}>
-                  <span className={cn("font-medium", cookingMode ? "min-w-[5rem]" : "min-w-[4rem]")}>
+                <li key={i} className="flex gap-2">
+                  <span className="font-medium min-w-[4rem]">
                     {scaleAmount(ing.amount)} {ing.unit !== 'none' ? ing.unit : ''}
                   </span>
                   <span>
                     {ing.item}
-                    {ing.notes && !cookingMode && (
+                    {ing.notes && (
                       <span className="text-muted-foreground"> ({ing.notes})</span>
                     )}
                   </span>
@@ -369,84 +397,16 @@ export default function RecipeDetailPage() {
       {recipe.instructions && (
         <Card>
           <CardHeader>
-            <CardTitle className={cookingMode ? "text-2xl" : ""}>Instructions</CardTitle>
-            {cookingMode && steps.length > 0 && (
-              <div className="space-y-2 mt-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className={cn(
-                    completedSteps.size === steps.length
-                      ? "text-primary font-medium"
-                      : "text-muted-foreground"
-                  )}>
-                    {completedSteps.size === steps.length
-                      ? "All steps done!"
-                      : `${completedSteps.size} of ${steps.length} steps done`
-                    }
-                  </span>
-                </div>
-                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-primary transition-all duration-300"
-                    style={{ width: `${(completedSteps.size / steps.length) * 100}%` }}
-                  />
-                </div>
-              </div>
-            )}
+            <CardTitle>Instructions</CardTitle>
           </CardHeader>
           <CardContent>
-            {cookingMode ? (
-              <div className="space-y-1">
-                {steps.map((line, i) => {
-                  const isCompleted = completedSteps.has(i)
-                  return (
-                    <div
-                      key={i}
-                      role="checkbox"
-                      aria-checked={isCompleted}
-                      aria-label={`Step ${i + 1}: ${line.trim()}`}
-                      tabIndex={0}
-                      onClick={() => toggleStep(i)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault()
-                          toggleStep(i)
-                        }
-                      }}
-                      className={cn(
-                        "flex items-start gap-3 py-3 px-3 rounded-xl cursor-pointer transition-all duration-200 border-b border-muted last:border-0",
-                        "active:bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-                        isCompleted && "bg-muted/30"
-                      )}
-                    >
-                      {/* Checkbox indicator */}
-                      <div className={cn(
-                        "shrink-0 mt-0.5 h-6 w-6 rounded-full border-2 flex items-center justify-center transition-all duration-200",
-                        isCompleted
-                          ? "bg-primary border-primary"
-                          : "border-muted-foreground/40"
-                      )}>
-                        {isCompleted && <CheckIcon className="h-3.5 w-3.5 text-primary-foreground" />}
-                      </div>
-                      {/* Step text */}
-                      <span className={cn(
-                        "text-xl leading-relaxed transition-all duration-200",
-                        isCompleted && "opacity-50 line-through"
-                      )}>
-                        {line}
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
-            ) : (
-              <div className="prose prose-sm max-w-none">
-                {recipe.instructions.split('\n').map((line, i) => (
-                  <p key={i} className={line.trim() ? '' : 'h-4'}>
-                    {line}
-                  </p>
-                ))}
-              </div>
-            )}
+            <div className="prose prose-sm max-w-none">
+              {recipe.instructions.split('\n').map((line, i) => (
+                <p key={i} className={line.trim() ? '' : 'h-4'}>
+                  {line}
+                </p>
+              ))}
+            </div>
           </CardContent>
         </Card>
       )}
