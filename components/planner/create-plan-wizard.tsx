@@ -4,6 +4,7 @@ import { useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useMealPlans } from '@/hooks/use-meal-plan'
 import { useRecipes } from '@/hooks/use-recipes'
+import { RecipeImporter } from '@/components/recipes/recipe-importer'
 import { calculateTimeline } from '@/lib/timing-calculator'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -51,11 +52,12 @@ export function CreatePlanWizard() {
   const [items, setItems] = useState<WizardItem[]>([])
   const [creating, setCreating] = useState(false)
 
-  // Step 2: search + custom item
+  // Step 2: search + custom item + importer
   const [search, setSearch] = useState('')
   const [customName, setCustomName] = useState('')
   const [customCookTime, setCustomCookTime] = useState('')
   const [customMethod, setCustomMethod] = useState('oven')
+  const [importerOpen, setImporterOpen] = useState(false)
 
   // Recipe search filter
   const filteredRecipes = useMemo(() => {
@@ -119,6 +121,29 @@ export function CreatePlanWizard() {
 
   const removeItem = useCallback((id: string) => {
     setItems(prev => prev.filter(i => i.id !== id))
+  }, [])
+
+  const handleImportResult = useCallback((data: { title?: string; instructions?: string; ingredients?: Array<{ amount?: string; unit?: string; item: string; notes?: string }>; cook_time_minutes?: number; prep_time_minutes?: number; rest_time_minutes?: number }) => {
+    if (!data.title) return
+    setItems(prev => [...prev, {
+      id: generateId(),
+      name: data.title!,
+      cook_time_minutes: data.cook_time_minutes || 30,
+      prep_time_minutes: data.prep_time_minutes || 0,
+      rest_time_minutes: data.rest_time_minutes || 0,
+      cooking_method: 'oven',
+      temperature: null,
+      temperature_unit: 'C',
+      instructions: data.instructions || null,
+      recipe_id: null,
+      ingredients: data.ingredients?.map(i => ({
+        amount: i.amount || '',
+        unit: i.unit || 'none',
+        item: i.item,
+        notes: i.notes || '',
+      })) || null,
+    }])
+    setImporterOpen(false)
   }, [])
 
   // Timeline preview for Step 3
@@ -261,7 +286,7 @@ export function CreatePlanWizard() {
             />
           </div>
 
-          {/* Recipe Grid */}
+          {/* Recipe Grid (scrollable) */}
           {recipesLoading ? (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {[...Array(6)].map((_, i) => (
@@ -269,50 +294,92 @@ export function CreatePlanWizard() {
               ))}
             </div>
           ) : filteredRecipes.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {filteredRecipes.map(recipe => {
-                const isAdded = addedRecipeIds.has(recipe.id)
-                return (
-                  <button
-                    key={recipe.id}
-                    role="button"
-                    aria-pressed={isAdded}
-                    aria-label={isAdded ? `Remove ${recipe.title} from plan` : `Add ${recipe.title} to plan`}
-                    onClick={() => toggleRecipe(recipe)}
-                    className={cn(
-                      "relative text-left border-2 rounded-xl overflow-hidden transition-all duration-150",
-                      "hover:shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-                      isAdded ? "border-[#40916C]" : "border-border hover:border-primary"
-                    )}
-                  >
-                    {isAdded && (
-                      <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-[#40916C] flex items-center justify-center z-10">
-                        <CheckIcon className="h-3.5 w-3.5 text-white" />
-                      </div>
-                    )}
-                    <div className="h-20 bg-card flex items-center justify-center text-3xl">
-                      {recipe.image_url ? (
-                        <img src={recipe.image_url} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <span>🍽️</span>
-                      )}
-                    </div>
-                    <div className="p-2">
-                      <div className="font-bold text-sm leading-tight line-clamp-1">{recipe.title}</div>
-                      <div className="text-xs text-muted-foreground mt-0.5">
-                        {recipe.total_time_minutes ? `${recipe.total_time_minutes}m` : `${recipe.cook_time_minutes || 30}m`}
-                        {recipe.cuisine && ` · ${recipe.cuisine}`}
-                      </div>
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
+            <>
+              <div className="max-h-[50vh] md:max-h-[400px] overflow-y-auto border border-border rounded-xl p-3">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {filteredRecipes.map(recipe => {
+                    const isAdded = addedRecipeIds.has(recipe.id)
+                    return (
+                      <button
+                        key={recipe.id}
+                        role="button"
+                        aria-pressed={isAdded}
+                        aria-label={isAdded ? `Remove ${recipe.title} from plan` : `Add ${recipe.title} to plan`}
+                        onClick={() => toggleRecipe(recipe)}
+                        className={cn(
+                          "relative text-left border-2 rounded-xl overflow-hidden transition-all duration-150",
+                          "hover:shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                          isAdded ? "border-[#40916C]" : "border-border hover:border-primary"
+                        )}
+                      >
+                        {isAdded && (
+                          <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-[#40916C] flex items-center justify-center z-10">
+                            <CheckIcon className="h-3.5 w-3.5 text-white" />
+                          </div>
+                        )}
+                        <div className="h-20 bg-card flex items-center justify-center text-3xl">
+                          {recipe.image_url ? (
+                            <img src={recipe.image_url} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <span>🍽️</span>
+                          )}
+                        </div>
+                        <div className="p-2">
+                          <div className="font-bold text-sm leading-tight line-clamp-1">{recipe.title}</div>
+                          <div className="text-xs text-muted-foreground mt-0.5">
+                            {recipe.total_time_minutes ? `${recipe.total_time_minutes}m` : `${recipe.cook_time_minutes || 30}m`}
+                            {recipe.cuisine && ` · ${recipe.cuisine}`}
+                          </div>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+              {filteredRecipes.length > 6 && (
+                <p className="text-center text-xs text-muted-foreground -mt-2">Scroll to see all {filteredRecipes.length} recipes</p>
+              )}
+            </>
           ) : (
             <div className="text-center py-6 text-muted-foreground">
-              {search ? 'No recipes match your search' : 'No saved recipes yet. Add a custom item below!'}
+              {search ? 'No recipes match your search' : 'No saved recipes yet. Import or add a custom item below!'}
             </div>
           )}
+
+          {/* Import a new recipe */}
+          <div className="bg-card rounded-xl p-3">
+            <p className="font-bold text-sm mb-1">Import a new recipe</p>
+            <p className="text-xs text-muted-foreground mb-2">Don't see what you need? Import a recipe and add it to your plan.</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setImporterOpen(true)}
+                className="flex-1 flex flex-col items-center gap-1 py-3 border-2 border-border rounded-xl bg-background hover:border-primary transition-all"
+              >
+                <LinkIcon className="h-5 w-5 text-muted-foreground" />
+                <span className="text-xs font-semibold">From URL</span>
+              </button>
+              <button
+                onClick={() => setImporterOpen(true)}
+                className="flex-1 flex flex-col items-center gap-1 py-3 border-2 border-border rounded-xl bg-background hover:border-primary transition-all"
+              >
+                <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                <span className="text-xs font-semibold">From Image</span>
+              </button>
+              <button
+                onClick={() => setImporterOpen(true)}
+                className="flex-1 flex flex-col items-center gap-1 py-3 border-2 border-border rounded-xl bg-background hover:border-primary transition-all"
+              >
+                <CameraIcon className="h-5 w-5 text-muted-foreground" />
+                <span className="text-xs font-semibold">Take Photo</span>
+              </button>
+            </div>
+          </div>
+
+          <RecipeImporter
+            open={importerOpen}
+            onOpenChange={setImporterOpen}
+            onResult={handleImportResult}
+          />
 
           {/* Custom Item Form */}
           <div className="bg-card rounded-xl p-3">
@@ -529,6 +596,31 @@ function SearchIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+    </svg>
+  )
+}
+
+function LinkIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+    </svg>
+  )
+}
+
+function ImageIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 0 3Z" />
+    </svg>
+  )
+}
+
+function CameraIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0Z" />
     </svg>
   )
 }
