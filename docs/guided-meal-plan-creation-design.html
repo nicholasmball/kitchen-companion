@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guided Meal Plan Creation - UX Design</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #FAF6F1; --card: #F5E6D3; --card-nested: #EDD9C4; --border: #EDD9C4;
+      --text: #3D2914; --text-heading: #5C3D1E; --text-muted: #8B5A2B;
+      --primary: #D97B4A; --primary-hover: #C46A3A; --primary-fg: #FFFFFF;
+      --success: #40916C; --teal: #3D8B8B;
+      --shadow-soft: 0 4px 16px rgba(139, 90, 43, 0.12);
+    }
+    body { font-family: 'Nunito', sans-serif; background: #1a1a2e; color: var(--text); padding: 2rem; }
+    h1.page-title { color: white; text-align: center; font-size: 2rem; margin-bottom: 0.5rem; }
+    p.page-subtitle { color: #aaa; text-align: center; margin-bottom: 2rem; font-size: 0.95rem; }
+    .section-label { color: white; font-size: 1.3rem; font-weight: 700; margin: 3rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--primary); display: inline-block; }
+    .design-notes { background: #2a2a4a; color: #ccc; padding: 1rem 1.5rem; border-radius: 0.75rem; margin-bottom: 1.5rem; font-size: 0.9rem; line-height: 1.6; }
+    .design-notes strong { color: var(--primary); }
+    .design-notes code { background: #3a3a5a; padding: 2px 6px; border-radius: 4px; font-size: 0.85rem; }
+    .mockup-frame { background: var(--bg); border-radius: 1rem; overflow: hidden; box-shadow: 0 8px 24px rgba(139,90,43,0.15); margin-bottom: 2rem; }
+    .mockup-frame.desktop { max-width: 800px; margin-left: auto; margin-right: auto; }
+    .mockup-frame.mobile { max-width: 390px; margin-left: auto; margin-right: auto; }
+    .mockup-label { color: #aaa; text-align: center; font-size: 0.85rem; margin-top: 0.5rem; margin-bottom: 1.5rem; }
+    .annotation { display: inline-block; background: #2a2a4a; color: #ccc; padding: 0.3rem 0.7rem; border-radius: 0.5rem; font-size: 0.75rem; margin: 0.25rem; border: 1px solid #3a3a5a; }
+    .annotation.highlight { border-color: var(--primary); color: var(--primary); }
+
+    /* Flow diagram */
+    .flow-container { display: flex; gap: 1.5rem; flex-wrap: wrap; justify-content: center; margin: 1.5rem 0; }
+    .flow-step { background: #2a2a4a; border-radius: 0.75rem; padding: 1rem 1.25rem; width: 200px; text-align: center; }
+    .flow-step .num { background: var(--primary); color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; margin: 0 auto 0.5rem; }
+    .flow-step .title { color: white; font-weight: 700; font-size: 0.9rem; margin-bottom: 0.25rem; }
+    .flow-step .desc { color: #aaa; font-size: 0.8rem; line-height: 1.4; }
+    .flow-arrow { color: var(--primary); font-size: 1.5rem; align-self: center; }
+
+    /* ===== WIZARD COMPONENTS ===== */
+    .wizard-header { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .wizard-header h2 { font-size: 1.2rem; font-weight: 700; color: var(--text-heading); }
+    .wizard-close { background: none; border: none; font-size: 1.3rem; color: var(--text-muted); cursor: pointer; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+    .wizard-close:hover { background: var(--card); }
+
+    /* Step indicator */
+    .step-indicator { display: flex; align-items: center; justify-content: center; gap: 0; padding: 1rem 1.5rem 0.5rem; }
+    .step-dot { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; border: 2px solid var(--border); color: var(--text-muted); background: var(--bg); }
+    .step-dot.active { background: var(--primary); border-color: var(--primary); color: white; }
+    .step-dot.completed { background: var(--success); border-color: var(--success); color: white; }
+    .step-line { width: 60px; height: 2px; background: var(--border); }
+    .step-line.completed { background: var(--success); }
+    .step-labels { display: flex; justify-content: center; gap: 3.5rem; padding: 0.3rem 0 0.75rem; }
+    .step-label { font-size: 0.7rem; color: var(--text-muted); text-align: center; }
+    .step-label.active { color: var(--primary); font-weight: 600; }
+
+    /* Wizard body */
+    .wizard-body { padding: 1.25rem 1.5rem; }
+    .wizard-footer { padding: 1rem 1.5rem; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+
+    /* Buttons */
+    .btn { padding: 0.6rem 1.25rem; border-radius: 0.75rem; font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 0.9rem; cursor: pointer; border: none; transition: all 0.15s; }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-outline { background: transparent; border: 2px solid var(--border); color: var(--text); }
+    .btn-outline:hover { border-color: var(--primary); }
+    .btn-ghost { background: transparent; border: none; color: var(--text-muted); }
+    .btn-ghost:hover { color: var(--text); }
+
+    /* Form inputs */
+    .form-group { margin-bottom: 1rem; }
+    .form-label { display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 0.35rem; color: var(--text-heading); }
+    .form-input { width: 100%; padding: 0.6rem 0.75rem; border: 2px solid var(--border); border-radius: 0.75rem; font-family: 'Nunito', sans-serif; font-size: 0.95rem; background: var(--bg); color: var(--text); }
+    .form-input:focus { outline: none; border-color: var(--primary); }
+    .form-hint { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; }
+
+    /* Recipe cards grid */
+    .recipe-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-top: 0.75rem; }
+    .recipe-card { border: 2px solid var(--border); border-radius: 0.75rem; overflow: hidden; cursor: pointer; transition: all 0.15s; position: relative; }
+    .recipe-card:hover { border-color: var(--primary); box-shadow: var(--shadow-soft); }
+    .recipe-card.added { border-color: var(--success); }
+    .recipe-img { height: 80px; background: var(--card-nested); display: flex; align-items: center; justify-content: center; font-size: 2rem; }
+    .recipe-card-body { padding: 0.5rem 0.6rem; }
+    .recipe-card-title { font-weight: 700; font-size: 0.85rem; color: var(--text); line-height: 1.2; margin-bottom: 0.25rem; }
+    .recipe-card-meta { font-size: 0.7rem; color: var(--text-muted); }
+    .recipe-card-check { position: absolute; top: 0.4rem; right: 0.4rem; width: 24px; height: 24px; border-radius: 50%; background: var(--success); display: flex; align-items: center; justify-content: center; color: white; font-size: 0.75rem; font-weight: 700; }
+
+    /* Added items sidebar */
+    .added-items { background: var(--card); border-radius: 0.75rem; padding: 0.75rem; margin-top: 1rem; }
+    .added-items-title { font-weight: 700; font-size: 0.85rem; color: var(--text-heading); margin-bottom: 0.5rem; }
+    .added-item { display: flex; align-items: center; justify-content: space-between; padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+    .added-item:last-child { border-bottom: none; }
+    .added-item-name { font-weight: 600; }
+    .added-item-time { font-size: 0.75rem; color: var(--text-muted); }
+    .added-item-remove { color: var(--text-muted); cursor: pointer; font-size: 0.8rem; background: none; border: none; padding: 0.2rem; }
+    .added-item-remove:hover { color: #BB3E43; }
+
+    /* Custom item mini-form */
+    .custom-item-form { background: var(--card); border-radius: 0.75rem; padding: 0.75rem; margin-top: 0.75rem; }
+    .custom-item-form .form-row { display: flex; gap: 0.5rem; }
+    .custom-item-form .form-input { font-size: 0.85rem; padding: 0.5rem 0.6rem; }
+
+    /* Review items */
+    .review-item { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; border: 1px solid var(--border); border-radius: 0.75rem; margin-bottom: 0.5rem; }
+    .review-item-info { flex: 1; }
+    .review-item-name { font-weight: 700; font-size: 0.95rem; }
+    .review-item-times { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.15rem; }
+    .review-item-badge { background: var(--card); padding: 0.15rem 0.5rem; border-radius: 0.4rem; font-size: 0.7rem; font-weight: 600; color: var(--text-muted); }
+
+    /* Mini timeline */
+    .mini-timeline { background: var(--card); border-radius: 0.75rem; padding: 0.75rem; margin-top: 1rem; }
+    .mini-timeline-title { font-weight: 700; font-size: 0.85rem; color: var(--text-heading); margin-bottom: 0.5rem; }
+    .mini-event { display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0; font-size: 0.8rem; }
+    .mini-event-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .mini-event-dot.prep { background: var(--teal); }
+    .mini-event-dot.cook { background: var(--primary); }
+    .mini-event-dot.serve { background: var(--success); }
+    .mini-event-time { font-weight: 600; min-width: 3.5rem; color: var(--text-heading); }
+    .mini-event-desc { color: var(--text-muted); }
+
+    /* Empty state */
+    .empty-state { text-align: center; padding: 3rem 1.5rem; }
+    .empty-mascot { font-size: 4rem; margin-bottom: 1rem; }
+    .empty-headline { font-size: 1.5rem; font-weight: 800; color: var(--text-heading); margin-bottom: 0.5rem; }
+    .empty-desc { color: var(--text-muted); font-size: 0.95rem; max-width: 400px; margin: 0 auto 1.5rem; line-height: 1.5; }
+    .empty-cta { font-size: 1.1rem; padding: 0.8rem 2rem; }
+
+    /* Search bar */
+    .search-bar { position: relative; margin-bottom: 0.75rem; }
+    .search-bar input { width: 100%; padding: 0.6rem 0.75rem 0.6rem 2.2rem; border: 2px solid var(--border); border-radius: 0.75rem; font-family: 'Nunito', sans-serif; font-size: 0.9rem; background: var(--bg); }
+    .search-bar input:focus { outline: none; border-color: var(--primary); }
+    .search-icon { position: absolute; left: 0.7rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+
+  <h1 class="page-title">Guided Meal Plan Creation</h1>
+  <p class="page-subtitle">UX Design Document &mdash; Building on Requirements & Acceptance Criteria (Step 1)</p>
+
+  <!-- ===== DESIGN RATIONALE ===== -->
+  <div class="section-label">Design Rationale</div>
+  <div class="design-notes">
+    <strong>Problem:</strong> Creating a meal plan currently involves a dialog for basics, landing on an empty page, then figuring out separate buttons to add items. New users don't understand what a meal plan does or how timing works.<br><br>
+    <strong>Solution:</strong> A full-page 3-step wizard (R1) at <code>/planner/new</code> that guides users from naming to adding dishes to reviewing — all before creating the plan. This follows Hick's Law (fewer choices per step) and progressive disclosure (show what's relevant now).<br><br>
+    <strong>Key decisions:</strong><br>
+    &bull; <strong>Full-page wizard, not dialog:</strong> A wizard gives enough space for recipe cards, search, and the review timeline. Dialogs are too cramped for this.<br>
+    &bull; <strong>Step indicator:</strong> Numbered dots (1-2-3) with labels. Completed steps get a green check. Users always know where they are.<br>
+    &bull; <strong>Recipe quick-add cards:</strong> Tap a recipe card to add it — card gets a green checkmark. No intermediate confirmation. This is the "one tap to add" principle from the design guide.<br>
+    &bull; <strong>Custom item mini-form:</strong> Only 3 fields (name, cook time, method) vs the full 9-field form. Reduces friction for simple items like "Frozen peas — 5 min — hob".<br>
+    &bull; <strong>Mini timeline in Review:</strong> Shows a condensed preview of when things happen. Builds confidence that the plan makes sense before committing.<br>
+    &bull; <strong>Batch create:</strong> Nothing is persisted until "Create Plan" in Step 3. User can exit at any time without side effects.
+  </div>
+
+  <!-- ===== USER FLOW ===== -->
+  <div class="section-label">User Flow</div>
+  <div class="flow-container">
+    <div class="flow-step">
+      <div class="num">0</div>
+      <div class="title">Empty State</div>
+      <div class="desc">Mascot + "Plan your next meal" CTA</div>
+    </div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">
+      <div class="num">1</div>
+      <div class="title">What's cooking?</div>
+      <div class="desc">Name + serve time</div>
+    </div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">
+      <div class="num">2</div>
+      <div class="title">Add dishes</div>
+      <div class="desc">Recipe cards + custom items</div>
+    </div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">
+      <div class="num">3</div>
+      <div class="title">Review & go</div>
+      <div class="desc">Summary + timeline + create</div>
+    </div>
+  </div>
+
+  <!-- ===== ENHANCED EMPTY STATE ===== -->
+  <div class="section-label">Enhanced Empty State (Planner List)</div>
+  <div class="design-notes">
+    <strong>When:</strong> User has zero meal plans. The existing <code>EmptyStateWithMascot</code> is already used — we enhance the messaging and make the CTA navigate to <code>/planner/new</code>.<br>
+    <strong>Goal:</strong> Explain what meal plans do in one sentence, then get the user into the wizard.
+  </div>
+
+  <div class="mockup-frame desktop">
+    <div class="empty-state">
+      <div class="empty-mascot">&#x1F468;&#x200D;&#x1F373;</div>
+      <div class="empty-headline">Plan your next meal</div>
+      <div class="empty-desc">
+        Tell us what you're cooking and when you want to serve. We'll calculate exactly when to start each dish so everything's ready at the same time.
+      </div>
+      <button class="btn btn-primary empty-cta">Create Your First Plan</button>
+    </div>
+  </div>
+  <p class="mockup-label">Empty state &mdash; warm mascot, clear explanation, single CTA</p>
+
+  <!-- ===== STEP 1: WHAT'S COOKING? ===== -->
+  <div class="section-label">Step 1 &mdash; What's Cooking?</div>
+  <div class="design-notes">
+    <strong>Fields:</strong> Plan name (required, large input, auto-focused) + serve date/time (sensible defaults: today, 6 PM).<br>
+    <strong>Minimal friction:</strong> Only 2 fields. Description removed from creation — can be added later in edit mode. Defaults mean the user can just type a name and hit Next.
+  </div>
+
+  <div class="mockup-frame desktop">
+    <div class="wizard-header">
+      <h2>New Meal Plan</h2>
+      <button class="wizard-close">&times;</button>
+    </div>
+
+    <!-- Step indicator -->
+    <div class="step-indicator">
+      <div class="step-dot active">1</div>
+      <div class="step-line"></div>
+      <div class="step-dot">2</div>
+      <div class="step-line"></div>
+      <div class="step-dot">3</div>
+    </div>
+    <div class="step-labels">
+      <span class="step-label active">Name & Time</span>
+      <span class="step-label">Add Dishes</span>
+      <span class="step-label">Review</span>
+    </div>
+
+    <div class="wizard-body">
+      <div style="max-width: 480px; margin: 0 auto;">
+        <div class="form-group">
+          <label class="form-label">What are you making?</label>
+          <input class="form-input" type="text" placeholder="e.g. Sunday Roast, Pasta Night, BBQ" value="Sunday Roast" style="font-size: 1.1rem; padding: 0.75rem 1rem;" />
+          <p class="form-hint">Give your meal plan a name</p>
+        </div>
+
+        <div style="display: flex; gap: 0.75rem;">
+          <div class="form-group" style="flex: 1;">
+            <label class="form-label">Serve date</label>
+            <input class="form-input" type="date" value="2026-04-07" />
+          </div>
+          <div class="form-group" style="flex: 1;">
+            <label class="form-label">Serve time</label>
+            <input class="form-input" type="time" value="18:00" />
+          </div>
+        </div>
+        <p class="form-hint">We'll calculate when to start each dish so everything's ready by this time</p>
+      </div>
+    </div>
+
+    <div class="wizard-footer">
+      <button class="btn btn-ghost">Cancel</button>
+      <button class="btn btn-primary">Next: Add Dishes &rarr;</button>
+    </div>
+  </div>
+  <p class="mockup-label">Step 1 &mdash; just a name and serve time, sensible defaults</p>
+
+  <!-- ===== STEP 2: ADD DISHES ===== -->
+  <div class="section-label">Step 2 &mdash; Add Your Dishes</div>
+  <div class="design-notes">
+    <strong>Layout:</strong> Search bar at top, recipe card grid below, "Your Dishes" panel at bottom showing what's been added.<br>
+    <strong>Quick-add:</strong> Tap a recipe card → it gets a green checkmark, item added to "Your Dishes" instantly. Tap again to remove.<br>
+    <strong>Custom item:</strong> Expandable mini-form below the grid — name, cook time, method. 3 fields only.<br>
+    <strong>Empty recipes state:</strong> If user has no saved recipes, show a friendly message with option to add custom items.
+  </div>
+
+  <div class="mockup-frame desktop">
+    <div class="wizard-header">
+      <h2>New Meal Plan</h2>
+      <button class="wizard-close">&times;</button>
+    </div>
+
+    <div class="step-indicator">
+      <div class="step-dot completed">&#10003;</div>
+      <div class="step-line completed"></div>
+      <div class="step-dot active">2</div>
+      <div class="step-line"></div>
+      <div class="step-dot">3</div>
+    </div>
+    <div class="step-labels">
+      <span class="step-label">Name & Time</span>
+      <span class="step-label active">Add Dishes</span>
+      <span class="step-label">Review</span>
+    </div>
+
+    <div class="wizard-body">
+      <!-- Search -->
+      <div class="search-bar">
+        <span class="search-icon">&#x1F50D;</span>
+        <input type="text" placeholder="Search your recipes..." />
+      </div>
+
+      <!-- Recipe grid -->
+      <div class="recipe-grid">
+        <div class="recipe-card added">
+          <div class="recipe-card-check">&#10003;</div>
+          <div class="recipe-img">&#x1F357;</div>
+          <div class="recipe-card-body">
+            <div class="recipe-card-title">Roast Chicken</div>
+            <div class="recipe-card-meta">1h 30m &bull; British</div>
+          </div>
+        </div>
+        <div class="recipe-card added">
+          <div class="recipe-card-check">&#10003;</div>
+          <div class="recipe-img">&#x1F954;</div>
+          <div class="recipe-card-body">
+            <div class="recipe-card-title">Roast Potatoes</div>
+            <div class="recipe-card-meta">55m &bull; British</div>
+          </div>
+        </div>
+        <div class="recipe-card">
+          <div class="recipe-img">&#x1F966;</div>
+          <div class="recipe-card-body">
+            <div class="recipe-card-title">Steamed Broccoli</div>
+            <div class="recipe-card-meta">10m &bull; Side</div>
+          </div>
+        </div>
+        <div class="recipe-card">
+          <div class="recipe-img">&#x1F35E;</div>
+          <div class="recipe-card-body">
+            <div class="recipe-card-title">Yorkshire Puddings</div>
+            <div class="recipe-card-meta">25m &bull; British</div>
+          </div>
+        </div>
+        <div class="recipe-card">
+          <div class="recipe-img">&#x1F372;</div>
+          <div class="recipe-card-body">
+            <div class="recipe-card-title">Onion Gravy</div>
+            <div class="recipe-card-meta">20m &bull; British</div>
+          </div>
+        </div>
+        <div class="recipe-card">
+          <div class="recipe-img">&#x1F955;</div>
+          <div class="recipe-card-body">
+            <div class="recipe-card-title">Honey Glazed Carrots</div>
+            <div class="recipe-card-meta">25m &bull; Side</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add custom item -->
+      <div class="custom-item-form">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+          <span style="font-weight: 700; font-size: 0.85rem; color: var(--text-heading);">Or add a custom item</span>
+        </div>
+        <div class="form-row">
+          <input class="form-input" type="text" placeholder="Item name" style="flex: 2;" />
+          <input class="form-input" type="number" placeholder="Cook mins" style="flex: 1;" />
+          <select class="form-input" style="flex: 1;">
+            <option>Oven</option>
+            <option>Hob</option>
+            <option>Grill</option>
+            <option>Other</option>
+          </select>
+          <button class="btn btn-outline" style="padding: 0.5rem 0.75rem; font-size: 0.8rem;">Add</button>
+        </div>
+      </div>
+
+      <!-- Your dishes -->
+      <div class="added-items">
+        <div class="added-items-title">Your Dishes (2)</div>
+        <div class="added-item">
+          <div>
+            <span class="added-item-name">Roast Chicken</span>
+            <span class="added-item-time"> &mdash; 1h 30m</span>
+          </div>
+          <button class="added-item-remove">&times;</button>
+        </div>
+        <div class="added-item">
+          <div>
+            <span class="added-item-name">Roast Potatoes</span>
+            <span class="added-item-time"> &mdash; 55m</span>
+          </div>
+          <button class="added-item-remove">&times;</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="wizard-footer">
+      <button class="btn btn-outline">&larr; Back</button>
+      <button class="btn btn-primary">Next: Review &rarr;</button>
+    </div>
+  </div>
+  <p class="mockup-label">Step 2 &mdash; recipe cards with quick-add checkmarks, custom item form, "Your Dishes" panel</p>
+
+  <div style="text-align: center; margin-bottom: 2rem;">
+    <span class="annotation highlight">tap to add (green checkmark)</span>
+    <span class="annotation">search bar filters</span>
+    <span class="annotation highlight">custom item: 3 fields only</span>
+    <span class="annotation">"Your Dishes" count + remove</span>
+  </div>
+
+  <!-- ===== STEP 3: REVIEW & GO ===== -->
+  <div class="section-label">Step 3 &mdash; Review & Go</div>
+  <div class="design-notes">
+    <strong>Purpose:</strong> Confirm what's in the plan before creating. Shows items with times + a mini timeline preview.<br>
+    <strong>"Create Plan" button:</strong> Batch-creates the plan + all items, then redirects to the detail page.<br>
+    <strong>"Add More" link:</strong> Goes back to Step 2 if they forgot something.
+  </div>
+
+  <div class="mockup-frame desktop">
+    <div class="wizard-header">
+      <h2>New Meal Plan</h2>
+      <button class="wizard-close">&times;</button>
+    </div>
+
+    <div class="step-indicator">
+      <div class="step-dot completed">&#10003;</div>
+      <div class="step-line completed"></div>
+      <div class="step-dot completed">&#10003;</div>
+      <div class="step-line completed"></div>
+      <div class="step-dot active">3</div>
+    </div>
+    <div class="step-labels">
+      <span class="step-label">Name & Time</span>
+      <span class="step-label">Add Dishes</span>
+      <span class="step-label active">Review</span>
+    </div>
+
+    <div class="wizard-body">
+      <div style="display: flex; gap: 1.5rem;">
+        <!-- Left: Items -->
+        <div style="flex: 1;">
+          <h3 style="font-size: 1rem; font-weight: 700; color: var(--text-heading); margin-bottom: 0.75rem;">Sunday Roast &mdash; Serving at 6:00 PM</h3>
+
+          <div class="review-item">
+            <div class="review-item-info">
+              <div class="review-item-name">Roast Chicken</div>
+              <div class="review-item-times">10m prep &bull; 1h 20m cook &bull; 10m rest</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <span class="review-item-badge">Oven 180&deg;C</span>
+              <button class="added-item-remove">&times;</button>
+            </div>
+          </div>
+
+          <div class="review-item">
+            <div class="review-item-info">
+              <div class="review-item-name">Roast Potatoes</div>
+              <div class="review-item-times">10m prep &bull; 45m cook</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <span class="review-item-badge">Oven 220&deg;C</span>
+              <button class="added-item-remove">&times;</button>
+            </div>
+          </div>
+
+          <button class="btn btn-ghost" style="margin-top: 0.5rem; font-size: 0.85rem;">+ Add more dishes</button>
+        </div>
+
+        <!-- Right: Mini timeline -->
+        <div style="width: 260px;">
+          <div class="mini-timeline">
+            <div class="mini-timeline-title">Timeline Preview</div>
+            <div class="mini-event">
+              <div class="mini-event-dot prep"></div>
+              <span class="mini-event-time">4:20 PM</span>
+              <span class="mini-event-desc">Prep Roast Chicken</span>
+            </div>
+            <div class="mini-event">
+              <div class="mini-event-dot cook"></div>
+              <span class="mini-event-time">4:30 PM</span>
+              <span class="mini-event-desc">Oven: Roast Chicken</span>
+            </div>
+            <div class="mini-event">
+              <div class="mini-event-dot prep"></div>
+              <span class="mini-event-time">5:05 PM</span>
+              <span class="mini-event-desc">Prep Roast Potatoes</span>
+            </div>
+            <div class="mini-event">
+              <div class="mini-event-dot cook"></div>
+              <span class="mini-event-time">5:15 PM</span>
+              <span class="mini-event-desc">Oven: Roast Potatoes</span>
+            </div>
+            <div class="mini-event">
+              <div class="mini-event-dot serve"></div>
+              <span class="mini-event-time">6:00 PM</span>
+              <span class="mini-event-desc">Serve!</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="wizard-footer">
+      <button class="btn btn-outline">&larr; Back</button>
+      <button class="btn btn-primary" style="font-size: 1rem; padding: 0.7rem 1.5rem;">&#x1F37D; Create Plan</button>
+    </div>
+  </div>
+  <p class="mockup-label">Step 3 &mdash; review items + mini timeline preview + "Create Plan"</p>
+
+  <div style="text-align: center; margin-bottom: 2rem;">
+    <span class="annotation highlight">mini timeline preview</span>
+    <span class="annotation">remove items</span>
+    <span class="annotation highlight">batch create on submit</span>
+    <span class="annotation">"+ Add more" goes back to Step 2</span>
+  </div>
+
+  <!-- ===== MOBILE STEP 2 ===== -->
+  <div class="section-label">Mobile &mdash; Step 2</div>
+  <div class="design-notes">
+    <strong>Responsive:</strong> Recipe grid becomes 2 columns. "Your Dishes" panel stays at bottom. Custom item form stacks vertically. Touch targets 44px+.
+  </div>
+
+  <div class="mockup-frame mobile">
+    <div class="wizard-header" style="padding: 0.75rem 1rem;">
+      <h2 style="font-size: 1rem;">New Meal Plan</h2>
+      <button class="wizard-close" style="width: 32px; height: 32px;">&times;</button>
+    </div>
+
+    <div class="step-indicator" style="padding: 0.75rem 1rem 0.25rem;">
+      <div class="step-dot completed" style="width: 28px; height: 28px; font-size: 0.75rem;">&#10003;</div>
+      <div class="step-line" style="width: 40px;"></div>
+      <div class="step-dot active" style="width: 28px; height: 28px; font-size: 0.75rem;">2</div>
+      <div class="step-line" style="width: 40px;"></div>
+      <div class="step-dot" style="width: 28px; height: 28px; font-size: 0.75rem;">3</div>
+    </div>
+
+    <div class="wizard-body" style="padding: 0.75rem 1rem;">
+      <div class="search-bar">
+        <span class="search-icon">&#x1F50D;</span>
+        <input type="text" placeholder="Search recipes..." style="font-size: 0.85rem;" />
+      </div>
+
+      <div class="recipe-grid" style="grid-template-columns: repeat(2, 1fr); gap: 0.5rem;">
+        <div class="recipe-card added">
+          <div class="recipe-card-check" style="width: 20px; height: 20px; font-size: 0.65rem;">&#10003;</div>
+          <div class="recipe-img" style="height: 60px; font-size: 1.5rem;">&#x1F357;</div>
+          <div class="recipe-card-body" style="padding: 0.4rem 0.5rem;">
+            <div class="recipe-card-title" style="font-size: 0.8rem;">Roast Chicken</div>
+            <div class="recipe-card-meta" style="font-size: 0.65rem;">1h 30m</div>
+          </div>
+        </div>
+        <div class="recipe-card">
+          <div class="recipe-img" style="height: 60px; font-size: 1.5rem;">&#x1F954;</div>
+          <div class="recipe-card-body" style="padding: 0.4rem 0.5rem;">
+            <div class="recipe-card-title" style="font-size: 0.8rem;">Roast Potatoes</div>
+            <div class="recipe-card-meta" style="font-size: 0.65rem;">55m</div>
+          </div>
+        </div>
+        <div class="recipe-card">
+          <div class="recipe-img" style="height: 60px; font-size: 1.5rem;">&#x1F966;</div>
+          <div class="recipe-card-body" style="padding: 0.4rem 0.5rem;">
+            <div class="recipe-card-title" style="font-size: 0.8rem;">Steamed Broccoli</div>
+            <div class="recipe-card-meta" style="font-size: 0.65rem;">10m</div>
+          </div>
+        </div>
+        <div class="recipe-card">
+          <div class="recipe-img" style="height: 60px; font-size: 1.5rem;">&#x1F35E;</div>
+          <div class="recipe-card-body" style="padding: 0.4rem 0.5rem;">
+            <div class="recipe-card-title" style="font-size: 0.8rem;">Yorkshire Puds</div>
+            <div class="recipe-card-meta" style="font-size: 0.65rem;">25m</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="added-items" style="margin-top: 0.75rem;">
+        <div class="added-items-title">Your Dishes (1)</div>
+        <div class="added-item">
+          <div>
+            <span class="added-item-name">Roast Chicken</span>
+            <span class="added-item-time"> &mdash; 1h 30m</span>
+          </div>
+          <button class="added-item-remove">&times;</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="wizard-footer" style="padding: 0.75rem 1rem;">
+      <button class="btn btn-outline" style="font-size: 0.85rem; padding: 0.5rem 0.75rem;">&larr; Back</button>
+      <button class="btn btn-primary" style="font-size: 0.85rem; padding: 0.5rem 0.75rem;">Next &rarr;</button>
+    </div>
+  </div>
+  <p class="mockup-label">Mobile Step 2 &mdash; 2-column grid, large touch targets</p>
+
+  <!-- ===== COMPONENT ARCHITECTURE ===== -->
+  <div class="section-label">Component Architecture</div>
+  <div class="design-notes">
+    <strong>New route:</strong> <code>app/(main)/planner/new/page.tsx</code> — hosts the wizard<br>
+    <strong>New component:</strong> <code>components/planner/create-plan-wizard.tsx</code> — the full wizard with internal step state<br><br>
+    <strong>Internal state:</strong><br>
+    <code>step: 1 | 2 | 3</code> — current wizard step<br>
+    <code>planName: string</code> — from Step 1<br>
+    <code>serveDate: string</code> — from Step 1<br>
+    <code>serveTime: string</code> — from Step 1<br>
+    <code>selectedItems: WizardItem[]</code> — items added in Step 2 (recipe-based or custom)<br><br>
+    <strong>WizardItem type:</strong><br>
+    <code>{ name, cook_time_minutes, prep_time_minutes, rest_time_minutes, cooking_method, temperature, temperature_unit, instructions, recipe_id, ingredients }</code><br><br>
+    <strong>On "Create Plan":</strong><br>
+    1. Call <code>createMealPlan({ name, serve_time, is_active: true })</code><br>
+    2. For each item, call <code>addMealItem(planId, item)</code><br>
+    3. Navigate to <code>/planner/{planId}</code><br><br>
+    <strong>Planner list page change:</strong><br>
+    Change "Create Meal Plan" button from opening dialog → navigating to <code>/planner/new</code>
+  </div>
+
+  <!-- ===== ACCESSIBILITY ===== -->
+  <div class="section-label">Accessibility</div>
+  <div class="design-notes">
+    &bull; Step indicator: <code>aria-current="step"</code> on active step, <code>aria-label="Step 1: Name and Time"</code><br>
+    &bull; Recipe cards: <code>role="button"</code>, <code>aria-pressed={isAdded}</code>, <code>aria-label="Add Roast Chicken to plan"</code><br>
+    &bull; Form inputs: visible labels (not just placeholders), proper <code>htmlFor</code> linking<br>
+    &bull; Navigation: Back/Next buttons always visible, keyboard tab order follows visual order<br>
+    &bull; Close button: <code>aria-label="Cancel and return to planner"</code><br>
+    &bull; "Next" disabled state: includes text explaining why ("Add at least one dish to continue")<br>
+    &bull; Mini timeline: uses list semantics with <code>role="list"</code>
+  </div>
+
+</body>
+</html>

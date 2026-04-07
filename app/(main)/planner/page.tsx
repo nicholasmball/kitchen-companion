@@ -74,24 +74,28 @@ export default function PlannerPage() {
             Plan your meals so everything is ready at the same time
           </p>
         </div>
-        <Button onClick={() => setFormOpen(true)}>
-          <PlusIcon className="h-4 w-4 mr-2" />
-          New Plan
-        </Button>
+        <Link href="/planner/new">
+          <Button>
+            <PlusIcon className="h-4 w-4 mr-2" />
+            New Plan
+          </Button>
+        </Link>
       </div>
 
       {/* Plans List */}
       {mealPlans.length === 0 ? (
         <Card className="border-dashed">
-          <CardContent className="py-6">
+          <CardContent className="py-8">
             <EmptyStateWithMascot
-              title="No meals planned yet"
-              message="What shall we cook? Create your first meal plan to start timing your dishes perfectly."
+              title="Plan your next meal"
+              message="Tell us what you're cooking and when you want to serve. We'll calculate exactly when to start each dish so everything's ready at the same time."
               action={
-                <Button onClick={() => setFormOpen(true)}>
-                  <PlusIcon className="h-4 w-4 mr-2" />
-                  Create Meal Plan
-                </Button>
+                <Link href="/planner/new">
+                  <Button size="lg">
+                    <PlusIcon className="h-4 w-4 mr-2" />
+                    Create Your First Plan
+                  </Button>
+                </Link>
               }
             />
           </CardContent>
