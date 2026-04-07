@@ -1,5 +1,6 @@
 // Re-export database types
 export * from './database'
+import type { Ingredient } from './database'
 
 // Timeline event types for the meal planner
 export type TimelineEventType =
