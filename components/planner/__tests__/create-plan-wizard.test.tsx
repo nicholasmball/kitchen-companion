@@ -156,8 +156,11 @@ describe('CreatePlanWizard', () => {
       expect(screen.queryByText('Roast Chicken')).toBeNull()
     })
 
-    it('adds a custom item', () => {
+    it('adds a custom item after expanding the form', () => {
       goToStep2()
+
+      // Custom form is collapsed — expand it
+      fireEvent.click(screen.getByText('+ Add a custom item without a recipe'))
 
       fireEvent.change(screen.getByLabelText('Custom item name'), { target: { value: 'Frozen Peas' } })
       fireEvent.change(screen.getByLabelText('Cook time in minutes'), { target: { value: '5' } })

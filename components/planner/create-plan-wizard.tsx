@@ -58,6 +58,7 @@ export function CreatePlanWizard() {
   const [customCookTime, setCustomCookTime] = useState('')
   const [customMethod, setCustomMethod] = useState('oven')
   const [importerOpen, setImporterOpen] = useState(false)
+  const [showCustomForm, setShowCustomForm] = useState(false)
 
   // Recipe search filter
   const filteredRecipes = useMemo(() => {
@@ -346,34 +347,20 @@ export function CreatePlanWizard() {
             </div>
           )}
 
-          {/* Import a new recipe */}
-          <div className="bg-card rounded-xl p-3">
-            <p className="font-bold text-sm mb-1">Import a new recipe</p>
-            <p className="text-xs text-muted-foreground mb-2">Don't see what you need? Import a recipe and add it to your plan.</p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setImporterOpen(true)}
-                className="flex-1 flex flex-col items-center gap-1 py-3 border-2 border-border rounded-xl bg-background hover:border-primary transition-all"
-              >
-                <LinkIcon className="h-5 w-5 text-muted-foreground" />
-                <span className="text-xs font-semibold">From URL</span>
-              </button>
-              <button
-                onClick={() => setImporterOpen(true)}
-                className="flex-1 flex flex-col items-center gap-1 py-3 border-2 border-border rounded-xl bg-background hover:border-primary transition-all"
-              >
-                <ImageIcon className="h-5 w-5 text-muted-foreground" />
-                <span className="text-xs font-semibold">From Image</span>
-              </button>
-              <button
-                onClick={() => setImporterOpen(true)}
-                className="flex-1 flex flex-col items-center gap-1 py-3 border-2 border-border rounded-xl bg-background hover:border-primary transition-all"
-              >
-                <CameraIcon className="h-5 w-5 text-muted-foreground" />
-                <span className="text-xs font-semibold">Take Photo</span>
-              </button>
+          {/* Import a recipe — prominent card */}
+          <button
+            onClick={() => setImporterOpen(true)}
+            className="w-full flex items-center gap-3 p-3 md:p-4 border-2 border-primary rounded-xl bg-primary/5 hover:bg-primary/10 hover:shadow-soft transition-all text-left"
+          >
+            <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-primary flex items-center justify-center flex-shrink-0">
+              <ImportIcon className="h-5 w-5 md:h-6 md:w-6 text-primary-foreground" />
             </div>
-          </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-sm">Import a recipe</p>
+              <p className="text-xs text-muted-foreground">Paste a URL or upload a photo to add it to your plan</p>
+            </div>
+            <ChevronRightIcon className="h-5 w-5 text-primary flex-shrink-0" />
+          </button>
 
           <RecipeImporter
             open={importerOpen}
@@ -381,50 +368,64 @@ export function CreatePlanWizard() {
             onResult={handleImportResult}
           />
 
-          {/* Custom Item Form */}
-          <div className="bg-card rounded-xl p-3">
-            <p className="font-bold text-sm mb-2">Or add a custom item</p>
-            <div className="flex gap-2">
-              <Input
-                type="text"
-                placeholder="Item name"
-                value={customName}
-                onChange={(e) => setCustomName(e.target.value)}
-                className="flex-[2]"
-                aria-label="Custom item name"
-              />
-              <Input
-                type="number"
-                placeholder="Cook mins"
-                value={customCookTime}
-                onChange={(e) => setCustomCookTime(e.target.value)}
-                className="flex-1"
-                min="1"
-                aria-label="Cook time in minutes"
-              />
-              <select
-                value={customMethod}
-                onChange={(e) => setCustomMethod(e.target.value)}
-                className="flex-1 rounded-md border border-border bg-background px-2 text-sm"
-                aria-label="Cooking method"
-              >
-                <option value="oven">Oven</option>
-                <option value="hob">Hob</option>
-                <option value="grill">Grill</option>
-                <option value="microwave">Microwave</option>
-                <option value="air_fryer">Air Fryer</option>
-                <option value="other">Other</option>
-              </select>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={addCustomItem}
-                disabled={!customName.trim() || !customCookTime || parseInt(customCookTime) <= 0}
-              >
-                Add
-              </Button>
+          {/* Custom item — collapsed toggle */}
+          {!showCustomForm ? (
+            <button
+              onClick={() => setShowCustomForm(true)}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              + Add a custom item without a recipe
+            </button>
+          ) : (
+            <div className="bg-card rounded-xl p-3">
+              <div className="flex items-center justify-between mb-2">
+                <p className="font-bold text-sm">Custom item</p>
+                <button onClick={() => setShowCustomForm(false)} className="text-muted-foreground hover:text-foreground">
+                  <XIcon className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  placeholder="Item name"
+                  value={customName}
+                  onChange={(e) => setCustomName(e.target.value)}
+                  className="flex-[2]"
+                  aria-label="Custom item name"
+                />
+                <Input
+                  type="number"
+                  placeholder="Cook mins"
+                  value={customCookTime}
+                  onChange={(e) => setCustomCookTime(e.target.value)}
+                  className="flex-1"
+                  min="1"
+                  aria-label="Cook time in minutes"
+                />
+                <select
+                  value={customMethod}
+                  onChange={(e) => setCustomMethod(e.target.value)}
+                  className="flex-1 rounded-md border border-border bg-background px-2 text-sm"
+                  aria-label="Cooking method"
+                >
+                  <option value="oven">Oven</option>
+                  <option value="hob">Hob</option>
+                  <option value="grill">Grill</option>
+                  <option value="microwave">Microwave</option>
+                  <option value="air_fryer">Air Fryer</option>
+                  <option value="other">Other</option>
+                </select>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={addCustomItem}
+                  disabled={!customName.trim() || !customCookTime || parseInt(customCookTime) <= 0}
+                >
+                  Add
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Your Dishes */}
           {items.length > 0 && (
@@ -600,27 +601,18 @@ function SearchIcon({ className }: { className?: string }) {
   )
 }
 
-function LinkIcon({ className }: { className?: string }) {
+function ImportIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z" />
     </svg>
   )
 }
 
-function ImageIcon({ className }: { className?: string }) {
+function ChevronRightIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 0 3Z" />
-    </svg>
-  )
-}
-
-function CameraIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0Z" />
+    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
     </svg>
   )
 }

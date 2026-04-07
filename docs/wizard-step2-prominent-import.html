@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wizard Step 2 - Prominent Import</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #FAF6F1; --card: #F5E6D3; --card-nested: #EDD9C4; --border: #EDD9C4;
+      --text: #3D2914; --text-heading: #5C3D1E; --text-muted: #8B5A2B;
+      --primary: #D97B4A; --primary-hover: #C46A3A; --primary-fg: #FFFFFF;
+      --success: #40916C; --teal: #3D8B8B;
+    }
+    body { font-family: 'Nunito', sans-serif; background: #1a1a2e; color: var(--text); padding: 2rem; }
+    h1.page-title { color: white; text-align: center; font-size: 2rem; margin-bottom: 0.5rem; }
+    p.page-subtitle { color: #aaa; text-align: center; margin-bottom: 2rem; font-size: 0.95rem; }
+    .section-label { color: white; font-size: 1.3rem; font-weight: 700; margin: 3rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--primary); display: inline-block; }
+    .design-notes { background: #2a2a4a; color: #ccc; padding: 1rem 1.5rem; border-radius: 0.75rem; margin-bottom: 1.5rem; font-size: 0.9rem; line-height: 1.6; }
+    .design-notes strong { color: var(--primary); }
+    .design-notes code { background: #3a3a5a; padding: 2px 6px; border-radius: 4px; font-size: 0.85rem; }
+    .mockup-frame { background: var(--bg); border-radius: 1rem; overflow: hidden; box-shadow: 0 8px 24px rgba(139,90,43,0.15); margin-bottom: 2rem; }
+    .mockup-frame.desktop { max-width: 800px; margin-left: auto; margin-right: auto; }
+    .mockup-frame.mobile { max-width: 390px; margin-left: auto; margin-right: auto; }
+    .mockup-label { color: #aaa; text-align: center; font-size: 0.85rem; margin-top: 0.5rem; margin-bottom: 1.5rem; }
+    .annotation { display: inline-block; background: #2a2a4a; color: #ccc; padding: 0.3rem 0.7rem; border-radius: 0.5rem; font-size: 0.75rem; margin: 0.25rem; border: 1px solid #3a3a5a; }
+    .annotation.highlight { border-color: var(--primary); color: var(--primary); }
+
+    /* Wizard chrome */
+    .wizard-header { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .wizard-header h2 { font-size: 1.2rem; font-weight: 700; color: var(--text-heading); }
+    .wizard-close { background: none; border: none; font-size: 1.3rem; color: var(--text-muted); cursor: pointer; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+    .step-indicator { display: flex; align-items: center; justify-content: center; gap: 0; padding: 1rem 1.5rem 0.25rem; }
+    .step-dot { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; border: 2px solid var(--border); color: var(--text-muted); background: var(--bg); }
+    .step-dot.active { background: var(--primary); border-color: var(--primary); color: white; }
+    .step-dot.completed { background: var(--success); border-color: var(--success); color: white; }
+    .step-line { width: 60px; height: 2px; background: var(--border); }
+    .step-line.completed { background: var(--success); }
+    .step-labels { display: flex; justify-content: center; gap: 3.5rem; padding: 0.3rem 0 0.5rem; }
+    .step-label { font-size: 0.7rem; color: var(--text-muted); }
+    .step-label.active { color: var(--primary); font-weight: 600; }
+    .wizard-body { padding: 1rem 1.5rem; }
+    .wizard-footer { padding: 1rem 1.5rem; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .btn { padding: 0.6rem 1.25rem; border-radius: 0.75rem; font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 0.9rem; cursor: pointer; border: none; transition: all 0.15s; }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-outline { background: transparent; border: 2px solid var(--border); color: var(--text); }
+
+    /* Search */
+    .search-bar { position: relative; margin-bottom: 0.75rem; }
+    .search-bar input { width: 100%; padding: 0.6rem 0.75rem 0.6rem 2.2rem; border: 2px solid var(--border); border-radius: 0.75rem; font-family: 'Nunito', sans-serif; font-size: 0.9rem; background: var(--bg); }
+    .search-icon { position: absolute; left: 0.7rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.9rem; }
+
+    /* Grid */
+    .recipe-grid-container { max-height: 400px; overflow-y: auto; border: 1px solid var(--border); border-radius: 0.75rem; padding: 0.75rem; margin-bottom: 0.5rem; }
+    .recipe-grid-container::-webkit-scrollbar { width: 6px; }
+    .recipe-grid-container::-webkit-scrollbar-thumb { background: var(--card-nested); border-radius: 3px; }
+    .recipe-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+    .recipe-card { border: 2px solid var(--border); border-radius: 0.75rem; overflow: hidden; cursor: pointer; transition: all 0.15s; position: relative; }
+    .recipe-card:hover { border-color: var(--primary); box-shadow: 0 4px 16px rgba(139,90,43,0.12); }
+    .recipe-card.added { border-color: var(--success); }
+    .recipe-img { height: 80px; background: var(--card-nested); display: flex; align-items: center; justify-content: center; font-size: 2rem; }
+    .recipe-card-body { padding: 0.5rem 0.6rem; }
+    .recipe-card-title { font-weight: 700; font-size: 0.85rem; color: var(--text); line-height: 1.2; margin-bottom: 0.25rem; }
+    .recipe-card-meta { font-size: 0.7rem; color: var(--text-muted); }
+    .recipe-card-check { position: absolute; top: 0.4rem; right: 0.4rem; width: 24px; height: 24px; border-radius: 50%; background: var(--success); display: flex; align-items: center; justify-content: center; color: white; font-size: 0.75rem; font-weight: 700; }
+    .scroll-hint { text-align: center; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.75rem; }
+
+    /* ===== IMPORT CARD (same visual weight as recipe grid) ===== */
+    .import-card {
+      border: 2px solid var(--primary);
+      border-radius: 0.75rem;
+      background: linear-gradient(135deg, rgba(217,123,74,0.08), rgba(217,123,74,0.02));
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      margin-bottom: 0.75rem;
+    }
+    .import-card:hover {
+      background: linear-gradient(135deg, rgba(217,123,74,0.14), rgba(217,123,74,0.06));
+      box-shadow: 0 4px 16px rgba(139,90,43,0.12);
+    }
+    .import-card-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      flex-shrink: 0;
+    }
+    .import-card-text h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-heading);
+      margin-bottom: 0.15rem;
+    }
+    .import-card-text p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.3;
+    }
+    .import-card-arrow {
+      margin-left: auto;
+      color: var(--primary);
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+
+    /* Your dishes */
+    .added-items { background: var(--card); border-radius: 0.75rem; padding: 0.75rem; }
+    .added-items-title { font-weight: 700; font-size: 0.85rem; color: var(--text-heading); margin-bottom: 0.5rem; }
+    .added-item { display: flex; align-items: center; justify-content: space-between; padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+    .added-item:last-child { border-bottom: none; }
+    .added-item-name { font-weight: 600; }
+    .added-item-time { font-size: 0.75rem; color: var(--text-muted); }
+    .added-item-remove { color: var(--text-muted); cursor: pointer; font-size: 0.8rem; background: none; border: none; }
+
+    /* Collapsed custom item */
+    .custom-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.5rem 0;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      background: none;
+      border: none;
+      font-family: 'Nunito', sans-serif;
+      margin-bottom: 0.5rem;
+    }
+    .custom-toggle:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+
+  <h1 class="page-title">Prominent Import Button</h1>
+  <p class="page-subtitle">Import elevated to a card with visual weight. Custom item demoted to a text link.</p>
+
+  <div class="section-label">Rationale</div>
+  <div class="design-notes">
+    <strong>Hierarchy change:</strong><br>
+    1. <strong>Recipe grid</strong> &mdash; primary action, most common path<br>
+    2. <strong>Import card</strong> &mdash; elevated to a styled card with primary border, icon, and arrow. Same visual language as the recipe grid but distinct. Clearly says what it does.<br>
+    3. <strong>Custom item</strong> &mdash; demoted to a collapsed text link ("+ Add a custom item without a recipe"). Clicking expands the mini-form. Out of the way, but accessible if needed.<br><br>
+    <strong>Why a card:</strong> The import button now has the same visual weight as the recipe cards. It looks like a first-class option, not an afterthought. The primary-coloured border and icon make it stand out without being obnoxious. The arrow hints that clicking opens a dialog.<br><br>
+    <strong>Why demote custom items:</strong> If it won't be used, it shouldn't take up prime real estate. A text link is enough &mdash; power users who need it will find it, and it doesn't distract everyone else.
+  </div>
+
+  <!-- ===== DESKTOP ===== -->
+  <div class="section-label">Desktop</div>
+
+  <div class="mockup-frame desktop">
+    <div class="wizard-header">
+      <h2>New Meal Plan</h2>
+      <button class="wizard-close">&times;</button>
+    </div>
+
+    <div class="step-indicator">
+      <div class="step-dot completed">&#10003;</div>
+      <div class="step-line completed"></div>
+      <div class="step-dot active">2</div>
+      <div class="step-line"></div>
+      <div class="step-dot">3</div>
+    </div>
+    <div class="step-labels">
+      <span class="step-label">Name & Time</span>
+      <span class="step-label active">Add Dishes</span>
+      <span class="step-label">Review</span>
+    </div>
+
+    <div class="wizard-body">
+      <div class="search-bar">
+        <span class="search-icon">&#x1F50D;</span>
+        <input type="text" placeholder="Search your recipes..." />
+      </div>
+
+      <div class="recipe-grid-container" style="max-height: 300px;">
+        <div class="recipe-grid">
+          <div class="recipe-card added">
+            <div class="recipe-card-check">&#10003;</div>
+            <div class="recipe-img">&#x1F357;</div>
+            <div class="recipe-card-body">
+              <div class="recipe-card-title">Classic Roast Chicken</div>
+              <div class="recipe-card-meta">117m &bull; British</div>
+            </div>
+          </div>
+          <div class="recipe-card">
+            <div class="recipe-img">&#x1F954;</div>
+            <div class="recipe-card-body">
+              <div class="recipe-card-title">Ultimate Roast Potatoes</div>
+              <div class="recipe-card-meta">70m &bull; British</div>
+            </div>
+          </div>
+          <div class="recipe-card added">
+            <div class="recipe-card-check">&#10003;</div>
+            <div class="recipe-img">&#x1F966;</div>
+            <div class="recipe-card-body">
+              <div class="recipe-card-title">Roasted Vegetables</div>
+              <div class="recipe-card-meta">60m</div>
+            </div>
+          </div>
+          <div class="recipe-card">
+            <div class="recipe-img">&#x1F9C0;</div>
+            <div class="recipe-card-body">
+              <div class="recipe-card-title">Cauliflower Cheese</div>
+              <div class="recipe-card-meta">90m &bull; British</div>
+            </div>
+          </div>
+          <div class="recipe-card">
+            <div class="recipe-img">&#x1F372;</div>
+            <div class="recipe-card-body">
+              <div class="recipe-card-title">Turkey Meatballs</div>
+              <div class="recipe-card-meta">30m &bull; Italian</div>
+            </div>
+          </div>
+          <div class="recipe-card">
+            <div class="recipe-img">&#x1F357;</div>
+            <div class="recipe-card-body">
+              <div class="recipe-card-title">Ultimate Roast Chicken</div>
+              <div class="recipe-card-meta">100m &bull; British</div>
+            </div>
+          </div>
+          <div class="recipe-card">
+            <div class="recipe-img">&#x1F35E;</div>
+            <div class="recipe-card-body">
+              <div class="recipe-card-title">Yorkshire Puddings</div>
+              <div class="recipe-card-meta">25m &bull; British</div>
+            </div>
+          </div>
+          <div class="recipe-card">
+            <div class="recipe-img">&#x1F955;</div>
+            <div class="recipe-card-body">
+              <div class="recipe-card-title">Honey Glazed Carrots</div>
+              <div class="recipe-card-meta">25m &bull; Side</div>
+            </div>
+          </div>
+          <div class="recipe-card">
+            <div class="recipe-img">&#x1F372;</div>
+            <div class="recipe-card-body">
+              <div class="recipe-card-title">Onion Gravy</div>
+              <div class="recipe-card-meta">20m &bull; British</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="scroll-hint">&#8595; Scroll to see all 9 recipes</div>
+
+      <!-- Import card -->
+      <div class="import-card">
+        <div class="import-card-icon">&#x1F4E5;</div>
+        <div class="import-card-text">
+          <h3>Import a recipe</h3>
+          <p>Paste a URL or upload a photo of a recipe to add it to your plan</p>
+        </div>
+        <span class="import-card-arrow">&rsaquo;</span>
+      </div>
+
+      <!-- Collapsed custom item link -->
+      <button class="custom-toggle">+ Add a custom item without a recipe</button>
+
+      <!-- Your dishes -->
+      <div class="added-items">
+        <div class="added-items-title">Your Dishes (2)</div>
+        <div class="added-item">
+          <div>
+            <span class="added-item-name">Classic Roast Chicken</span>
+            <span class="added-item-time"> &mdash; 117m</span>
+          </div>
+          <button class="added-item-remove">&times;</button>
+        </div>
+        <div class="added-item">
+          <div>
+            <span class="added-item-name">Roasted Vegetables</span>
+            <span class="added-item-time"> &mdash; 60m</span>
+          </div>
+          <button class="added-item-remove">&times;</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="wizard-footer">
+      <button class="btn btn-outline">&larr; Back</button>
+      <button class="btn btn-primary">Next: Review &rarr;</button>
+    </div>
+  </div>
+  <p class="mockup-label">Desktop &mdash; import card with visual weight, custom item collapsed to text link</p>
+
+  <div style="text-align: center; margin-bottom: 2rem;">
+    <span class="annotation highlight">import card: primary border + icon + arrow</span>
+    <span class="annotation">custom item: text link (expandable)</span>
+    <span class="annotation highlight">clear hierarchy: grid > import > custom</span>
+  </div>
+
+  <!-- ===== MOBILE ===== -->
+  <div class="section-label">Mobile</div>
+
+  <div class="mockup-frame mobile">
+    <div class="wizard-header" style="padding: 0.75rem 1rem;">
+      <h2 style="font-size: 1rem;">New Meal Plan</h2>
+      <button class="wizard-close" style="width: 32px; height: 32px;">&times;</button>
+    </div>
+
+    <div class="step-indicator" style="padding: 0.75rem 1rem 0.25rem;">
+      <div class="step-dot completed" style="width: 28px; height: 28px; font-size: 0.75rem;">&#10003;</div>
+      <div class="step-line" style="width: 40px;"></div>
+      <div class="step-dot active" style="width: 28px; height: 28px; font-size: 0.75rem;">2</div>
+      <div class="step-line" style="width: 40px;"></div>
+      <div class="step-dot" style="width: 28px; height: 28px; font-size: 0.75rem;">3</div>
+    </div>
+
+    <div class="wizard-body" style="padding: 0.75rem 1rem;">
+      <div class="search-bar">
+        <span class="search-icon">&#x1F50D;</span>
+        <input type="text" placeholder="Search recipes..." style="font-size: 0.85rem;" />
+      </div>
+
+      <div class="recipe-grid-container" style="max-height: 240px;">
+        <div class="recipe-grid" style="grid-template-columns: repeat(2, 1fr); gap: 0.5rem;">
+          <div class="recipe-card added">
+            <div class="recipe-card-check" style="width: 20px; height: 20px; font-size: 0.65rem;">&#10003;</div>
+            <div class="recipe-img" style="height: 60px; font-size: 1.5rem;">&#x1F357;</div>
+            <div class="recipe-card-body" style="padding: 0.4rem 0.5rem;">
+              <div class="recipe-card-title" style="font-size: 0.8rem;">Classic Roast Chicken</div>
+              <div class="recipe-card-meta" style="font-size: 0.65rem;">117m &bull; British</div>
+            </div>
+          </div>
+          <div class="recipe-card">
+            <div class="recipe-img" style="height: 60px; font-size: 1.5rem;">&#x1F954;</div>
+            <div class="recipe-card-body" style="padding: 0.4rem 0.5rem;">
+              <div class="recipe-card-title" style="font-size: 0.8rem;">Roast Potatoes</div>
+              <div class="recipe-card-meta" style="font-size: 0.65rem;">70m</div>
+            </div>
+          </div>
+          <div class="recipe-card">
+            <div class="recipe-img" style="height: 60px; font-size: 1.5rem;">&#x1F966;</div>
+            <div class="recipe-card-body" style="padding: 0.4rem 0.5rem;">
+              <div class="recipe-card-title" style="font-size: 0.8rem;">Roasted Veg</div>
+              <div class="recipe-card-meta" style="font-size: 0.65rem;">60m</div>
+            </div>
+          </div>
+          <div class="recipe-card">
+            <div class="recipe-img" style="height: 60px; font-size: 1.5rem;">&#x1F9C0;</div>
+            <div class="recipe-card-body" style="padding: 0.4rem 0.5rem;">
+              <div class="recipe-card-title" style="font-size: 0.8rem;">Cauliflower Cheese</div>
+              <div class="recipe-card-meta" style="font-size: 0.65rem;">90m</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="scroll-hint" style="font-size: 0.7rem;">&#8595; Scroll for more</div>
+
+      <!-- Import card - mobile -->
+      <div class="import-card" style="padding: 0.75rem 1rem; gap: 0.75rem;">
+        <div class="import-card-icon" style="width: 40px; height: 40px; border-radius: 10px; font-size: 1.1rem;">&#x1F4E5;</div>
+        <div class="import-card-text">
+          <h3 style="font-size: 0.9rem;">Import a recipe</h3>
+          <p style="font-size: 0.75rem;">From URL or photo</p>
+        </div>
+        <span class="import-card-arrow">&rsaquo;</span>
+      </div>
+
+      <button class="custom-toggle" style="font-size: 0.75rem;">+ Add a custom item</button>
+
+      <div class="added-items">
+        <div class="added-items-title">Your Dishes (1)</div>
+        <div class="added-item">
+          <div>
+            <span class="added-item-name">Classic Roast Chicken</span>
+            <span class="added-item-time"> &mdash; 117m</span>
+          </div>
+          <button class="added-item-remove">&times;</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="wizard-footer" style="padding: 0.75rem 1rem;">
+      <button class="btn btn-outline" style="font-size: 0.85rem; padding: 0.5rem 0.75rem;">&larr; Back</button>
+      <button class="btn btn-primary" style="font-size: 0.85rem; padding: 0.5rem 0.75rem;">Next &rarr;</button>
+    </div>
+  </div>
+  <p class="mockup-label">Mobile &mdash; compact import card, custom item as text link</p>
+
+</body>
+</html>
