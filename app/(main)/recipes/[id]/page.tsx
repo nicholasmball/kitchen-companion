@@ -40,8 +40,6 @@ export default function RecipeDetailPage() {
   const [startingCooking, setStartingCooking] = useState(false)
   const [addToPlanOpen, setAddToPlanOpen] = useState(false)
   const [cookingMode, setCookingMode] = useState(false)
-  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set())
-  const [checkedIngredients, setCheckedIngredients] = useState<Set<number>>(new Set())
   const [serveTime, setServeTime] = useState(() => {
     // Default to 1 hour from now, rounded to nearest 15 minutes
     const now = new Date()
@@ -153,34 +151,8 @@ export default function RecipeDetailPage() {
     }
   }
 
-  const toggleStep = useCallback((index: number) => {
-    setCompletedSteps(prev => {
-      const next = new Set(prev)
-      if (next.has(index)) {
-        next.delete(index)
-      } else {
-        next.add(index)
-      }
-      return next
-    })
-  }, [])
-
-  const toggleIngredient = useCallback((index: number) => {
-    setCheckedIngredients(prev => {
-      const next = new Set(prev)
-      if (next.has(index)) {
-        next.delete(index)
-      } else {
-        next.add(index)
-      }
-      return next
-    })
-  }, [])
-
   const exitCookingMode = useCallback(() => {
     setCookingMode(false)
-    setCompletedSteps(new Set())
-    setCheckedIngredients(new Set())
   }, [])
 
   if (loading) {
@@ -214,10 +186,6 @@ export default function RecipeDetailPage() {
           recipe={recipe}
           servings={servings}
           onServingsChange={setServings}
-          completedSteps={completedSteps}
-          onToggleStep={toggleStep}
-          checkedIngredients={checkedIngredients}
-          onToggleIngredient={toggleIngredient}
           onExit={exitCookingMode}
           onStartTimer={() => setStartCookingOpen(true)}
           scaleAmount={scaleAmount}
