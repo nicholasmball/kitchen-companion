@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { TimelineRecipeSheet } from '@/components/planner/timeline-recipe-sheet'
 import { cn } from '@/lib/utils'
 import type { TimelineEvent, TimelineEventType } from '@/types'
 import { getTimeUntil, formatTimeUntil, getEventColor } from '@/lib/timing-calculator'
@@ -11,15 +10,15 @@ import { getTimeUntil, formatTimeUntil, getEventColor } from '@/lib/timing-calcu
 interface TimelineViewProps {
   events: TimelineEvent[]
   serveTime: Date
+  onEventClick?: (event: TimelineEvent) => void
 }
 
 function isClickableEvent(event: TimelineEvent): boolean {
   return event.type !== 'serve' && !!event.instructions
 }
 
-export function TimelineView({ events, serveTime }: TimelineViewProps) {
+export function TimelineView({ events, serveTime, onEventClick }: TimelineViewProps) {
   const [now, setNow] = useState(new Date())
-  const [selectedEvent, setSelectedEvent] = useState<TimelineEvent | null>(null)
 
   // Update current time every second
   useEffect(() => {
@@ -79,22 +78,22 @@ export function TimelineView({ events, serveTime }: TimelineViewProps) {
 
                     {/* Event card */}
                     <div
-                      role={clickable ? 'button' : undefined}
-                      tabIndex={clickable ? 0 : undefined}
-                      aria-label={clickable ? `View recipe details for ${event.description}` : undefined}
-                      onClick={clickable ? () => setSelectedEvent(event) : undefined}
-                      onKeyDown={clickable ? (e) => {
+                      role={clickable && onEventClick ? 'button' : undefined}
+                      tabIndex={clickable && onEventClick ? 0 : undefined}
+                      aria-label={clickable && onEventClick ? `View recipe details for ${event.description}` : undefined}
+                      onClick={clickable && onEventClick ? () => onEventClick(event) : undefined}
+                      onKeyDown={clickable && onEventClick ? (e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault()
-                          setSelectedEvent(event)
+                          onEventClick(event)
                         }
                       } : undefined}
                       className={cn(
                         "p-3 rounded-lg border",
                         isNext ? 'border-primary bg-primary/5' : '',
                         getEventColor(event.type),
-                        clickable && "cursor-pointer transition-all duration-150 hover:border-primary hover:shadow-soft hover:translate-x-0.5",
-                        clickable && "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                        clickable && onEventClick && "cursor-pointer transition-all duration-150 hover:border-primary hover:shadow-soft hover:translate-x-0.5",
+                        clickable && onEventClick && "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                       )}
                     >
                       <div className="flex items-start justify-between gap-2">
@@ -118,7 +117,7 @@ export function TimelineView({ events, serveTime }: TimelineViewProps) {
                               {isPast ? 'Done' : formatTimeUntil(event.time)}
                             </div>
                           </div>
-                          {clickable && (
+                          {clickable && onEventClick && (
                             <ChevronRightIcon className="h-4 w-4 text-muted-foreground/60" />
                           )}
                         </div>
@@ -131,18 +130,6 @@ export function TimelineView({ events, serveTime }: TimelineViewProps) {
           </div>
         </CardContent>
       </Card>
-
-      {/* Recipe detail sheet */}
-      <TimelineRecipeSheet
-        open={!!selectedEvent}
-        onOpenChange={(open) => {
-          if (!open) setSelectedEvent(null)
-        }}
-        mealItemName={selectedEvent?.mealItemName || ''}
-        eventType={selectedEvent?.type || 'prep_start'}
-        ingredients={selectedEvent?.ingredients || null}
-        instructions={selectedEvent?.instructions || null}
-      />
     </>
   )
 }

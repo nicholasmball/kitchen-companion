@@ -11,6 +11,7 @@ import { TimelineView } from '@/components/planner/timeline-view'
 import { TimerDisplay } from '@/components/planner/timer-display'
 import { NotificationPrompt } from '@/components/planner/notification-prompt'
 import { AddRecipeToPlan } from '@/components/planner/add-recipe-to-plan'
+import { PlannerRecipeSheet } from '@/components/planner/planner-recipe-sheet'
 import { calculateTimeline } from '@/lib/timing-calculator'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -23,7 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import type { MealItem, MealPlanInsert, MealItemInsert } from '@/types'
+import type { MealItem, MealPlanInsert, MealItemInsert, TimelineEvent, TimelineEventType } from '@/types'
 
 interface MealPlanWithItems {
   id: string
@@ -56,22 +57,23 @@ export default function MealPlanDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Step completion state for all meal items (keyed by item ID)
-  const [completedPlanSteps, setCompletedPlanSteps] = useState<Map<string, Set<number>>>(new Map())
+  // Shared recipe sheet state (used by both item card clicks and timeline event clicks)
+  const [recipeSheetItem, setRecipeSheetItem] = useState<MealItem | null>(null)
+  const [recipeSheetEventType, setRecipeSheetEventType] = useState<TimelineEventType | null>(null)
 
-  const togglePlanStep = useCallback((itemId: string, stepIndex: number) => {
-    setCompletedPlanSteps(prev => {
-      const next = new Map(prev)
-      const itemSteps = new Set(prev.get(itemId) || [])
-      if (itemSteps.has(stepIndex)) {
-        itemSteps.delete(stepIndex)
-      } else {
-        itemSteps.add(stepIndex)
-      }
-      next.set(itemId, itemSteps)
-      return next
-    })
+  const handleViewRecipeFromCard = useCallback((item: MealItem) => {
+    setRecipeSheetItem(item)
+    setRecipeSheetEventType(null)
   }, [])
+
+  const handleViewRecipeFromTimeline = useCallback((event: TimelineEvent) => {
+    if (!plan) return
+    const item = plan.meal_items.find(i => i.id === event.mealItemId)
+    if (item) {
+      setRecipeSheetItem(item)
+      setRecipeSheetEventType(event.type)
+    }
+  }, [plan])
 
   // Dialog states
   const [editPlanOpen, setEditPlanOpen] = useState(false)
@@ -323,8 +325,7 @@ export default function MealPlanDetailPage() {
                     setItemFormOpen(true)
                   }}
                   onDelete={(id) => setDeleteItemDialog(id)}
-                  completedSteps={completedPlanSteps.get(item.id) || new Set()}
-                  onToggleStep={(stepIndex) => togglePlanStep(item.id, stepIndex)}
+                  onViewRecipe={handleViewRecipeFromCard}
                 />
               ))}
             </div>
@@ -335,7 +336,7 @@ export default function MealPlanDetailPage() {
         <div>
           <h2 className="text-xl font-semibold mb-4">Timeline</h2>
           {serveTime ? (
-            <TimelineView events={timeline} serveTime={serveTime} />
+            <TimelineView events={timeline} serveTime={serveTime} onEventClick={handleViewRecipeFromTimeline} />
           ) : (
             <Card>
               <CardContent className="py-8 text-center text-muted-foreground">
@@ -418,6 +419,19 @@ export default function MealPlanDetailPage() {
             } : null)
           }
         }}
+      />
+
+      {/* Unified recipe sheet (opens from both item card clicks and timeline event clicks) */}
+      <PlannerRecipeSheet
+        open={!!recipeSheetItem}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRecipeSheetItem(null)
+            setRecipeSheetEventType(null)
+          }
+        }}
+        mealItem={recipeSheetItem}
+        eventType={recipeSheetEventType}
       />
     </div>
   )
