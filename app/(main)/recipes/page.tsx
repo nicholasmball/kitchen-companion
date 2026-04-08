@@ -108,12 +108,12 @@ export default function RecipesPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">My Recipes</h1>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setImporterOpen(true)}>
+          <Button onClick={() => setImporterOpen(true)}>
             <ImportIcon className="h-4 w-4 mr-2" />
             Import
           </Button>
           <Link href="/recipes/new">
-            <Button>
+            <Button variant="outline">
               <PlusIcon className="h-4 w-4 mr-2" />
               Add Recipe
             </Button>
