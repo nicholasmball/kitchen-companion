@@ -15,6 +15,11 @@ interface RecipeCookingViewProps {
   scaleAmount?: (amount: string) => string
   highlightedStepIndex?: number
   recipeId?: string | null
+  // Controlled state (optional — when provided, component uses these instead of internal state)
+  checkedIngredients?: Set<number>
+  onToggleIngredient?: (index: number) => void
+  completedSteps?: Set<number>
+  onToggleStep?: (index: number) => void
 }
 
 export function RecipeCookingView({
@@ -27,11 +32,20 @@ export function RecipeCookingView({
   scaleAmount,
   highlightedStepIndex,
   recipeId,
+  checkedIngredients: controlledCheckedIngredients,
+  onToggleIngredient: controlledToggleIngredient,
+  completedSteps: controlledCompletedSteps,
+  onToggleStep: controlledToggleStep,
 }: RecipeCookingViewProps) {
-  const [checkedIngredients, setCheckedIngredients] = useState<Set<number>>(new Set())
-  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set())
+  // Internal state (used when no controlled props provided)
+  const [internalCheckedIngredients, setInternalCheckedIngredients] = useState<Set<number>>(new Set())
+  const [internalCompletedSteps, setInternalCompletedSteps] = useState<Set<number>>(new Set())
   const [ingredientsExpanded, setIngredientsExpanded] = useState(false)
   const highlightRef = useRef<HTMLDivElement>(null)
+
+  // Use controlled state if provided, otherwise internal
+  const checkedIngredients = controlledCheckedIngredients ?? internalCheckedIngredients
+  const completedSteps = controlledCompletedSteps ?? internalCompletedSteps
 
   const ingredients = rawIngredients || []
   const steps = instructions
@@ -45,22 +59,30 @@ export function RecipeCookingView({
   const activeStepIndex = highlightedStepIndex ?? steps.findIndex((_, i) => !completedSteps.has(i))
 
   const toggleIngredient = useCallback((index: number) => {
-    setCheckedIngredients(prev => {
-      const next = new Set(prev)
-      if (next.has(index)) next.delete(index)
-      else next.add(index)
-      return next
-    })
-  }, [])
+    if (controlledToggleIngredient) {
+      controlledToggleIngredient(index)
+    } else {
+      setInternalCheckedIngredients(prev => {
+        const next = new Set(prev)
+        if (next.has(index)) next.delete(index)
+        else next.add(index)
+        return next
+      })
+    }
+  }, [controlledToggleIngredient])
 
   const toggleStep = useCallback((index: number) => {
-    setCompletedSteps(prev => {
-      const next = new Set(prev)
-      if (next.has(index)) next.delete(index)
-      else next.add(index)
-      return next
-    })
-  }, [])
+    if (controlledToggleStep) {
+      controlledToggleStep(index)
+    } else {
+      setInternalCompletedSteps(prev => {
+        const next = new Set(prev)
+        if (next.has(index)) next.delete(index)
+        else next.add(index)
+        return next
+      })
+    }
+  }, [controlledToggleStep])
 
   const toggleIngredientsPanel = useCallback(() => {
     setIngredientsExpanded(prev => !prev)

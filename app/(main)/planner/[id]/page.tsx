@@ -61,6 +61,37 @@ export default function MealPlanDetailPage() {
   const [recipeSheetItem, setRecipeSheetItem] = useState<MealItem | null>(null)
   const [recipeSheetEventType, setRecipeSheetEventType] = useState<TimelineEventType | null>(null)
 
+  // Persistent checkbox state per meal item (survives sheet open/close)
+  const [itemCheckState, setItemCheckState] = useState<Map<string, { checkedIngredients: Set<number>; completedSteps: Set<number> }>>(new Map())
+
+  const getItemCheckState = useCallback((itemId: string) => {
+    return itemCheckState.get(itemId) || { checkedIngredients: new Set<number>(), completedSteps: new Set<number>() }
+  }, [itemCheckState])
+
+  const toggleItemIngredient = useCallback((itemId: string, index: number) => {
+    setItemCheckState(prev => {
+      const next = new Map(prev)
+      const state = next.get(itemId) || { checkedIngredients: new Set<number>(), completedSteps: new Set<number>() }
+      const ingredients = new Set(state.checkedIngredients)
+      if (ingredients.has(index)) ingredients.delete(index)
+      else ingredients.add(index)
+      next.set(itemId, { ...state, checkedIngredients: ingredients })
+      return next
+    })
+  }, [])
+
+  const toggleItemStep = useCallback((itemId: string, index: number) => {
+    setItemCheckState(prev => {
+      const next = new Map(prev)
+      const state = next.get(itemId) || { checkedIngredients: new Set<number>(), completedSteps: new Set<number>() }
+      const steps = new Set(state.completedSteps)
+      if (steps.has(index)) steps.delete(index)
+      else steps.add(index)
+      next.set(itemId, { ...state, completedSteps: steps })
+      return next
+    })
+  }, [])
+
   const handleViewRecipeFromCard = useCallback((item: MealItem) => {
     setRecipeSheetItem(item)
     setRecipeSheetEventType(null)
@@ -432,6 +463,10 @@ export default function MealPlanDetailPage() {
         }}
         mealItem={recipeSheetItem}
         eventType={recipeSheetEventType}
+        checkedIngredients={recipeSheetItem ? getItemCheckState(recipeSheetItem.id).checkedIngredients : undefined}
+        onToggleIngredient={recipeSheetItem ? (index: number) => toggleItemIngredient(recipeSheetItem.id, index) : undefined}
+        completedSteps={recipeSheetItem ? getItemCheckState(recipeSheetItem.id).completedSteps : undefined}
+        onToggleStep={recipeSheetItem ? (index: number) => toggleItemStep(recipeSheetItem.id, index) : undefined}
       />
     </div>
   )

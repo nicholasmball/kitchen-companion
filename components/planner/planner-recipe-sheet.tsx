@@ -16,6 +16,10 @@ interface PlannerRecipeSheetProps {
   onOpenChange: (open: boolean) => void
   mealItem: MealItem | null
   eventType?: TimelineEventType | null
+  checkedIngredients?: Set<number>
+  onToggleIngredient?: (index: number) => void
+  completedSteps?: Set<number>
+  onToggleStep?: (index: number) => void
 }
 
 const METHOD_LABELS: Record<string, string> = {
@@ -68,6 +72,10 @@ export function PlannerRecipeSheet({
   onOpenChange,
   mealItem,
   eventType,
+  checkedIngredients,
+  onToggleIngredient,
+  completedSteps,
+  onToggleStep,
 }: PlannerRecipeSheetProps) {
   const highlightedStepIndex = useMemo(
     () => getHighlightedStepIndex(mealItem?.instructions || null, eventType),
@@ -120,6 +128,10 @@ export function PlannerRecipeSheet({
           variant="sheet"
           highlightedStepIndex={highlightedStepIndex}
           recipeId={mealItem.recipe_id}
+          checkedIngredients={checkedIngredients}
+          onToggleIngredient={onToggleIngredient}
+          completedSteps={completedSteps}
+          onToggleStep={onToggleStep}
         />
       </SheetContent>
     </Sheet>
