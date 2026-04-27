@@ -22,6 +22,7 @@ import type { User } from '@supabase/supabase-js'
 export function Navbar() {
   const [user, setUser] = useState<User | null>(null)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -58,12 +59,13 @@ export function Navbar() {
             const { data: profile } = await withTimeout(
               supabase
                 .from('profiles')
-                .select('avatar_url')
+                .select('avatar_url, is_admin')
                 .eq('id', fetchedUser.id)
                 .single(),
               5000
             )
             setAvatarUrl(profile?.avatar_url || null)
+            setIsAdmin(profile?.is_admin || false)
           } catch {
             // Profile fetch failed — avatar will show fallback initial
           }
@@ -96,6 +98,7 @@ export function Navbar() {
         }
       } else {
         setAvatarUrl(null)
+        setIsAdmin(false)
       }
     })
 
@@ -162,6 +165,13 @@ export function Navbar() {
 
         <div className="flex items-center gap-2">
           <ThemeToggle />
+          {user && (
+            <BugReportDialog>
+              <Button variant="ghost" size="icon" aria-label="Report a bug">
+                <BugIcon className="h-5 w-5" />
+              </Button>
+            </BugReportDialog>
+          )}
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -193,11 +203,14 @@ export function Navbar() {
                 <DropdownMenuItem asChild>
                   <Link href="/help">Help</Link>
                 </DropdownMenuItem>
-                <BugReportDialog>
-                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                    Report a Bug
-                  </DropdownMenuItem>
-                </BugReportDialog>
+                {isAdmin && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href="/admin/bug-reports">Bug Reports</Link>
+                    </DropdownMenuItem>
+                  </>
+                )}
                 <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
                   Sign out
                 </DropdownMenuItem>
@@ -228,6 +241,14 @@ function HelpIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
+    </svg>
+  )
+}
+
+function BugIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 12.75c1.148 0 2.278.08 3.383.237 1.037.146 1.866.966 1.866 2.013 0 3.728-2.35 6.75-5.25 6.75S6.75 18.728 6.75 15c0-1.046.83-1.867 1.866-2.013A24.204 24.204 0 0 1 12 12.75ZM12 12.75c2.883 0 5.647.508 8.207 1.44a23.91 23.91 0 0 1-1.152-6.135l-.223-2.234a2.048 2.048 0 0 0-1.39-1.727 25.01 25.01 0 0 0-10.884 0 2.048 2.048 0 0 0-1.39 1.727l-.222 2.234a23.911 23.911 0 0 1-1.153 6.135A24.076 24.076 0 0 1 12 12.75Zm0 0V6M8.25 4.5l.375-1.125a1.125 1.125 0 0 1 1.07-.775h4.61c.49 0 .926.318 1.07.775L15.75 4.5" />
     </svg>
   )
 }
