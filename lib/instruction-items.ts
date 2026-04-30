@@ -1,4 +1,4 @@
-export type InstructionItemType = 'step' | 'prep'
+export type InstructionItemType = 'step' | 'action'
 
 export interface InstructionItem {
   id: string
@@ -6,7 +6,8 @@ export interface InstructionItem {
   type: InstructionItemType
 }
 
-const PREP_PREFIX_RE = /^\s*\[prep\]\s*/i
+// Marker emitted on serialize. Parser also accepts the legacy [prep] alias.
+const ACTION_PREFIX_RE = /^\s*\[(action|prep)\]\s*/i
 
 let nextId = 0
 const generateId = () => `item-${Date.now()}-${nextId++}`
@@ -18,12 +19,12 @@ export function parseInstructionItems(raw: string | null | undefined): Instructi
     .map((line) => line.replace(/\r$/, ''))
     .filter((line) => line.trim().length > 0)
     .map((line) => {
-      const isPrep = PREP_PREFIX_RE.test(line)
-      const text = isPrep ? line.replace(PREP_PREFIX_RE, '').trim() : line.trim()
+      const isAction = ACTION_PREFIX_RE.test(line)
+      const text = isAction ? line.replace(ACTION_PREFIX_RE, '').trim() : line.trim()
       return {
         id: generateId(),
         text,
-        type: isPrep ? 'prep' : 'step',
+        type: isAction ? 'action' : 'step',
       }
     })
 }
@@ -31,16 +32,16 @@ export function parseInstructionItems(raw: string | null | undefined): Instructi
 export function serializeInstructionItems(items: InstructionItem[]): string {
   return items
     .map((item) => item.text.trim())
-    .map((text, i) => (items[i].type === 'prep' ? `[prep] ${text}` : text))
-    .filter((line) => line.replace(/^\[prep\]\s*/i, '').length > 0)
+    .map((text, i) => (items[i].type === 'action' ? `[action] ${text}` : text))
+    .filter((line) => line.replace(/^\[(action|prep)\]\s*/i, '').length > 0)
     .join('\n')
 }
 
-export function stripPrepMarkers(raw: string | null | undefined): string {
+export function stripActionMarkers(raw: string | null | undefined): string {
   if (!raw) return ''
   return raw
     .split('\n')
-    .map((line) => line.replace(PREP_PREFIX_RE, ''))
+    .map((line) => line.replace(ACTION_PREFIX_RE, ''))
     .join('\n')
 }
 

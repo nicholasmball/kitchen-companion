@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   parseInstructionItems,
   serializeInstructionItems,
-  stripPrepMarkers,
+  stripActionMarkers,
   makeBlankItem,
 } from './instruction-items'
 
@@ -27,32 +27,38 @@ describe('parseInstructionItems', () => {
     expect(items.every((i) => i.type === 'step')).toBe(true)
   })
 
-  it('detects [prep] prefix and strips it from text', () => {
-    const items = parseInstructionItems('[prep] Boil the kettle')
+  it('detects [action] prefix and strips it from text', () => {
+    const items = parseInstructionItems('[action] Boil the kettle')
     expect(items).toHaveLength(1)
-    expect(items[0]).toMatchObject({ text: 'Boil the kettle', type: 'prep' })
+    expect(items[0]).toMatchObject({ text: 'Boil the kettle', type: 'action' })
   })
 
-  it('handles [prep] case-insensitively', () => {
-    expect(parseInstructionItems('[PREP] Tea towel')[0].type).toBe('prep')
-    expect(parseInstructionItems('[Prep] Tea towel')[0].type).toBe('prep')
+  it('accepts the legacy [prep] alias', () => {
+    const items = parseInstructionItems('[prep] Boil the kettle')
+    expect(items[0]).toMatchObject({ text: 'Boil the kettle', type: 'action' })
   })
 
-  it('handles [prep] with surrounding whitespace', () => {
-    expect(parseInstructionItems('  [prep]   Boil kettle  ')[0]).toMatchObject({
+  it('handles markers case-insensitively', () => {
+    expect(parseInstructionItems('[ACTION] Tea towel')[0].type).toBe('action')
+    expect(parseInstructionItems('[Action] Tea towel')[0].type).toBe('action')
+    expect(parseInstructionItems('[PREP] Tea towel')[0].type).toBe('action')
+  })
+
+  it('handles markers with surrounding whitespace', () => {
+    expect(parseInstructionItems('  [action]   Boil kettle  ')[0]).toMatchObject({
       text: 'Boil kettle',
-      type: 'prep',
+      type: 'action',
     })
   })
 
-  it('mixes prep and step in order', () => {
+  it('mixes action and step in order', () => {
     const items = parseInstructionItems(
-      '[prep] Boil kettle\nWhisk batter\n[prep] Warm the tin\nPour batter'
+      '[action] Boil kettle\nWhisk batter\n[action] Warm the tin\nPour batter'
     )
     expect(items.map((i) => ({ text: i.text, type: i.type }))).toEqual([
-      { text: 'Boil kettle', type: 'prep' },
+      { text: 'Boil kettle', type: 'action' },
       { text: 'Whisk batter', type: 'step' },
-      { text: 'Warm the tin', type: 'prep' },
+      { text: 'Warm the tin', type: 'action' },
       { text: 'Pour batter', type: 'step' },
     ])
   })
@@ -74,8 +80,8 @@ describe('parseInstructionItems', () => {
     expect(ids.size).toBe(3)
   })
 
-  it('does not treat [prep] in the middle of a line as a marker', () => {
-    expect(parseInstructionItems('Add [prep] tag if you like')[0].type).toBe('step')
+  it('does not treat [action] in the middle of a line as a marker', () => {
+    expect(parseInstructionItems('Add [action] tag if you like')[0].type).toBe('step')
   })
 })
 
@@ -93,20 +99,20 @@ describe('serializeInstructionItems', () => {
     ).toBe('Whisk\nFry')
   })
 
-  it('adds [prep] marker for prep items', () => {
+  it('emits [action] marker for action items', () => {
     expect(
       serializeInstructionItems([
-        { id: '1', text: 'Boil kettle', type: 'prep' },
+        { id: '1', text: 'Boil kettle', type: 'action' },
         { id: '2', text: 'Whisk', type: 'step' },
       ])
-    ).toBe('[prep] Boil kettle\nWhisk')
+    ).toBe('[action] Boil kettle\nWhisk')
   })
 
   it('drops items whose text is empty/whitespace-only', () => {
     expect(
       serializeInstructionItems([
         { id: '1', text: 'Whisk', type: 'step' },
-        { id: '2', text: '', type: 'prep' },
+        { id: '2', text: '', type: 'action' },
         { id: '3', text: '  ', type: 'step' },
         { id: '4', text: 'Fry', type: 'step' },
       ])
@@ -114,13 +120,18 @@ describe('serializeInstructionItems', () => {
   })
 
   it('round-trips parse → serialize → parse', () => {
-    const input = '[prep] Boil kettle\nWhisk batter\n[prep] Warm tin\nPour batter'
+    const input = '[action] Boil kettle\nWhisk batter\n[action] Warm tin\nPour batter'
     const items = parseInstructionItems(input)
     const serialized = serializeInstructionItems(items)
     const reparsed = parseInstructionItems(serialized)
     expect(reparsed.map((i) => ({ text: i.text, type: i.type }))).toEqual(
       items.map((i) => ({ text: i.text, type: i.type }))
     )
+  })
+
+  it('upgrades legacy [prep] to [action] on round-trip', () => {
+    const items = parseInstructionItems('[prep] Boil kettle')
+    expect(serializeInstructionItems(items)).toBe('[action] Boil kettle')
   })
 
   it('trims leading/trailing whitespace within each item', () => {
@@ -130,25 +141,29 @@ describe('serializeInstructionItems', () => {
   })
 })
 
-describe('stripPrepMarkers', () => {
+describe('stripActionMarkers', () => {
   it('returns empty string for null/undefined', () => {
-    expect(stripPrepMarkers(null)).toBe('')
-    expect(stripPrepMarkers(undefined)).toBe('')
+    expect(stripActionMarkers(null)).toBe('')
+    expect(stripActionMarkers(undefined)).toBe('')
   })
 
-  it('removes [prep] from each line, preserving structure', () => {
-    expect(stripPrepMarkers('[prep] Boil kettle\nWhisk batter\n[prep] Warm tin')).toBe(
+  it('removes [action] from each line, preserving structure', () => {
+    expect(stripActionMarkers('[action] Boil kettle\nWhisk batter\n[action] Warm tin')).toBe(
       'Boil kettle\nWhisk batter\nWarm tin'
     )
   })
 
-  it('leaves non-prep lines untouched', () => {
-    expect(stripPrepMarkers('Whisk batter\nFry bacon')).toBe('Whisk batter\nFry bacon')
+  it('also strips legacy [prep] markers', () => {
+    expect(stripActionMarkers('[prep] Boil kettle')).toBe('Boil kettle')
+  })
+
+  it('leaves non-marker lines untouched', () => {
+    expect(stripActionMarkers('Whisk batter\nFry bacon')).toBe('Whisk batter\nFry bacon')
   })
 
   it('handles case-insensitive markers', () => {
-    expect(stripPrepMarkers('[PREP] Boil kettle')).toBe('Boil kettle')
-    expect(stripPrepMarkers('[Prep] Boil kettle')).toBe('Boil kettle')
+    expect(stripActionMarkers('[ACTION] Boil kettle')).toBe('Boil kettle')
+    expect(stripActionMarkers('[Prep] Boil kettle')).toBe('Boil kettle')
   })
 })
 
@@ -161,7 +176,7 @@ describe('makeBlankItem', () => {
   })
 
   it('respects requested type', () => {
-    expect(makeBlankItem('prep').type).toBe('prep')
+    expect(makeBlankItem('action').type).toBe('action')
   })
 
   it('generates unique ids', () => {

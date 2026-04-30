@@ -115,7 +115,7 @@ ${activeMealPlan.items.map((item) => {
       if (item.instructions) {
         const steps = item.instructions
           .split('\n')
-          .map((s) => s.replace(/^\s*\[prep\]\s*/i, '').trim())
+          .map((s) => s.replace(/^\s*\[(action|prep)\]\s*/i, '').trim())
           .filter((s) => s.length > 0)
         itemBlock += `\n  Steps:\n${steps.map((step, i) => `    ${i + 1}. ${step.replace(/^\d+\.\s*/, '')}`).join('\n')}`
       }

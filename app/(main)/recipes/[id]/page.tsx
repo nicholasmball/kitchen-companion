@@ -375,20 +375,20 @@ export default function RecipeDetailPage() {
             <CardContent>
               <ol className="space-y-2 list-none pl-0">
                 {items.map((item) => {
-                  const isPrep = item.type === 'prep'
-                  if (!isPrep) stepCount += 1
-                  const label = isPrep ? 'Prep' : `${stepCount}.`
+                  const isAction = item.type === 'action'
+                  if (!isAction) stepCount += 1
+                  const label = isAction ? 'Action' : `${stepCount}.`
                   return (
                     <li
                       key={item.id}
                       className={cn(
                         "flex gap-3 p-3 rounded-lg",
-                        isPrep ? "bg-[#40916C]/5 border-l-[3px] border-[#40916C]" : "bg-transparent"
+                        isAction ? "bg-[#40916C]/5 border-l-[3px] border-[#40916C]" : "bg-transparent"
                       )}
                     >
                       <span className={cn(
                         "shrink-0 w-12 text-sm font-bold",
-                        isPrep ? "text-[#40916C] uppercase tracking-wide" : "text-muted-foreground"
+                        isAction ? "text-[#40916C] uppercase tracking-wide" : "text-muted-foreground"
                       )}>
                         {label}
                       </span>

@@ -126,7 +126,7 @@ Supabase Storage bucket `recipe-images` for recipe image uploads.
 - Image upload to Supabase Storage
 - Servings adjuster (scales ingredients)
 - Cooking Mode (larger text, screen stays awake)
-- **Prep tasks inline within method:** each row in the recipe's method list can be flagged as a `step` or `prep` (e.g. "boil the kettle", "warm the tin"). Prep items render with a green badge in the recipe detail and cooking mode. Persisted as part of the existing `recipes.instructions` text using a `[prep] ` line prefix — see `lib/instruction-items.ts` for parser/serializer/`stripPrepMarkers` helper. AI prompts and Alexa TTS contexts strip the marker so it's never read aloud.
+- **Action items inline within method:** each row in the recipe's method list can be flagged as a `step` or `action` (e.g. "boil the kettle", "warm the tin"). Action items render with a green badge in the recipe detail and cooking mode. Persisted as part of the existing `recipes.instructions` text using an `[action] ` line prefix — see `lib/instruction-items.ts` for parser/serializer/`stripActionMarkers` helper. The parser also accepts the legacy `[prep]` marker. AI prompts and Alexa TTS contexts strip the marker so it's never read aloud.
 
 ### PWA (Progressive Web App)
 - Installable to home screen on mobile and desktop

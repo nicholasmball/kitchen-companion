@@ -381,14 +381,14 @@ function StepList({
         const isCompleted = completedSteps.has(i)
         const isActive = i === activeStepIndex
         const isHighlighted = highlightedStepIndex != null && i === highlightedStepIndex
-        const isPrep = item.type === 'prep'
+        const isAction = item.type === 'action'
         return (
           <div
             key={item.id}
             ref={isHighlighted ? highlightRef : undefined}
             role="checkbox"
             aria-checked={isCompleted}
-            aria-label={`${isPrep ? 'Prep' : 'Step'} ${i + 1}: ${item.text.trim()}`}
+            aria-label={`${isAction ? 'Action' : 'Step'} ${i + 1}: ${item.text.trim()}`}
             aria-current={isHighlighted ? 'step' : undefined}
             tabIndex={0}
             onClick={() => onToggleStep(i)}
@@ -402,14 +402,14 @@ function StepList({
               "flex items-start gap-3 py-3 px-3 rounded-xl cursor-pointer transition-all duration-200 border-b border-muted last:border-0",
               "active:bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
               isCompleted && "bg-muted/30",
-              isPrep && !isCompleted && "bg-[#40916C]/5 border-l-[3px] border-l-[#40916C] ml-[-3px]",
-              (isActive || isHighlighted) && !isCompleted && !isPrep && "bg-primary/5 border-l-[3px] border-l-primary ml-[-3px]",
-              (isActive || isHighlighted) && !isCompleted && isPrep && "ring-2 ring-[#40916C]/30"
+              isAction && !isCompleted && "bg-[#40916C]/5 border-l-[3px] border-l-[#40916C] ml-[-3px]",
+              (isActive || isHighlighted) && !isCompleted && !isAction && "bg-primary/5 border-l-[3px] border-l-primary ml-[-3px]",
+              (isActive || isHighlighted) && !isCompleted && isAction && "ring-2 ring-[#40916C]/30"
             )}
           >
             <div className={cn(
               "shrink-0 mt-0.5 h-6 w-6 rounded-full border-2 flex items-center justify-center transition-all duration-200",
-              isCompleted && (isPrep ? "bg-[#40916C] border-[#40916C]" : "bg-primary border-primary"),
+              isCompleted && (isAction ? "bg-[#40916C] border-[#40916C]" : "bg-primary border-primary"),
               !isCompleted && "border-muted-foreground/40"
             )}>
               {isCompleted && <CheckIcon className="h-3.5 w-3.5 text-white" />}
@@ -418,15 +418,15 @@ function StepList({
               <div className="flex items-center gap-2 mb-0.5">
                 <div className={cn(
                   "text-xs font-bold",
-                  isPrep
+                  isAction
                     ? "text-[#40916C]"
                     : (isActive || isHighlighted) && !isCompleted
                       ? "text-primary"
                       : "text-muted-foreground"
                 )}>
-                  {isPrep ? 'Prep' : `Step ${i + 1}`}
+                  {isAction ? 'Action' : `Step ${i + 1}`}
                 </div>
-                {isPrep && (
+                {isAction && (
                   <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#40916C] bg-[#40916C]/12 px-1.5 py-0.5 rounded">
                     Before you cook
                   </span>
