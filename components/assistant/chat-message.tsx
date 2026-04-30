@@ -92,9 +92,9 @@ export function ChatMessageBubble({ message, isStreaming }: ChatMessageProps) {
         {/* Save Recipe Button */}
         {showSaveButton && !saved && (
           <Button
-            size="sm"
-            variant="secondary"
-            className="mt-3"
+            size="default"
+            variant="default"
+            className="mt-3 shadow-warm"
             onClick={handleSaveRecipe}
             disabled={saving}
           >
