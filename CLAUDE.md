@@ -118,6 +118,7 @@ Supabase Storage bucket `recipe-images` for recipe image uploads.
 - Alexa Custom Skill — "Alexa, ask Cat's Kitchen..." (see `alexa-skill/SETUP.md`)
 - Alexa account linking via 6-character code (generated in Settings, spoken to Alexa)
 - When linked: meal plan queries, next event, serve time, ingredients, and context-aware chef
+- Step-by-step cooking guidance: "Guide me through the [dish]", "Read me step 3", "What step am I on?"
 
 ### Recipe Collection
 - CRUD with search/filter (cuisine, course, difficulty, time, favourites)
@@ -125,6 +126,7 @@ Supabase Storage bucket `recipe-images` for recipe image uploads.
 - Image upload to Supabase Storage
 - Servings adjuster (scales ingredients)
 - Cooking Mode (larger text, screen stays awake)
+- **Prep tasks inline within method:** each row in the recipe's method list can be flagged as a `step` or `prep` (e.g. "boil the kettle", "warm the tin"). Prep items render with a green badge in the recipe detail and cooking mode. Persisted as part of the existing `recipes.instructions` text using a `[prep] ` line prefix — see `lib/instruction-items.ts` for parser/serializer/`stripPrepMarkers` helper. AI prompts and Alexa TTS contexts strip the marker so it's never read aloud.
 
 ### PWA (Progressive Web App)
 - Installable to home screen on mobile and desktop

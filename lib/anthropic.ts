@@ -72,7 +72,17 @@ Keep responses concise and practical - remember the user is likely in the kitche
 export interface ActiveMealPlanContext {
   name: string
   serveTime: string
-  items: Array<{ name: string; cookTime: number; method: string }>
+  items: Array<{
+    name: string
+    cookTime: number
+    method: string
+    prepTime?: number
+    restTime?: number
+    temperature?: number | null
+    temperatureUnit?: string
+    instructions?: string | null
+    ingredients?: Array<{ amount: string; unit: string; item: string }> | null
+  }>
 }
 
 export interface UserPreferencesContext {
@@ -93,7 +103,24 @@ export function buildSystemPrompt(
     prompt += `\n\n---\n\nThe user is currently cooking a meal called "${activeMealPlan.name}" with a target serve time of ${activeMealPlan.serveTime}.
 
 They are preparing the following dishes:
-${activeMealPlan.items.map((item) => `- ${item.name} (${item.cookTime} min, ${item.method})`).join('\n')}
+${activeMealPlan.items.map((item) => {
+      const details = [`${item.cookTime} min cook`, item.method]
+      if (item.prepTime) details.push(`${item.prepTime} min prep`)
+      if (item.restTime) details.push(`${item.restTime} min rest`)
+      if (item.temperature) details.push(`${item.temperature}°${item.temperatureUnit || 'C'}`)
+      let itemBlock = `- ${item.name} (${details.join(', ')})`
+      if (item.ingredients && item.ingredients.length > 0) {
+        itemBlock += `\n  Ingredients: ${item.ingredients.map((ing) => [ing.amount, ing.unit, ing.item].filter(Boolean).join(' ')).join(', ')}`
+      }
+      if (item.instructions) {
+        const steps = item.instructions
+          .split('\n')
+          .map((s) => s.replace(/^\s*\[prep\]\s*/i, '').trim())
+          .filter((s) => s.length > 0)
+        itemBlock += `\n  Steps:\n${steps.map((step, i) => `    ${i + 1}. ${step.replace(/^\d+\.\s*/, '')}`).join('\n')}`
+      }
+      return itemBlock
+    }).join('\n')}
 
 You can reference this meal plan in your responses and offer specific advice related to what they're cooking.`
   }

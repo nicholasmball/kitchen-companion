@@ -10,12 +10,14 @@ const mockCreate = vi.fn().mockResolvedValue({
   content: [{ type: 'text', text: 'Roast a chicken at 200°C for about 20 minutes per 500g, plus 20 minutes extra.' }],
 })
 
+const mockBuildSystemPrompt = vi.fn().mockReturnValue('You are a chef assistant.')
+
 vi.mock('@/lib/anthropic', () => ({
   createAnthropicClient: () => ({
     messages: { create: mockCreate },
   }),
   CLAUDE_MODEL: 'claude-sonnet-4-20250514',
-  buildSystemPrompt: () => 'You are a chef assistant.',
+  buildSystemPrompt: (...args: unknown[]) => mockBuildSystemPrompt(...args),
 }))
 
 // Mock alexa-auth
@@ -81,6 +83,7 @@ describe('/api/alexa', () => {
     mockGetActiveMealPlan.mockResolvedValue(null)
     mockGetUserRecipes.mockResolvedValue([])
     mockRedeemLinkingCode.mockResolvedValue(null)
+    mockBuildSystemPrompt.mockReturnValue('You are a chef assistant.')
   })
 
   it('handles LaunchRequest with greeting', async () => {
@@ -130,7 +133,7 @@ describe('/api/alexa', () => {
 
     const callArgs = mockCreate.mock.calls[0][0]
     expect(callArgs.system).toContain('Alexa voice')
-    expect(callArgs.max_tokens).toBe(300)
+    expect(callArgs.max_tokens).toBe(400)
   })
 
   it('handles AskChefIntent with no question', async () => {
@@ -464,6 +467,194 @@ describe('/api/alexa', () => {
 
       expect(json.response.outputSpeech.text).toContain('spaghetti')
       expect(json.response.outputSpeech.text).toContain('olive oil')
+    })
+  })
+
+  describe('GuideMeIntent', () => {
+    it('routes to chef with formatted question containing dish name', async () => {
+      const POST = await getHandler()
+      const body = buildAlexaRequest({
+        type: 'IntentRequest',
+        intent: {
+          name: 'GuideMeIntent',
+          slots: {
+            dishName: { name: 'dishName', value: 'roast chicken' },
+          },
+        },
+      })
+      const response = await POST(createRequest(body))
+      const json = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(mockCreate).toHaveBeenCalledTimes(1)
+      const callArgs = mockCreate.mock.calls[0][0]
+      expect(callArgs.messages[callArgs.messages.length - 1].content).toContain('roast chicken')
+      expect(callArgs.messages[callArgs.messages.length - 1].content).toContain('step by step')
+      expect(json.response.shouldEndSession).toBe(false)
+    })
+
+    it('uses fallback dish name when slot is empty', async () => {
+      const POST = await getHandler()
+      const body = buildAlexaRequest({
+        type: 'IntentRequest',
+        intent: {
+          name: 'GuideMeIntent',
+          slots: {
+            dishName: { name: 'dishName' },
+          },
+        },
+      })
+      const response = await POST(createRequest(body))
+      await response.json()
+
+      expect(mockCreate).toHaveBeenCalledTimes(1)
+      const callArgs = mockCreate.mock.calls[0][0]
+      expect(callArgs.messages[callArgs.messages.length - 1].content).toContain('the dish')
+    })
+  })
+
+  describe('ReadStepIntent', () => {
+    it('routes to chef with step number', async () => {
+      const POST = await getHandler()
+      const body = buildAlexaRequest({
+        type: 'IntentRequest',
+        intent: {
+          name: 'ReadStepIntent',
+          slots: {
+            stepNumber: { name: 'stepNumber', value: '3' },
+          },
+        },
+      })
+      const response = await POST(createRequest(body))
+      const json = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(mockCreate).toHaveBeenCalledTimes(1)
+      const callArgs = mockCreate.mock.calls[0][0]
+      expect(callArgs.messages[callArgs.messages.length - 1].content).toContain('step 3')
+      expect(json.response.shouldEndSession).toBe(false)
+    })
+
+    it('defaults to step 1 when slot is empty', async () => {
+      const POST = await getHandler()
+      const body = buildAlexaRequest({
+        type: 'IntentRequest',
+        intent: {
+          name: 'ReadStepIntent',
+          slots: {
+            stepNumber: { name: 'stepNumber' },
+          },
+        },
+      })
+      const response = await POST(createRequest(body))
+      await response.json()
+
+      expect(mockCreate).toHaveBeenCalledTimes(1)
+      const callArgs = mockCreate.mock.calls[0][0]
+      expect(callArgs.messages[callArgs.messages.length - 1].content).toContain('step 1')
+    })
+  })
+
+  describe('Chef system prompt with instructions', () => {
+    it('includes instructions when meal plan items have them', async () => {
+      mockResolveAlexaUser.mockResolvedValue({
+        userId: 'user-123',
+        profile: { temperature_unit: 'C', measurement_system: 'metric' },
+      })
+      mockGetActiveMealPlan.mockResolvedValue({
+        plan: { name: 'Dinner', serve_time: '2024-01-01T18:00:00Z' },
+        items: [
+          {
+            name: 'Roast Chicken',
+            cook_time_minutes: 90,
+            cooking_method: 'oven',
+            prep_time_minutes: 15,
+            rest_time_minutes: 10,
+            temperature: 200,
+            temperature_unit: 'C',
+            instructions: 'Preheat the oven\nSeason the chicken\nRoast for 90 minutes',
+            ingredients: [
+              { amount: '1', unit: '', item: 'whole chicken' },
+              { amount: '2', unit: 'tbsp', item: 'olive oil' },
+            ],
+          },
+        ],
+      })
+
+      const POST = await getHandler()
+      const body = buildAlexaRequest({
+        type: 'IntentRequest',
+        intent: {
+          name: 'GuideMeIntent',
+          slots: {
+            dishName: { name: 'dishName', value: 'roast chicken' },
+          },
+        },
+      })
+      const response = await POST(createRequest(body))
+      await response.json()
+
+      expect(mockCreate).toHaveBeenCalledTimes(1)
+      // Verify buildSystemPrompt was called with context containing instructions
+      expect(mockBuildSystemPrompt).toHaveBeenCalledTimes(1)
+      const mealPlanCtx = mockBuildSystemPrompt.mock.calls[0][0]
+      expect(mealPlanCtx.name).toBe('Dinner')
+      expect(mealPlanCtx.items[0].instructions).toContain('Preheat the oven')
+      expect(mealPlanCtx.items[0].ingredients).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ item: 'whole chicken' }),
+          expect.objectContaining({ item: 'olive oil' }),
+        ])
+      )
+      expect(mealPlanCtx.items[0].temperature).toBe(200)
+      expect(mealPlanCtx.items[0].prepTime).toBe(15)
+      expect(mealPlanCtx.items[0].restTime).toBe(10)
+    })
+
+    it('handles items with null instructions gracefully', async () => {
+      mockResolveAlexaUser.mockResolvedValue({
+        userId: 'user-123',
+        profile: { temperature_unit: 'C', measurement_system: 'metric' },
+      })
+      mockGetActiveMealPlan.mockResolvedValue({
+        plan: { name: 'Dinner', serve_time: '2024-01-01T18:00:00Z' },
+        items: [
+          {
+            name: 'Quick Salad',
+            cook_time_minutes: 5,
+            cooking_method: 'other',
+            prep_time_minutes: 0,
+            rest_time_minutes: 0,
+            temperature: null,
+            temperature_unit: 'C',
+            instructions: null,
+            ingredients: null,
+          },
+        ],
+      })
+
+      const POST = await getHandler()
+      const body = buildAlexaRequest({
+        type: 'IntentRequest',
+        intent: {
+          name: 'AskChefIntent',
+          slots: {
+            question: { name: 'question', value: 'how do I make the salad' },
+          },
+        },
+      })
+      const response = await POST(createRequest(body))
+      const json = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(mockCreate).toHaveBeenCalledTimes(1)
+      // Verify context was passed with null instructions/ingredients
+      const mealPlanCtx = mockBuildSystemPrompt.mock.calls[0][0]
+      expect(mealPlanCtx.items[0].name).toBe('Quick Salad')
+      expect(mealPlanCtx.items[0].instructions).toBeNull()
+      expect(mealPlanCtx.items[0].ingredients).toBeNull()
+      // Verify no crash occurred — we got a valid response
+      expect(json.response.outputSpeech.text).toBeDefined()
     })
   })
 })

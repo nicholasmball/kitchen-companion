@@ -153,6 +153,48 @@
             "what ingredients",
             "read me the ingredients"
           ]
+        },
+        {
+          "name": "GuideMeIntent",
+          "slots": [
+            {
+              "name": "dishName",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [
+            "guide me through {dishName}",
+            "guide me through the {dishName}",
+            "walk me through {dishName}",
+            "walk me through the {dishName}",
+            "steps for {dishName}",
+            "steps for the {dishName}",
+            "start cooking {dishName}",
+            "start cooking the {dishName}",
+            "instructions for {dishName}",
+            "instructions for the {dishName}",
+            "read me the steps for {dishName}",
+            "read me the steps for the {dishName}"
+          ]
+        },
+        {
+          "name": "ReadStepIntent",
+          "slots": [
+            {
+              "name": "stepNumber",
+              "type": "AMAZON.NUMBER"
+            }
+          ],
+          "samples": [
+            "read me step {stepNumber}",
+            "read step {stepNumber}",
+            "what's step {stepNumber}",
+            "what is step {stepNumber}",
+            "go to step {stepNumber}",
+            "step {stepNumber}",
+            "skip to step {stepNumber}",
+            "repeat step {stepNumber}"
+          ]
         }
       ],
       "types": []

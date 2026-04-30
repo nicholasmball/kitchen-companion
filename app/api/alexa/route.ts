@@ -122,6 +122,12 @@ function buildMealPlanContext(data: ActiveMealPlanWithItems): ActiveMealPlanCont
       name: item.name,
       cookTime: item.cook_time_minutes,
       method: item.cooking_method,
+      prepTime: item.prep_time_minutes || undefined,
+      restTime: item.rest_time_minutes || undefined,
+      temperature: item.temperature,
+      temperatureUnit: item.temperature_unit,
+      instructions: item.instructions,
+      ingredients: item.ingredients,
     })),
   }
 }
@@ -444,8 +450,8 @@ async function handleAskChef(
 
     const response = await anthropic.messages.create({
       model: CLAUDE_MODEL,
-      max_tokens: 300,
-      system: systemPrompt + recipesContext + '\n\nIMPORTANT: You are responding via Alexa voice. Keep responses concise (2-3 sentences max). Do not use markdown, bullet points, or numbered lists. Speak naturally as if talking to someone in the kitchen. Do not use special characters or formatting.',
+      max_tokens: 400,
+      system: systemPrompt + recipesContext + '\n\nIMPORTANT: You are responding via Alexa voice. Keep responses concise (2-3 sentences max). Do not use markdown, bullet points, or numbered lists. Speak naturally as if talking to someone in the kitchen. Do not use special characters or formatting.\n\nWhen the user asks to be guided through cooking an item, read them ONE step at a time. Say the step number and instruction clearly. After each step, ask if they\'re ready for the next one. If they say "next step", read the next step. If they ask "what step am I on", tell them the step number and repeat it. If they ask for a specific step number, read that step.\n\nIf the user asks how long is left on an item, calculate from the item\'s cook, prep, and rest times and the serve time.\n\nMatch informal item references ("the chicken", "potatoes") to the closest meal plan item name.',
       messages,
     })
 
@@ -589,6 +595,22 @@ export async function POST(request: Request) {
           case 'GetIngredientsIntent':
             response = await handleGetIngredients(userId, sessionAttributes)
             break
+          case 'GuideMeIntent': {
+            const dishName = alexaRequest.intent?.slots?.dishName?.value || 'the dish'
+            response = await handleAskChef(
+              `Guide me through cooking the ${dishName} step by step`,
+              sessionAttributes, userId, alexaUser
+            )
+            break
+          }
+          case 'ReadStepIntent': {
+            const stepNumber = alexaRequest.intent?.slots?.stepNumber?.value || '1'
+            response = await handleAskChef(
+              `Read me step ${stepNumber}`,
+              sessionAttributes, userId, alexaUser
+            )
+            break
+          }
           case 'AskChefIntent':
             response = await handleAskChef(
               alexaRequest.intent?.slots?.question?.value || '',
