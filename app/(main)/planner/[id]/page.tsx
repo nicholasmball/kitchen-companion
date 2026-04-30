@@ -61,8 +61,47 @@ export default function MealPlanDetailPage() {
   const [recipeSheetItem, setRecipeSheetItem] = useState<MealItem | null>(null)
   const [recipeSheetEventType, setRecipeSheetEventType] = useState<TimelineEventType | null>(null)
 
-  // Persistent checkbox state per meal item (survives sheet open/close)
+  // Persistent checkbox state per meal item — kept in sessionStorage so it
+  // survives navigating away (e.g. to the chef) and back during a cooking
+  // session, but clears when the browser/tab closes.
   const [itemCheckState, setItemCheckState] = useState<Map<string, { checkedIngredients: Set<number>; completedSteps: Set<number> }>>(new Map())
+  const [checkStateHydrated, setCheckStateHydrated] = useState(false)
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(`kitchen:planner:checkstate:${id}`)
+      if (raw) {
+        const parsed = JSON.parse(raw) as Record<string, { checkedIngredients: number[]; completedSteps: number[] }>
+        const map = new Map<string, { checkedIngredients: Set<number>; completedSteps: Set<number> }>()
+        for (const [key, val] of Object.entries(parsed)) {
+          map.set(key, {
+            checkedIngredients: new Set(val.checkedIngredients),
+            completedSteps: new Set(val.completedSteps),
+          })
+        }
+        setItemCheckState(map)
+      }
+    } catch {
+      // ignore corrupted storage
+    }
+    setCheckStateHydrated(true)
+  }, [id])
+
+  useEffect(() => {
+    if (!checkStateHydrated) return
+    try {
+      const obj: Record<string, { checkedIngredients: number[]; completedSteps: number[] }> = {}
+      for (const [key, val] of itemCheckState.entries()) {
+        obj[key] = {
+          checkedIngredients: Array.from(val.checkedIngredients),
+          completedSteps: Array.from(val.completedSteps),
+        }
+      }
+      sessionStorage.setItem(`kitchen:planner:checkstate:${id}`, JSON.stringify(obj))
+    } catch {
+      // ignore quota / storage errors
+    }
+  }, [itemCheckState, checkStateHydrated, id])
 
   const getItemCheckState = useCallback((itemId: string) => {
     return itemCheckState.get(itemId) || { checkedIngredients: new Set<number>(), completedSteps: new Set<number>() }
