@@ -59,7 +59,9 @@ export function MealItemCard({
                     onRefreshFromRecipe(item)
                   }}
                   aria-label={`Recipe for ${item.name} has been updated. Tap to review changes.`}
-                  className="inline-flex items-center gap-1.5 min-h-[28px] px-2 py-1 rounded-md text-xs font-bold border border-[#C99846]/40 bg-[#C99846]/12 text-[#8B5A2B] hover:bg-[#C99846]/20 transition-colors"
+                  // Visible badge stays compact; before:* extends an invisible
+                  // hit area to ≥ 44×44 px to meet the tap-target guideline.
+                  className="relative inline-flex items-center gap-1.5 min-h-[28px] px-2 py-1 rounded-md text-xs font-bold border border-[#C99846]/40 bg-[#C99846]/12 text-[#8B5A2B] hover:bg-[#C99846]/20 transition-colors before:absolute before:-inset-y-2 before:-inset-x-1.5 before:content-['']"
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-[#C99846]" />
                   Recipe updated
