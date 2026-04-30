@@ -29,10 +29,11 @@ export function ChatInterface({ activeMealPlan, temperatureUnit, measurementSyst
   const chatInputRef = useRef<ChatInputHandle>(null)
   const [inputValue, setInputValue] = useState('')
 
-  // Auto-scroll to bottom when new messages arrive
+  // Auto-scroll to bottom when new messages arrive, and again when streaming
+  // ends so post-stream UI (e.g. Save to Recipes button) is visible.
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+  }, [messages, isLoading])
 
   const handleQuickAction = (prompt: string) => {
     setInputValue(prompt)
