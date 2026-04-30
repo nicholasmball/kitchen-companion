@@ -22,6 +22,12 @@ interface RecipeData {
   prep_time_minutes?: number | null
   rest_time_minutes?: number | null
   instructions?: string | null
+  ingredients?: { amount: string; unit: string; item: string; notes?: string }[] | null
+  /** Optional override for the meal item's `notes` column. */
+  notes?: string | null
+  /** If true, force the picker into create mode on open (used when caller knows
+   *  there are no plans, or wants to skip selection). */
+  forceCreateMode?: boolean
 }
 
 interface AddToPlanDialogProps {
@@ -50,6 +56,17 @@ export function AddToPlanDialog({ open, onOpenChange, recipe, onSuccess }: AddTo
     }
   }, [open, fetchMealPlans])
 
+  // After plans load, decide which mode the dialog should open in.
+  // - forceCreateMode caller wins
+  // - no plans → fall back to create mode + pre-fill the name with the recipe title
+  useEffect(() => {
+    if (!open || loading) return
+    if (recipe.forceCreateMode || mealPlans.length === 0) {
+      setMode('create')
+      setNewPlanName((current) => current || recipe.title)
+    }
+  }, [open, loading, mealPlans.length, recipe.forceCreateMode, recipe.title])
+
   const handleAdd = async () => {
     setAdding(true)
 
@@ -77,7 +94,8 @@ export function AddToPlanDialog({ open, onOpenChange, recipe, onSuccess }: AddTo
         rest_time_minutes: recipe.rest_time_minutes || 0,
         cooking_method: 'oven',
         instructions: recipe.instructions || null,
-        notes: null,
+        notes: recipe.notes ?? null,
+        ingredients: recipe.ingredients?.length ? recipe.ingredients : null,
       })
 
       onOpenChange(false)

@@ -114,6 +114,7 @@ Supabase Storage bucket `recipe-images` for recipe image uploads.
 - British personality (Celsius, metric, British terminology)
 - Context-aware (knows about active meal plan)
 - "Save to Recipes" button when assistant provides a recipe
+- "Add to plan" button (sibling to Save to Recipes) — one-tap when an active meal plan exists ("Add to '{plan name}'"), otherwise opens the existing `AddToPlanDialog` picker. First-time users (no plans) get the picker pre-filled in create mode with the recipe title. Adds as a custom meal item (`recipe_id = null`); see `components/assistant/chat-message.tsx`.
 - Voice input via microphone button (Web Speech API, hidden on unsupported browsers)
 - Alexa Custom Skill — "Alexa, ask Cat's Kitchen..." (see `alexa-skill/SETUP.md`)
 - Alexa account linking via 6-character code (generated in Settings, spoken to Alexa)

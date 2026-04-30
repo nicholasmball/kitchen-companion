@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chef chat — Save to planner button</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #FAF6F1; --card: #F5E6D3; --card-nested: #EDD9C4; --border: #EDD9C4;
+      --text: #3D2914; --text-heading: #5C3D1E; --text-muted: #8B5A2B;
+      --primary: #D97B4A; --primary-hover: #C46A3A; --primary-fg: #FFFFFF;
+      --secondary-bubble: #F5E6D3; --user-bubble: #D97B4A;
+    }
+    body { font-family: 'Nunito', sans-serif; background: #1a1a2e; color: var(--text); padding: 2rem; line-height: 1.5; }
+    h1 { color: white; text-align: center; font-size: 2rem; margin-bottom: 0.5rem; }
+    p.lede { color: #aaa; text-align: center; max-width: 720px; margin: 0 auto 2rem; font-size: 0.95rem; }
+    .section-label { color: white; font-size: 1.2rem; font-weight: 700; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--primary); display: inline-block; }
+    .design-notes { background: #2a2a4a; color: #ccc; padding: 1rem 1.5rem; border-radius: 0.75rem; margin-bottom: 1.5rem; font-size: 0.9rem; line-height: 1.6; }
+    .design-notes strong { color: var(--primary); }
+    .design-notes code { background: #3a3a5a; padding: 2px 6px; border-radius: 4px; font-size: 0.85rem; }
+    .design-notes ul, .design-notes ol { margin: 0.5rem 0 0.25rem 1.25rem; }
+    .design-notes li { margin-bottom: 0.3rem; }
+
+    .mockup-row { display: flex; gap: 1.5rem; flex-wrap: wrap; justify-content: center; margin-bottom: 1.5rem; }
+    .mockup-frame { background: var(--bg); border-radius: 1rem; overflow: hidden; box-shadow: 0 8px 24px rgba(139,90,43,0.15); }
+    .mockup-frame.mobile { width: 360px; }
+    .mockup-frame.tablet { width: 460px; }
+    .mockup-label { color: #aaa; text-align: center; font-size: 0.85rem; margin-top: 0.5rem; }
+    .annotation { display: inline-block; background: #2a2a4a; color: #ccc; padding: 0.3rem 0.7rem; border-radius: 0.5rem; font-size: 0.75rem; margin: 0.25rem; border: 1px solid #3a3a5a; }
+    .annotation.new { border-color: #40916C; color: #40916C; }
+    .annotation.highlight { border-color: var(--primary); color: var(--primary); }
+
+    /* ===== Chat message bubble ===== */
+    .chat-area { padding: 1rem; min-height: 200px; }
+    .chat-bubble {
+      max-width: 88%;
+      border-radius: 1rem 1rem 1rem 0.4rem;
+      background: var(--secondary-bubble);
+      padding: 0.85rem 1rem;
+      box-shadow: 0 2px 8px rgba(139,90,43,0.08);
+      margin-bottom: 0.5rem;
+    }
+    .chat-header { display: flex; align-items: center; gap: 0.45rem; margin-bottom: 0.5rem; }
+    .chat-mascot {
+      width: 24px; height: 24px; border-radius: 50%;
+      background: var(--primary); color: white;
+      display: flex; align-items: center; justify-content: center; font-size: 0.75rem;
+      flex-shrink: 0;
+    }
+    .chat-name { font-size: 0.75rem; font-weight: 700; color: var(--primary); }
+    .chat-text { font-size: 0.85rem; color: var(--text); line-height: 1.5; }
+    .chat-text .recipe-line { display: block; font-weight: 600; margin: 0.4rem 0 0.2rem; color: var(--text-heading); }
+
+    /* ===== Action button row ===== */
+    .actions-row {
+      display: flex; gap: 0.5rem; margin-top: 0.85rem; flex-wrap: wrap;
+    }
+    .actions-row.stacked { flex-direction: column; }
+    .actions-row.stacked .btn { width: 100%; justify-content: center; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
+      min-height: 36px;
+      padding: 0.5rem 0.9rem;
+      border-radius: 0.55rem;
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: background 0.15s;
+    }
+    .btn-primary { background: var(--primary); color: var(--primary-fg); box-shadow: 0 2px 6px rgba(217,123,74,0.25); }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-icon { width: 14px; height: 14px; }
+    .btn-truncate { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* ===== Picker modal mock ===== */
+    .modal-frame { background: var(--bg); border-radius: 0.75rem; padding: 1.25rem; box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+    .modal-title { font-size: 1.05rem; font-weight: 800; color: var(--text-heading); margin-bottom: 0.25rem; }
+    .modal-desc { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.85rem; }
+    .plan-row {
+      padding: 0.6rem 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      margin-bottom: 0.4rem;
+      cursor: pointer;
+      display: flex; justify-content: space-between; align-items: center;
+      background: white;
+    }
+    .plan-row.selected { border-color: var(--primary); background: rgba(217,123,74,0.06); }
+    .plan-row .plan-name { font-weight: 700; font-size: 0.85rem; color: var(--text-heading); }
+    .plan-row .plan-time { font-size: 0.7rem; color: var(--text-muted); margin-top: 1px; }
+    .plan-row .active-tag { font-size: 0.65rem; font-weight: 700; padding: 0.15rem 0.45rem; background: var(--primary); color: white; border-radius: 0.3rem; }
+    .modal-create-btn {
+      width: 100%; padding: 0.6rem; border: 1px dashed var(--text-muted);
+      background: transparent; color: var(--text-muted); font-weight: 600;
+      border-radius: 0.5rem; cursor: pointer; font-family: inherit; font-size: 0.85rem;
+    }
+    .modal-create-btn:hover { border-style: solid; border-color: var(--primary); color: var(--primary); }
+    .modal-footer { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem; }
+
+    /* ===== Toast ===== */
+    .toast-mock {
+      background: var(--text-heading);
+      color: white;
+      padding: 0.65rem 0.85rem;
+      border-radius: 0.6rem;
+      display: flex; align-items: center; gap: 0.6rem;
+      font-size: 0.85rem;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.3);
+      max-width: 360px;
+      margin: 0 auto;
+    }
+    .toast-mock .toast-msg { flex: 1; line-height: 1.35; }
+    .toast-mock .toast-msg strong { font-weight: 800; }
+    .toast-mock button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.3rem 0.7rem;
+      border-radius: 0.4rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    /* small input mock for new plan */
+    .input-mock {
+      width: 100%; padding: 0.5rem 0.65rem; border: 1px solid var(--border);
+      border-radius: 0.45rem; font-family: inherit; font-size: 0.85rem; background: white;
+    }
+    .input-label { font-size: 0.7rem; font-weight: 700; color: var(--text-heading); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 0.3rem; margin-top: 0.6rem; }
+  </style>
+</head>
+<body>
+
+  <h1>Chef chat — &ldquo;Add to plan&rdquo; button</h1>
+  <p class="lede">
+    Building on the <strong>Requirements & Acceptance Criteria</strong> step's decisions: just-meal-item (no auto-recipe), one-tap when active plan exists, picker otherwise, sibling to <strong>Save to Recipes</strong>. This doc shows the three button states + the picker reuse + toast/error/loading states. Compact because the surface area is one component file.
+  </p>
+
+  <!-- ============ STATE 1: ACTIVE PLAN ============ -->
+  <div class="section-label">State A · Active plan exists (one-tap)</div>
+  <div class="design-notes">
+    Most common case. Button label is <code>Add to "{plan name}"</code>, truncated with ellipsis if &gt; 22 chars (after the "Add to " prefix). Tooltip on hover/long-press shows the full plan name.
+    <br><br>
+    Both buttons use the same primary orange variant (matches the existing Save to Recipes treatment) — they're both equally valid actions; this isn't a scenario that justifies hierarchy. <strong>Save to Recipes</strong> stays first because the natural reading order is "save permanently first, then drop into tonight's plan."
+  </div>
+  <div class="mockup-row">
+    <div>
+      <div class="mockup-frame mobile">
+        <div class="chat-area">
+          <div class="chat-bubble">
+            <div class="chat-header"><div class="chat-mascot">🐱</div><div class="chat-name">Cat&apos;s Kitchen</div></div>
+            <div class="chat-text">
+              Here&apos;s a 25-min weeknight stir-fry — quick, flexible, and forgiving:
+              <span class="recipe-line">## Chicken & Veg Stir-fry</span>
+              ## Ingredients<br>
+              - 400g chicken thigh…<br>
+              ## Method<br>
+              1. Heat the wok…
+            </div>
+            <div class="actions-row stacked">
+              <button class="btn btn-primary">
+                <svg class="btn-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z"/></svg>
+                Save to Recipes
+              </button>
+              <button class="btn btn-primary">
+                <svg class="btn-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5"/></svg>
+                <span class="btn-truncate">Add to &ldquo;Sunday Roast&rdquo;</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mockup-label">Mobile · narrow bubble · buttons stack</div>
+    </div>
+
+    <div>
+      <div class="mockup-frame tablet">
+        <div class="chat-area">
+          <div class="chat-bubble">
+            <div class="chat-header"><div class="chat-mascot">🐱</div><div class="chat-name">Cat&apos;s Kitchen</div></div>
+            <div class="chat-text">Try this 25-min stir-fry: <span class="recipe-line">## Chicken & Veg Stir-fry</span>(abbreviated for mockup)</div>
+            <div class="actions-row">
+              <button class="btn btn-primary">
+                <svg class="btn-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z"/></svg>
+                Save to Recipes
+              </button>
+              <button class="btn btn-primary">
+                <svg class="btn-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5"/></svg>
+                <span class="btn-truncate">Add to &ldquo;Sunday Roast&rdquo;</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mockup-label">Tablet/desktop wider bubble · side-by-side</div>
+    </div>
+  </div>
+  <div>
+    <span class="annotation new">New "Add to {plan}" button</span>
+    <span class="annotation highlight">≥ 36px button height (Fitts's-Law tap target via padding)</span>
+    <span class="annotation">Plan name truncated · full in tooltip / aria-label</span>
+    <span class="annotation">Stacks below 380px wrapper width</span>
+  </div>
+
+  <!-- ============ STATE 2: NO ACTIVE PLAN (PICKER) ============ -->
+  <div class="section-label">State B · No active plan, &ge;1 plan exists (opens picker)</div>
+  <div class="design-notes">
+    When the user has plans but none active, a one-tap default would be a guess — the picker forces a deliberate choice. Reuses the existing <code>AddToPlanDialog</code> from the recipe → plan flow (already battle-tested), so this is an integration rather than a new component. Picker shows all plans + "Create new plan" affordance at the bottom.
+  </div>
+  <div class="mockup-row">
+    <div>
+      <div class="mockup-frame mobile">
+        <div class="chat-area" style="padding-top: 0.5rem;">
+          <div class="modal-frame">
+            <div class="modal-title">Add to Meal Plan</div>
+            <div class="modal-desc">Add &ldquo;Chicken & Veg Stir-fry&rdquo; to a plan.</div>
+
+            <div class="plan-row selected">
+              <div>
+                <div class="plan-name">Sunday Roast</div>
+                <div class="plan-time">Sun 28 Apr · 6:00 PM</div>
+              </div>
+            </div>
+            <div class="plan-row">
+              <div>
+                <div class="plan-name">Tuesday dinner</div>
+                <div class="plan-time">Tue 30 Apr · 7:30 PM</div>
+              </div>
+            </div>
+            <div class="plan-row">
+              <div>
+                <div class="plan-name">Friday curry night</div>
+                <div class="plan-time">Fri 03 May · 7:00 PM</div>
+              </div>
+            </div>
+            <button class="modal-create-btn">＋ Create new plan</button>
+
+            <div class="modal-footer">
+              <button class="btn" style="background:transparent;color:var(--text-muted);border:1px solid var(--border)">Cancel</button>
+              <button class="btn btn-primary">Add to Plan</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mockup-label">Picker (existing AddToPlanDialog, reused)</div>
+    </div>
+  </div>
+
+  <!-- ============ STATE 3: NO PLANS AT ALL ============ -->
+  <div class="section-label">State C · No plans exist (picker defaults to create)</div>
+  <div class="design-notes">
+    Same dialog, different default mode: form pre-filled with the recipe title as the plan name + sensible serve-time default (existing behaviour: now + 2h, rounded to next 15 min). The "Back to existing plans" link is hidden when there are none.
+  </div>
+  <div class="mockup-row">
+    <div>
+      <div class="mockup-frame mobile">
+        <div class="chat-area" style="padding-top: 0.5rem;">
+          <div class="modal-frame">
+            <div class="modal-title">Add to Meal Plan</div>
+            <div class="modal-desc">You don&apos;t have any plans yet — let&apos;s create one for &ldquo;Chicken & Veg Stir-fry&rdquo;.</div>
+
+            <span class="input-label">Plan Name</span>
+            <input class="input-mock" value="Chicken & Veg Stir-fry"/>
+
+            <span class="input-label">Serve Time</span>
+            <input class="input-mock" value="2026-04-30T19:00"/>
+
+            <div class="modal-footer">
+              <button class="btn" style="background:transparent;color:var(--text-muted);border:1px solid var(--border)">Cancel</button>
+              <button class="btn btn-primary">Create plan & add</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mockup-label">First-time user · picker in create mode</div>
+    </div>
+  </div>
+
+  <!-- ============ TOAST + STATES ============ -->
+  <div class="section-label">Success toast + non-success states</div>
+  <div class="design-notes">
+    On successful add, dismissible 6s toast with a primary "View plan" action. Match the existing post-save Phase 2 toast pattern from the planner sync feature.
+  </div>
+  <div class="mockup-row">
+    <div style="background: rgba(0,0,0,0.05); padding: 1.5rem; border-radius: 1rem;">
+      <div class="toast-mock">
+        <span style="font-size: 1.1rem;">✓</span>
+        <div class="toast-msg">
+          Added to <strong>Sunday Roast</strong>.
+        </div>
+        <button>View plan</button>
+      </div>
+      <div class="mockup-label">Success toast (auto-dismiss 6s)</div>
+    </div>
+  </div>
+
+  <div class="design-notes" style="margin-top: 1rem;">
+    <strong>State map (Compass UX heuristic — handle every state):</strong>
+    <ul>
+      <li><strong>Loading</strong> — clicking the button shows inline <em>"Adding…"</em> text and disables both action buttons until the mutation resolves. No spinner; the colour-faded disabled state + text change is enough for &lt; 1 s mutations.</li>
+      <li><strong>Optimistic</strong> — could update immediately, but planner data isn't on screen so there's no UI to reconcile; await the round-trip + use the toast as confirmation (familiar pattern from the sync push toast).</li>
+      <li><strong>Error</strong> — destructive toast: <em>"Couldn't add to plan. Try again?"</em> with a retry-on-tap action. Button returns to its default state.</li>
+      <li><strong>Empty</strong> (no recipe in message) — both buttons are hidden (existing behaviour for Save to Recipes via <code>containsRecipe</code>).</li>
+      <li><strong>Picker open during streaming</strong> — if the AI is still streaming when the cook taps, the button works on whatever recipe content has arrived so far (rare; the cook would normally wait until the message is complete because the button text only renders post-streaming).</li>
+      <li><strong>Concurrent</strong> — if the cook taps both Save to Recipes AND Add to plan rapidly, both fire independently and both succeed (no shared state).</li>
+    </ul>
+
+    <strong>Accessibility:</strong>
+    <ul>
+      <li><code>aria-label</code> on the Add to plan button uses the full plan name (no truncation): <em>"Add &ldquo;Sunday Roast — that 4-hour beef one&rdquo; to plan"</em>.</li>
+      <li>Both buttons keyboard-reachable; focus order: Save to Recipes → Add to plan.</li>
+      <li>Picker: existing dialog already follows shadcn focus-trap conventions.</li>
+      <li>Touch targets: ≥ 36px height + 0.5rem horizontal padding gives ≥ 44px effective hit area on iOS/Android (matches existing button sizing).</li>
+      <li>Stacked layout on narrow bubbles avoids horizontal overflow at 320 – 380 px wrapper widths.</li>
+    </ul>
+
+    <strong>Implementation notes for Atlas:</strong>
+    <ul>
+      <li><code>chat-message.tsx</code>: add a sibling button under <code>{showSaveButton && !saved && ...}</code>. Wrap both in <code>flex flex-col sm:flex-row gap-2</code> so they stack on narrow bubbles and sit side-by-side once there's room.</li>
+      <li>Determine button mode by reading <code>useMealPlans</code>: <code>activePlan</code> (one-tap) vs <code>mealPlans.length</code> (picker vs picker-in-create-mode).</li>
+      <li>One-tap path calls <code>addMealItem(activePlan.id, payload)</code> directly — no dialog open.</li>
+      <li>Picker path opens the existing <code>AddToPlanDialog</code> with the parsed recipe data; <strong>extend</strong> its <code>RecipeData</code> prop to optionally accept <code>ingredients</code> and <code>notes</code> so they round-trip into the meal item (current dialog drops them).</li>
+      <li><code>AddToPlanDialog</code> needs a tiny tweak: when called with no plans, default <code>mode</code> to <code>'create'</code> and pre-fill <code>newPlanName</code> from the recipe title.</li>
+      <li>Toast uses the existing <code>sonnerToast</code>, mirroring the Phase 2 push toast — same UX vocabulary across the app.</li>
+    </ul>
+
+    <strong>What this design deliberately does NOT add:</strong>
+    <ul>
+      <li>No "Save to recipes & planner" combined option in v1 — the cook can hit both buttons.</li>
+      <li>No mid-flow editing of the meal item — they edit after via the planner.</li>
+      <li>No serve-time selector when adding to an existing plan — uses the plan's existing serve time.</li>
+    </ul>
+  </div>
+
+  <div class="section-label">Hand-off</div>
+  <div class="design-notes">
+    Ready for build. Existing components carry most of the weight (`chat-message.tsx` for the new button, `AddToPlanDialog` for the picker, `sonnerToast` for the toast). Net new code is small. Awaiting Design Approval (step 3).
+  </div>
+
+</body>
+</html>
