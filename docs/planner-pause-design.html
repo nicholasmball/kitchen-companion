@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Planner pause / push-back / padding · UX</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #FAF6F1; --card: #F5E6D3; --card-nested: #EDD9C4; --border: #EDD9C4;
+      --text: #3D2914; --text-heading: #5C3D1E; --text-muted: #8B5A2B;
+      --primary: #D97B4A; --primary-hover: #C46A3A; --primary-fg: #FFFFFF;
+      --pause: #C99846;        /* amber — paused state */
+      --pause-deep: #8B5A2B;
+      --pause-soft: rgba(201,152,70,0.15);
+      --success: #40916C;
+      --danger: #B45050;
+    }
+    body { font-family: 'Nunito', sans-serif; background: #1a1a2e; color: var(--text); padding: 2rem; line-height: 1.5; }
+    h1 { color: white; text-align: center; font-size: 2rem; margin-bottom: 0.5rem; }
+    p.lede { color: #aaa; text-align: center; max-width: 740px; margin: 0 auto 2rem; font-size: 0.95rem; }
+    .section-label { color: white; font-size: 1.2rem; font-weight: 700; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--primary); display: inline-block; }
+    .design-notes { background: #2a2a4a; color: #ccc; padding: 1rem 1.5rem; border-radius: 0.75rem; margin-bottom: 1.5rem; font-size: 0.9rem; line-height: 1.6; }
+    .design-notes strong { color: var(--primary); }
+    .design-notes code { background: #3a3a5a; padding: 2px 6px; border-radius: 4px; font-size: 0.85rem; }
+    .design-notes ul, .design-notes ol { margin: 0.5rem 0 0.25rem 1.25rem; }
+    .design-notes li { margin-bottom: 0.3rem; }
+
+    .mockup-row { display: flex; gap: 1.5rem; flex-wrap: wrap; justify-content: center; margin-bottom: 1.5rem; }
+    .mockup-frame { background: var(--bg); border-radius: 1rem; overflow: hidden; box-shadow: 0 8px 24px rgba(139,90,43,0.15); }
+    .mockup-frame.mobile { width: 380px; }
+    .mockup-frame.tablet { width: 520px; }
+    .mockup-label { color: #aaa; text-align: center; font-size: 0.85rem; margin-top: 0.5rem; }
+    .annotation { display: inline-block; background: #2a2a4a; color: #ccc; padding: 0.3rem 0.7rem; border-radius: 0.5rem; font-size: 0.75rem; margin: 0.25rem; border: 1px solid #3a3a5a; }
+    .annotation.new { border-color: var(--success); color: var(--success); }
+    .annotation.pause { border-color: var(--pause); color: var(--pause); }
+    .annotation.warn { border-color: var(--danger); color: var(--danger); }
+
+    /* ===== Page header ===== */
+    .page-header {
+      padding: 0.85rem 1rem; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+    }
+    .page-title { font-size: 1.05rem; font-weight: 800; color: var(--text-heading); }
+    .page-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 1px; }
+    .header-actions { display: flex; gap: 0.4rem; flex-shrink: 0; }
+    .icon-btn {
+      width: 40px; height: 40px;
+      border-radius: 0.55rem; border: 1px solid var(--border);
+      background: var(--bg); color: var(--text-muted);
+      display: inline-flex; align-items: center; justify-content: center;
+      cursor: pointer;
+    }
+    .icon-btn:hover { background: var(--card); }
+
+    /* ===== Pause / Push primary buttons ===== */
+    .pause-bar {
+      display: flex; gap: 0.5rem; padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--border);
+      background: rgba(217,123,74,0.04);
+    }
+    .pause-btn {
+      flex: 1; min-height: 56px; padding: 0.5rem 1rem;
+      border-radius: 0.7rem; border: none; cursor: pointer;
+      font-family: inherit; font-size: 0.95rem; font-weight: 800;
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+      box-shadow: 0 2px 6px rgba(139,90,43,0.1);
+      background: var(--pause); color: white;
+    }
+    .pause-btn:hover { background: var(--pause-deep); }
+    .pushback-btn {
+      flex: 1; min-height: 56px; padding: 0.5rem 1rem;
+      border-radius: 0.7rem;
+      font-family: inherit; font-size: 0.85rem; font-weight: 700;
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+      background: var(--bg); color: var(--text-heading);
+      border: 1px solid var(--border);
+      cursor: pointer;
+    }
+    .pushback-btn:hover { background: var(--card); }
+    .icon { width: 18px; height: 18px; }
+
+    /* ===== Paused banner (the centrepiece) ===== */
+    .paused-banner {
+      background: var(--pause); color: white;
+      padding: 1rem 1.1rem;
+      display: flex; flex-direction: column; gap: 0.85rem;
+      position: relative;
+      overflow: hidden;
+    }
+    /* Subtle pulse so it's clearly "alive but paused" */
+    .paused-banner::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at top right, rgba(255,255,255,0.18), transparent 60%);
+      animation: pulse 3s ease-in-out infinite;
+      pointer-events: none;
+    }
+    @keyframes pulse { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
+    .paused-row1 { display: flex; align-items: center; gap: 0.65rem; }
+    .paused-icon-circle {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: rgba(255,255,255,0.2); border: 2px solid white;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; font-weight: 800; flex-shrink: 0;
+    }
+    .paused-title { font-size: 1.1rem; font-weight: 900; line-height: 1.1; }
+    .paused-elapsed { font-size: 0.8rem; opacity: 0.95; margin-top: 1px; font-variant-numeric: tabular-nums; }
+    .resume-btn {
+      width: 100%; min-height: 56px; padding: 0.5rem 1rem;
+      border-radius: 0.7rem; border: none; cursor: pointer;
+      font-family: inherit; font-size: 1rem; font-weight: 800;
+      background: white; color: var(--pause-deep);
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .resume-btn:hover { background: rgba(255,255,255,0.9); }
+    .paused-hint {
+      display: flex; align-items: center; gap: 0.5rem;
+      background: rgba(0,0,0,0.15); padding: 0.55rem 0.7rem;
+      border-radius: 0.5rem; font-size: 0.78rem; line-height: 1.4;
+    }
+    .paused-hint-icon { font-size: 1.1rem; }
+
+    /* ===== Push-back menu (popover) ===== */
+    .pushback-menu {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 0.5rem;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+      width: 240px;
+    }
+    .pushback-menu-title {
+      font-size: 0.7rem; font-weight: 800; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.05em;
+      padding: 0.4rem 0.6rem 0.5rem;
+    }
+    .pushback-option {
+      width: 100%; min-height: 48px; padding: 0.55rem 0.7rem;
+      border: none; background: transparent;
+      display: flex; align-items: center; justify-content: space-between;
+      font-family: inherit; font-size: 0.9rem; font-weight: 600;
+      color: var(--text); cursor: pointer; border-radius: 0.45rem;
+    }
+    .pushback-option:hover { background: var(--card); }
+    .pushback-option .new-time { font-size: 0.75rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+    .pushback-divider { height: 1px; background: var(--border); margin: 0.3rem 0.4rem; }
+    .pushback-option.custom { color: var(--primary); font-weight: 700; }
+
+    /* ===== Timeline mock ===== */
+    .timeline {
+      padding: 1rem;
+    }
+    .timeline-title { font-size: 1rem; font-weight: 700; color: var(--text-heading); margin-bottom: 0.65rem; }
+    .timeline-event {
+      display: flex; align-items: flex-start; gap: 0.65rem;
+      padding: 0.5rem 0.55rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .timeline-event:last-child { border-bottom: none; }
+    .timeline-event.paused-marker {
+      background: var(--pause-soft);
+      border-left: 3px solid var(--pause);
+      border-radius: 0.45rem;
+      margin-left: -3px;
+    }
+    .timeline-time {
+      font-weight: 800; color: var(--text-heading); font-size: 0.85rem;
+      width: 4.5rem; flex-shrink: 0; font-variant-numeric: tabular-nums;
+    }
+    .timeline-time.shifted { color: var(--pause-deep); }
+    .timeline-time.shifted::after { content: ' (was 6:00)'; font-size: 0.65rem; font-weight: 600; opacity: 0.7; display: block; }
+    .timeline-label { font-size: 0.85rem; color: var(--text); }
+
+    /* ===== Plan create form (padding field) ===== */
+    .form-section { padding: 1rem; }
+    .form-row { margin-bottom: 0.85rem; }
+    .form-label { display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-heading); margin-bottom: 0.3rem; }
+    .form-input {
+      width: 100%; padding: 0.55rem 0.65rem;
+      border: 1px solid var(--border); border-radius: 0.45rem;
+      background: white; font-family: inherit; font-size: 0.9rem;
+    }
+    .form-help { font-size: 0.7rem; color: var(--text-muted); margin-top: 0.3rem; line-height: 1.4; }
+    .form-help strong { color: var(--pause-deep); }
+    .padding-field-wrap {
+      background: rgba(64, 145, 108, 0.05);
+      border: 1px dashed rgba(64, 145, 108, 0.3);
+      border-radius: 0.6rem;
+      padding: 0.7rem;
+    }
+    .padding-suffix {
+      display: flex; align-items: center; gap: 0.4rem;
+    }
+    .padding-suffix .form-input { max-width: 5rem; text-align: center; font-weight: 700; }
+    .padding-suffix-text { font-size: 0.85rem; color: var(--text); font-weight: 600; }
+
+    /* ===== Toast ===== */
+    .toast-mock {
+      background: var(--text-heading); color: white;
+      padding: 0.7rem 0.95rem; border-radius: 0.6rem;
+      display: flex; align-items: center; gap: 0.6rem;
+      font-size: 0.88rem; box-shadow: 0 8px 18px rgba(0,0,0,0.3);
+      max-width: 380px; margin: 0 auto;
+    }
+    .toast-mock .toast-msg { flex: 1; line-height: 1.35; }
+    .toast-mock .toast-msg strong { font-weight: 800; }
+
+    /* ===== Cooking mode chrome ===== */
+    .cm-banner {
+      background: var(--primary); color: white;
+      padding: 0.75rem 1rem; display: flex; align-items: center; justify-content: space-between;
+    }
+    .cm-step { padding: 0.85rem; }
+    .cm-step-num { font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; }
+    .cm-step-text { font-size: 1.1rem; line-height: 1.4; margin-top: 0.2rem; }
+
+    /* Section divider */
+    .ddiv { text-align: center; margin: 4rem 0 1rem; }
+    .ddiv h2 { color: white; font-size: 1.5rem; padding: 0.5rem 1.2rem; border: 2px solid var(--pause); border-radius: 0.7rem; display: inline-block; }
+  </style>
+</head>
+<body>
+
+  <h1>Planner pause / push-back / padding</h1>
+  <p class="lede">
+    Building on the <strong>Requirements & Acceptance Criteria</strong> step's locked v1 set (A · pause + B · push-back + D · planning padding). The visual "PAUSED" state has to be impossible to miss for a cook glancing back at a phone on a flour-covered counter — that's the centrepiece of this design. Mockups assume a real-cook context (messy hands, time pressure, peripheral vision).
+  </p>
+
+  <!-- ============ STATE 1: RUNNING (with new buttons) ============ -->
+  <div class="section-label">1 · Running plan — Pause + Push-back affordances</div>
+  <div class="design-notes">
+    Pause and Push-back live in a dedicated bar directly under the page header — not buried in a menu, because (a) they're high-stakes mid-cook actions and (b) thumb reach matters. Both buttons are <strong>56 px tall</strong> (raised from project standard 44 px per requirements — messy hands deserve more target).
+    <ul>
+      <li><strong>Pause</strong> uses the amber "warning" colour palette so its triggered state (the banner) is colour-consistent.</li>
+      <li><strong>Push back serve time</strong> is a quieter outline button — used less often.</li>
+      <li>Both visible only when <code>plan.serve_time</code> is set (i.e. the plan has actually been scheduled — no point pausing an unscheduled plan).</li>
+    </ul>
+  </div>
+  <div class="mockup-row">
+    <div>
+      <div class="mockup-frame mobile">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Sunday Roast</div>
+            <div class="page-meta">Serve at 6:00 PM · 4 items</div>
+          </div>
+          <div class="header-actions">
+            <button class="icon-btn" title="Edit plan">✎</button>
+          </div>
+        </div>
+        <div class="pause-bar">
+          <button class="pause-btn">
+            <svg class="icon" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+            Pause plan
+          </button>
+          <button class="pushback-btn">
+            <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2"/><circle cx="12" cy="12" r="9"/></svg>
+            Push back
+          </button>
+        </div>
+        <div class="timeline">
+          <div class="timeline-title">Timeline</div>
+          <div class="timeline-event"><span class="timeline-time">4:23 PM</span><span class="timeline-label">Start chicken — preheat oven 200°C</span></div>
+          <div class="timeline-event"><span class="timeline-time">5:35 PM</span><span class="timeline-label">Start cauliflower cheese</span></div>
+          <div class="timeline-event"><span class="timeline-time">5:43 PM</span><span class="timeline-label">Chicken out, rest 17 min</span></div>
+          <div class="timeline-event"><span class="timeline-time">6:00 PM</span><span class="timeline-label">Serve · Sunday Roast</span></div>
+        </div>
+      </div>
+      <div class="mockup-label">Mobile · running plan with new Pause + Push-back bar</div>
+    </div>
+  </div>
+  <div>
+    <span class="annotation new">Pause button — primary mid-cook action</span>
+    <span class="annotation new">Push back — quieter, less-used button</span>
+    <span class="annotation pause">56 px tap targets (messy-hands principle)</span>
+  </div>
+
+  <!-- ============ STATE 2: PAUSED BANNER ============ -->
+  <div class="section-label">2 · Plan paused — the centrepiece banner</div>
+  <div class="design-notes">
+    When paused, the bar morphs into a <strong>full-bleed amber banner</strong> with: pause icon (high contrast white-on-amber), elapsed timer (font-variant-numeric: tabular-nums, ticks every second), large prominent Resume button, and a small reminder about the heat. Subtle radial pulse animation (3 s loop) makes it visually alive without being distracting — Compass-tested heuristic for "the system is waiting on you" states.
+    <br><br>
+    <strong>Why amber, not red?</strong> Red signals "something is wrong" — it'd raise stress. Amber says "we've stopped intentionally" — calm and recoverable. The banner shouts visually without shouting emotionally.
+    <br><br>
+    Tab title gets prefixed with <code>⏸ Paused — </code> so users glancing at a browser tab on a laptop also see it (e.g. cook ducks back to the office mid-cook).
+  </div>
+  <div class="mockup-row">
+    <div>
+      <div class="mockup-frame mobile">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Sunday Roast</div>
+            <div class="page-meta">Serve at 6:08 PM (was 6:00) · 4 items</div>
+          </div>
+          <div class="header-actions">
+            <button class="icon-btn" title="Edit plan">✎</button>
+          </div>
+        </div>
+        <div class="paused-banner">
+          <div class="paused-row1">
+            <div class="paused-icon-circle">⏸</div>
+            <div>
+              <div class="paused-title">Plan paused</div>
+              <div class="paused-elapsed">Paused for 4:23</div>
+            </div>
+          </div>
+          <button class="resume-btn">
+            <svg class="icon" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 0.3rem;"><path d="M8 5v14l11-7z"/></svg>
+            Resume plan
+          </button>
+          <div class="paused-hint">
+            <span class="paused-hint-icon">🔥</span>
+            <span>Don&apos;t forget the oven is still on!</span>
+          </div>
+        </div>
+        <div class="timeline">
+          <div class="timeline-title">Timeline</div>
+          <div class="timeline-event"><span class="timeline-time">4:23 PM</span><span class="timeline-label">Start chicken — preheat oven 200°C</span></div>
+          <div class="timeline-event paused-marker"><span class="timeline-time">5:18 PM</span><span class="timeline-label"><strong>Paused here</strong> · Resume to continue</span></div>
+          <div class="timeline-event"><span class="timeline-time shifted">5:43 PM</span><span class="timeline-label">Start cauliflower cheese</span></div>
+          <div class="timeline-event"><span class="timeline-time shifted">5:51 PM</span><span class="timeline-label">Chicken out, rest 17 min</span></div>
+          <div class="timeline-event"><span class="timeline-time shifted">6:08 PM</span><span class="timeline-label">Serve · Sunday Roast</span></div>
+        </div>
+      </div>
+      <div class="mockup-label">Mobile · banner pulses subtly · timeline shows shifted times + paused-here marker</div>
+    </div>
+    <div>
+      <div class="mockup-frame tablet">
+        <div class="cm-banner">
+          <div style="display:flex; align-items: center; gap: 0.5rem;">
+            <span style="font-size: 1.2rem;">👨‍🍳</span>
+            <strong style="font-weight: 800;">Cooking Mode</strong>
+            <span style="font-size: 0.75rem; opacity: 0.8;">· Sunday Roast</span>
+          </div>
+          <button class="icon-btn" style="background:rgba(255,255,255,0.2);border-color:transparent;color:white;">✕</button>
+        </div>
+        <div class="paused-banner">
+          <div class="paused-row1">
+            <div class="paused-icon-circle">⏸</div>
+            <div>
+              <div class="paused-title">Plan paused</div>
+              <div class="paused-elapsed">Paused for 1:42</div>
+            </div>
+          </div>
+          <button class="resume-btn">
+            <svg class="icon" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 0.3rem;"><path d="M8 5v14l11-7z"/></svg>
+            Resume plan
+          </button>
+          <div class="paused-hint">
+            <span class="paused-hint-icon">🔥</span>
+            <span>Don&apos;t forget the oven is still on!</span>
+          </div>
+        </div>
+        <div class="cm-step">
+          <div class="cm-step-num">Step 4 · in progress</div>
+          <div class="cm-step-text">Whisk in the egg yolks one at a time, then fold in the chocolate.</div>
+        </div>
+      </div>
+      <div class="mockup-label">Cooking mode · pause banner persists into single-item view</div>
+    </div>
+  </div>
+  <div>
+    <span class="annotation pause">Sticky banner (always visible regardless of scroll)</span>
+    <span class="annotation pause">Tabular-nums elapsed timer (no jitter)</span>
+    <span class="annotation pause">Heat-reminder beats false safety</span>
+    <span class="annotation new">Persists into cooking mode</span>
+  </div>
+
+  <!-- ============ STATE 3: PUSH-BACK MENU ============ -->
+  <div class="section-label">3 · Push back serve time menu</div>
+  <div class="design-notes">
+    Tapping <strong>Push back</strong> opens a popover anchored to the button. Five tap targets (4 quick + 1 custom), each ≥ 48 px tall. Each option shows the <em>resulting</em> serve time so the cook can pick by destination, not just by delta — recognition over recall.
+    <br><br>
+    Quick picks one-tap apply. "Pick a new time…" opens a small datetime input dialog. Push-back is also accessible <em>inside</em> the paused banner (subtle "or push the serve time" link below the Resume button) for the case where a quick pause turns into a longer delay.
+  </div>
+  <div class="mockup-row">
+    <div>
+      <div class="mockup-frame mobile">
+        <div class="page-header" style="padding-bottom: 0.65rem;">
+          <div><div class="page-title">Sunday Roast</div><div class="page-meta">Serve at 6:00 PM</div></div>
+        </div>
+        <div class="pause-bar">
+          <button class="pause-btn">
+            <svg class="icon" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+            Pause plan
+          </button>
+          <button class="pushback-btn" style="background: var(--card); border-color: var(--primary);">
+            <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2"/><circle cx="12" cy="12" r="9"/></svg>
+            Push back
+          </button>
+        </div>
+        <div style="position: relative;">
+          <div class="pushback-menu" style="position: absolute; top: 0.5rem; right: 1rem; z-index: 10;">
+            <div class="pushback-menu-title">Push serve time…</div>
+            <button class="pushback-option">+5 min<span class="new-time">→ 6:05 PM</span></button>
+            <button class="pushback-option">+10 min<span class="new-time">→ 6:10 PM</span></button>
+            <button class="pushback-option">+15 min<span class="new-time">→ 6:15 PM</span></button>
+            <button class="pushback-option">+30 min<span class="new-time">→ 6:30 PM</span></button>
+            <div class="pushback-divider"></div>
+            <button class="pushback-option custom">Pick a new time…</button>
+          </div>
+          <div style="height: 280px; opacity: 0.3;">
+            <div class="timeline">
+              <div class="timeline-title">Timeline</div>
+              <div class="timeline-event"><span class="timeline-time">4:23 PM</span><span class="timeline-label">Start chicken</span></div>
+              <div class="timeline-event"><span class="timeline-time">5:35 PM</span><span class="timeline-label">Start cauliflower cheese</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mockup-label">Push-back popover anchored to the button</div>
+    </div>
+    <div>
+      <div style="background: rgba(0,0,0,0.05); padding: 1.5rem; border-radius: 1rem;">
+        <div class="toast-mock">
+          <span style="font-size: 1.1rem;">✓</span>
+          <div class="toast-msg">Serve time pushed to <strong>6:15 PM</strong>.</div>
+        </div>
+        <div class="mockup-label">Toast after quick-pick (auto-dismiss 4 s)</div>
+      </div>
+    </div>
+  </div>
+  <div>
+    <span class="annotation new">Each option shows the resulting serve time (recognition)</span>
+    <span class="annotation pause">Push-back is also offered inside the paused banner for "this is going to be longer than expected"</span>
+  </div>
+
+  <!-- ============ STATE 4: PADDING FIELD ============ -->
+  <div class="section-label">4 · Plan create / edit form — buffer minutes field</div>
+  <div class="design-notes">
+    The padding field lives in the plan create / edit form, near the serve-time field (where the timing concept is already in the cook's head). Surrounded with a soft green dashed outline so it visually says "this is the contingency cushion" without needing extra labels (Gestalt similarity to the "before you start" / action-item theme established in the recipes feature). Default is <strong>0</strong>; help text recommends 10–15.
+    <br><br>
+    Showing the resulting <em>"start cooking 10 minutes earlier than the plan strictly requires"</em> microcopy (computed live from the field value) helps cooks understand what they're configuring.
+  </div>
+  <div class="mockup-row">
+    <div>
+      <div class="mockup-frame mobile">
+        <div class="page-header">
+          <div class="page-title">Edit plan</div>
+        </div>
+        <div class="form-section">
+          <div class="form-row">
+            <label class="form-label">Plan name</label>
+            <input class="form-input" value="Sunday Roast"/>
+          </div>
+          <div class="form-row">
+            <label class="form-label">Serve time</label>
+            <input class="form-input" value="2026-04-30T18:00"/>
+          </div>
+          <div class="form-row padding-field-wrap">
+            <label class="form-label">Buffer minutes <span style="color:var(--text-muted);font-weight:500;font-size:0.7rem;">(optional)</span></label>
+            <div class="padding-suffix">
+              <input class="form-input" value="10" type="number" min="0" max="120"/>
+              <span class="padding-suffix-text">min of slack at the start</span>
+            </div>
+            <div class="form-help">
+              Adds <strong>slack</strong> before cooking starts so a small interruption doesn&apos;t ruin the plan. Try <strong>10–15</strong> to start.
+              <br>
+              <em>Result:</em> cooking starts 10 min earlier than strictly needed. If something slips, you have a cushion.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mockup-label">Padding field placement · with live "result" microcopy</div>
+    </div>
+  </div>
+
+  <!-- ============ STATE MAP ============ -->
+  <div class="section-label">5 · State map (handle every state)</div>
+  <div class="design-notes">
+    <ul>
+      <li><strong>Plan running, no serve_time set</strong> — Pause / Push-back hidden (nothing to pause / push). Help text in the timeline area: "Set a serve time to enable pause and push-back."</li>
+      <li><strong>Plan running, serve_time in the past</strong> — Pause / Push-back still visible (cook may run a plan after its scheduled time). Push-back works normally.</li>
+      <li><strong>Plan paused</strong> — banner visible. Pause button replaced by the banner. Push-back still tappable inside the banner.</li>
+      <li><strong>Resume tap during paused</strong> — banner fades out (200 ms), timeline times update, success toast: <em>"Resumed. Serve at 6:08 PM"</em>.</li>
+      <li><strong>Network failure during pause/resume</strong> — optimistic UI updates immediately; if the mutation fails we roll back + toast: <em>"Couldn&apos;t pause. Try again?"</em>. The cook isn&apos;t left in an unknown state.</li>
+      <li><strong>Multi-tab</strong> — if the user has the planner open in two tabs, real-time subscription (already in the project) syncs the pause state across tabs.</li>
+      <li><strong>Plan deleted / made inactive while paused</strong> — pause state is lost (acceptable; the cook explicitly removed the plan).</li>
+      <li><strong>Cooking-mode entered from a paused plan</strong> — banner persists; step checkboxes still tickable (paused affects timing, not interactions).</li>
+      <li><strong>Cook taps Pause repeatedly</strong> — debounced; only the first tap fires the mutation.</li>
+      <li><strong>Push-back to a time before now</strong> — disallowed; quick-pick still works (since adds positive delta), custom datetime input has a min attribute pinned to now.</li>
+    </ul>
+
+    <strong>Accessibility</strong>:
+    <ul>
+      <li>Pause / Resume / Push-back are <code>&lt;button&gt;</code> elements with descriptive <code>aria-label</code>s ("Pause the meal plan", "Resume the meal plan, currently paused for 4 minutes 23 seconds", "Push back the serve time").</li>
+      <li>The paused banner has <code>role="status"</code> + <code>aria-live="polite"</code> so screen readers announce the pause state.</li>
+      <li>The elapsed timer updates via <code>aria-live="off"</code> to avoid flooding the screen reader with second-by-second announcements; it&apos;s decorative for sighted users.</li>
+      <li>Amber on amber-banner contrast: white-on-#C99846 = 4.6:1 (AA). Tested.</li>
+      <li>Pulse animation respects <code>prefers-reduced-motion</code> — disabled when the user has reduced-motion preference set.</li>
+      <li>Keyboard: Pause / Resume reachable via Tab; Esc closes the push-back popover.</li>
+      <li>Tap targets ≥ 56 px tall (raised from project standard 44 px per real-cook requirements).</li>
+    </ul>
+  </div>
+
+  <!-- ============ DATA + IMPLEMENTATION NOTES ============ -->
+  <div class="section-label">6 · Data model + implementation notes for Atlas</div>
+  <div class="design-notes">
+    <strong>Schema</strong> (3 new columns on <code>meal_plans</code>):
+    <ul>
+      <li><code>paused_at: timestamptz | null</code></li>
+      <li><code>total_pause_seconds: int default 0</code></li>
+      <li><code>padding_minutes: int default 0</code> (with check: <code>padding_minutes &gt;= 0 AND padding_minutes &lt;= 120</code>)</li>
+    </ul>
+    <strong>Timing-calculator changes</strong> (<code>lib/timing-calculator.ts</code>):
+    <ul>
+      <li>Effective offset = <code>total_pause_seconds + (now - paused_at if paused else 0)</code>. Add this to every event time.</li>
+      <li><code>padding_minutes</code> shifts the first event earlier by N minutes — i.e. the calculator&apos;s "earliest start" point becomes <code>serve_time - total_required_time - padding_minutes</code>.</li>
+      <li>Both adjustments compose cleanly: <code>effective_event_time = serve_time - (countdown_to_event) - padding_minutes + pause_offset</code>.</li>
+    </ul>
+    <strong>Notifications</strong>:
+    <ul>
+      <li>On Pause: cancel all scheduled notifications for this plan via the existing helper in <code>lib/notifications.ts</code>.</li>
+      <li>On Resume: re-schedule using the recomputed event times.</li>
+      <li>If the cook resumes mid-event (e.g. Resume happens 3 seconds after the cook_start should have fired), do NOT fire a missed notification — just continue from "now" forward.</li>
+    </ul>
+    <strong>UI extraction</strong>:
+    <ul>
+      <li>New <code>&lt;PausedBanner&gt;</code> component — encapsulates the banner + elapsed ticker + Resume button + heat hint. Used by both the planner page and cooking-mode views.</li>
+      <li>New <code>&lt;PushBackMenu&gt;</code> component — popover with quick-pick + custom-time options. Reused inside the banner.</li>
+      <li>Pause + Push-back buttons live in a new <code>&lt;PlanControlsBar&gt;</code> component below the page header.</li>
+    </ul>
+  </div>
+
+  <!-- ============ HAND-OFF ============ -->
+  <div class="section-label">Hand-off</div>
+  <div class="design-notes">
+    Ready for build. The banner + the Compass-tested pulse-animation pattern is the centrepiece — Atlas should pay particular attention to that. New schema + 2 new UI components + 1 calculator update.
+    <br><br>
+    Awaiting Design Approval (step 3) before Atlas picks up.
+  </div>
+
+</body>
+</html>

@@ -59,6 +59,9 @@ create table public.meal_plans (
   description text,
   serve_time timestamptz,
   is_active boolean default false,
+  paused_at timestamptz,                                          -- non-null while plan is paused
+  total_pause_seconds int default 0 not null,                     -- accumulated pause across resume cycles
+  padding_minutes int default 0 not null check (padding_minutes >= 0 and padding_minutes <= 120),
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );

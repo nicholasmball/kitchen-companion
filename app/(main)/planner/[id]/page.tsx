@@ -14,9 +14,19 @@ import { AddRecipeToPlan } from '@/components/planner/add-recipe-to-plan'
 import { PlannerRecipeSheet } from '@/components/planner/planner-recipe-sheet'
 import { RefreshFromRecipeDialog } from '@/components/planner/refresh-from-recipe-dialog'
 import { PushToRecipeDialog } from '@/components/planner/push-to-recipe-dialog'
+import { PausedBanner } from '@/components/planner/paused-banner'
+import { PlanControlsBar } from '@/components/planner/plan-controls-bar'
+import { PushBackMenu } from '@/components/planner/push-back-menu'
 import { calculateTimeline } from '@/lib/timing-calculator'
 import { createClient } from '@/lib/supabase/client'
 import { buildPushPayload, buildRefreshPayload, computeDiff, type SnapshotFieldKey } from '@/lib/recipe-sync'
+import {
+  applyPauseAndPadding,
+  buildPushBackPayload,
+  buildResumePayload,
+  isPaused,
+} from '@/lib/plan-pause'
+import { cancelScheduledNotification } from '@/lib/notifications'
 import { toast as sonnerToast } from 'sonner'
 import { getOfferPushOnSave } from '@/lib/sync-preferences'
 import { Button } from '@/components/ui/button'
@@ -41,6 +51,9 @@ interface MealPlanWithItems {
   is_active: boolean
   created_at: string
   updated_at: string
+  paused_at: string | null
+  total_pause_seconds: number
+  padding_minutes: number
   meal_items: MealItem[]
 }
 
@@ -78,6 +91,11 @@ export default function MealPlanDetailPage() {
   const [pushDialogRecipe, setPushDialogRecipe] = useState<Recipe | null>(null)
   const [pushDialogLoading, setPushDialogLoading] = useState(false)
   const [pushDialogError, setPushDialogError] = useState<string | null>(null)
+
+  // Pause / push-back state
+  const [pausing, setPausing] = useState(false)
+  const [resuming, setResuming] = useState(false)
+  const [pushBackMenuOpen, setPushBackMenuOpen] = useState(false)
 
   // Shared recipe sheet state (used by both item card clicks and timeline event clicks)
   const [recipeSheetItem, setRecipeSheetItem] = useState<MealItem | null>(null)
@@ -339,10 +357,11 @@ export default function MealPlanDetailPage() {
     [pushDialogItem, pushDialogRecipe, updateMealItem]
   )
 
-  // Calculate timeline
+  // Calculate timeline (with pause + padding offsets applied)
   const timeline = useMemo(() => {
     if (!plan?.serve_time || !plan.meal_items.length) return []
-    return calculateTimeline(plan.meal_items, new Date(plan.serve_time))
+    const base = calculateTimeline(plan.meal_items, new Date(plan.serve_time))
+    return applyPauseAndPadding(base, plan)
   }, [plan])
 
   // Sort items by timeline start time (earliest first) when a serve time exists
@@ -442,6 +461,73 @@ export default function MealPlanDetailPage() {
     setDeleting(false)
   }, [id, deleteMealPlan, router])
 
+  // ── Pause / Resume / Push-back handlers ───────────────────────────────
+  const cancelAllPlanNotifications = useCallback(() => {
+    if (!plan) return
+    // Future-proof: cancel any scheduled notifications keyed by plan + event id.
+    // (No-ops cleanly when nothing is scheduled.)
+    for (const event of timeline) {
+      cancelScheduledNotification(`${plan.id}-${event.id}`).catch(() => {
+        // Silent — best-effort cleanup
+      })
+    }
+  }, [plan, timeline])
+
+  const handlePause = useCallback(async () => {
+    if (!plan || isPaused(plan)) return
+    setPausing(true)
+    const pausedAt = new Date().toISOString()
+    // Optimistic update + rollback on failure
+    const prevPaused = plan.paused_at
+    setPlan((p) => (p ? { ...p, paused_at: pausedAt } : null))
+    cancelAllPlanNotifications()
+    const result = await updateMealPlan(id, { paused_at: pausedAt })
+    if (!result) {
+      setPlan((p) => (p ? { ...p, paused_at: prevPaused } : null))
+      sonnerToast.error("Couldn't pause", { description: 'Try again?' })
+    }
+    setPausing(false)
+  }, [plan, id, updateMealPlan, cancelAllPlanNotifications])
+
+  const handleResume = useCallback(async () => {
+    if (!plan || !plan.paused_at) return
+    setResuming(true)
+    const payload = buildResumePayload(plan)
+    const prevPaused = plan.paused_at
+    const prevTotal = plan.total_pause_seconds
+    // Optimistic update
+    setPlan((p) => (p ? { ...p, paused_at: null, total_pause_seconds: payload.total_pause_seconds } : null))
+    const result = await updateMealPlan(id, payload)
+    if (!result) {
+      setPlan((p) => (p ? { ...p, paused_at: prevPaused, total_pause_seconds: prevTotal } : null))
+      sonnerToast.error("Couldn't resume", { description: 'Try again?' })
+    } else {
+      sonnerToast.success('Resumed')
+    }
+    setResuming(false)
+  }, [plan, id, updateMealPlan])
+
+  const handlePushBack = useCallback(
+    async (selection: { addMinutes: number } | { newServeTime: string }) => {
+      if (!plan || !plan.serve_time) return
+      const payload = buildPushBackPayload(plan.serve_time, selection)
+      const prevServeTime = plan.serve_time
+      setPlan((p) => (p ? { ...p, serve_time: payload.serve_time } : null))
+      const result = await updateMealPlan(id, payload)
+      if (!result) {
+        setPlan((p) => (p ? { ...p, serve_time: prevServeTime } : null))
+        sonnerToast.error("Couldn't push back serve time", { description: 'Try again?' })
+      } else {
+        const time = new Date(payload.serve_time).toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+        sonnerToast.success(`Serve time pushed to ${time}`)
+      }
+    },
+    [plan, id, updateMealPlan]
+  )
+
   const handleSetActive = useCallback(async () => {
     const success = await setAsActive(id)
     if (success) {
@@ -484,9 +570,30 @@ export default function MealPlanDetailPage() {
   }
 
   const serveTime = plan.serve_time ? new Date(plan.serve_time) : null
+  const planIsPaused = isPaused(plan)
 
   return (
     <div className="space-y-6">
+      {/* Pause / Push-back affordances — sticky at the top so they're always reachable */}
+      {serveTime && (
+        <div className="sticky top-16 z-10 -mx-4 sm:mx-0 px-4 sm:px-0 pt-2 pb-2 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+          {planIsPaused ? (
+            <PausedBanner
+              plan={plan}
+              onResume={handleResume}
+              resuming={resuming}
+              onPushBack={() => setPushBackMenuOpen(true)}
+            />
+          ) : (
+            <PlanControlsBar
+              onPause={handlePause}
+              onPushBack={() => setPushBackMenuOpen(true)}
+              pausing={pausing}
+            />
+          )}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col gap-4">
         <div className="flex items-start justify-between">
@@ -688,6 +795,16 @@ export default function MealPlanDetailPage() {
           }
         }}
       />
+
+      {/* Push-back picker (also opens from inside the paused banner) */}
+      {plan.serve_time && (
+        <PushBackMenu
+          open={pushBackMenuOpen}
+          onOpenChange={setPushBackMenuOpen}
+          currentServeTime={plan.serve_time}
+          onApply={handlePushBack}
+        />
+      )}
 
       {/* Refresh-from-recipe diff dialog (Phase 1) */}
       <RefreshFromRecipeDialog

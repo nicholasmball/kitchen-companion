@@ -14,6 +14,9 @@ export type Database = {
           is_active: boolean
           created_at: string
           updated_at: string
+          paused_at: string | null
+          total_pause_seconds: number
+          padding_minutes: number
         }
         Insert: {
           id?: string
@@ -24,6 +27,9 @@ export type Database = {
           is_active?: boolean
           created_at?: string
           updated_at?: string
+          paused_at?: string | null
+          total_pause_seconds?: number
+          padding_minutes?: number
         }
         Update: {
           id?: string
@@ -34,6 +40,9 @@ export type Database = {
           is_active?: boolean
           created_at?: string
           updated_at?: string
+          paused_at?: string | null
+          total_pause_seconds?: number
+          padding_minutes?: number
         }
       }
       meal_items: {

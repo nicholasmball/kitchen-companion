@@ -108,6 +108,7 @@ Supabase Storage bucket `recipe-images` for recipe image uploads.
 - Browser notifications + audio alerts at each step
 - Label scanning via Claude Vision to extract cooking info from food packaging
 - Service Worker for background notifications
+- **Pause / Push back / Padding (interruption-tolerant timing):** sticky Pause + Push-back bar at the top of the planner page (56 px tap targets — "messy hands" principle). Pause freezes the timer (`meal_plans.paused_at` set, future notifications cancelled), shows a pulsing amber banner with elapsed-pause counter and "Don't forget the oven is still on!" hint. Resume bumps `total_pause_seconds` and shifts every event forward. Push-back offers +5/+10/+15/+30 quick picks plus custom datetime, each showing the resulting serve time. Plan create/edit form has a "Buffer minutes" field (default 0, max 120) that adds slack at the start so small interruptions don't cascade. All sync is manual; in-flight cooks never auto-mutated. See `lib/plan-pause.ts` for the time-arithmetic library + `docs/planner-pause-design.html` for the UX spec.
 
 ### Chef Assistant
 - Streaming chat powered by Claude API
