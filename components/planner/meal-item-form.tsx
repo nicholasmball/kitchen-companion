@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
@@ -19,6 +18,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { LabelScanner } from './label-scanner'
+import { InstructionEditor } from '@/components/recipes/instruction-editor'
+import {
+  parseInstructionItems,
+  serializeInstructionItems,
+  type InstructionItem,
+} from '@/lib/instruction-items'
 import { usePreferences } from '@/hooks/use-preferences'
 import type { MealItem } from '@/types'
 
@@ -53,7 +58,9 @@ export function MealItemForm({ item, open, onOpenChange, onSubmit }: MealItemFor
   const [temperature, setTemperature] = useState(item?.temperature?.toString() || '')
   const [temperatureUnit, setTemperatureUnit] = useState<'C' | 'F'>(item?.temperature_unit || preferredTempUnit)
   const [cookingMethod, setCookingMethod] = useState<string>(item?.cooking_method || 'oven')
-  const [instructions, setInstructions] = useState(item?.instructions || '')
+  const [instructionItems, setInstructionItems] = useState<InstructionItem[]>(() =>
+    parseInstructionItems(item?.instructions)
+  )
   const [notes, setNotes] = useState(item?.notes || '')
 
   // Sync state with item prop when it changes (for editing existing items)
@@ -66,7 +73,7 @@ export function MealItemForm({ item, open, onOpenChange, onSubmit }: MealItemFor
       setTemperature(item.temperature?.toString() || '')
       setTemperatureUnit(item.temperature_unit || 'C')
       setCookingMethod(item.cooking_method || 'oven')
-      setInstructions(item.instructions || '')
+      setInstructionItems(parseInstructionItems(item.instructions))
       setNotes(item.notes || '')
     } else {
       // Reset form when creating new item
@@ -77,7 +84,7 @@ export function MealItemForm({ item, open, onOpenChange, onSubmit }: MealItemFor
       setTemperature('')
       setTemperatureUnit(preferredTempUnit)
       setCookingMethod('oven')
-      setInstructions('')
+      setInstructionItems([])
       setNotes('')
     }
   }, [item])
@@ -97,7 +104,7 @@ export function MealItemForm({ item, open, onOpenChange, onSubmit }: MealItemFor
     if (data.temperature) setTemperature(data.temperature.toString())
     if (data.temperature_unit) setTemperatureUnit(data.temperature_unit as 'C' | 'F')
     if (data.cooking_method) setCookingMethod(data.cooking_method)
-    if (data.instructions) setInstructions(data.instructions)
+    if (data.instructions) setInstructionItems(parseInstructionItems(data.instructions))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -112,7 +119,7 @@ export function MealItemForm({ item, open, onOpenChange, onSubmit }: MealItemFor
       temperature: temperature ? parseInt(temperature) : null,
       temperature_unit: temperatureUnit,
       cooking_method: cookingMethod,
-      instructions: instructions.trim() || null,
+      instructions: serializeInstructionItems(instructionItems) || null,
       notes: notes.trim() || null,
     }
 
@@ -128,7 +135,7 @@ export function MealItemForm({ item, open, onOpenChange, onSubmit }: MealItemFor
         setPrepTime('')
         setRestTime('')
         setTemperature('')
-        setInstructions('')
+        setInstructionItems([])
         setNotes('')
       }
     }
@@ -246,14 +253,8 @@ export function MealItemForm({ item, open, onOpenChange, onSubmit }: MealItemFor
 
           {/* Instructions */}
           <div className="space-y-2">
-            <Label htmlFor="instructions">Instructions</Label>
-            <Textarea
-              id="instructions"
-              value={instructions}
-              onChange={(e) => setInstructions(e.target.value)}
-              placeholder="Any specific cooking instructions..."
-              rows={3}
-            />
+            <Label>Method</Label>
+            <InstructionEditor items={instructionItems} onChange={setInstructionItems} />
           </div>
 
           {/* Notes */}
