@@ -58,6 +58,7 @@ export function AddRecipeToPlan({ open, onOpenChange, onAdd }: AddRecipeToPlanPr
         notes: `From recipe: ${recipe.title}`,
         recipe_id: recipe.id,
         ingredients: recipe.ingredients?.length ? recipe.ingredients : null,
+        recipe_snapshot_at: new Date().toISOString(),
       })
       onOpenChange(false)
     } catch (err) {
@@ -88,6 +89,7 @@ export function AddRecipeToPlan({ open, onOpenChange, onAdd }: AddRecipeToPlanPr
         notes: 'Imported from URL/image',
         recipe_id: null,
         ingredients: null,
+        recipe_snapshot_at: null,
       })
       onOpenChange(false)
     } catch (err) {

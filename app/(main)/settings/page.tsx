@@ -15,9 +15,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { useOfferPushOnSave } from '@/lib/sync-preferences'
 import { useRouter } from 'next/navigation'
 
 export default function SettingsPage() {
+  const [offerPushOnSave, setOfferPushOnSavePref] = useOfferPushOnSave()
   const [displayName, setDisplayName] = useState('')
   const [email, setEmail] = useState('')
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
@@ -433,6 +435,23 @@ export default function SettingsPage() {
                 </Select>
                 <p className="text-xs text-muted-foreground">
                   Used by the chef assistant and when importing recipes
+                </p>
+              </div>
+
+              <div className="space-y-2 pt-2">
+                <Label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={offerPushOnSave}
+                    onChange={(e) => setOfferPushOnSavePref(e.target.checked)}
+                    className="w-4 h-4 accent-primary cursor-pointer"
+                  />
+                  <span>Offer to save planner edits back to recipes</span>
+                </Label>
+                <p className="text-xs text-muted-foreground pl-7">
+                  When you edit a meal item in the planner that came from a recipe,
+                  show a toast asking if you&apos;d like to save those changes to the
+                  canonical recipe too.
                 </p>
               </div>
             </div>

@@ -24,15 +24,19 @@ import {
   serializeInstructionItems,
   type InstructionItem,
 } from '@/lib/instruction-items'
+import { isStale, formatSnapshotDate } from '@/lib/recipe-sync'
 import { usePreferences } from '@/hooks/use-preferences'
-import type { MealItem } from '@/types'
+import type { MealItem, Recipe } from '@/types'
+import Link from 'next/link'
 
 interface MealItemFormProps {
   item?: MealItem
+  sourceRecipe?: Recipe | null
   open: boolean
   onOpenChange: (open: boolean) => void
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onSubmit: (data: any) => Promise<MealItem | null>
+  onRefreshFromRecipe?: (item: MealItem) => void
 }
 
 const COOKING_METHODS = [
@@ -47,7 +51,14 @@ const COOKING_METHODS = [
   { value: 'other', label: 'Other' },
 ]
 
-export function MealItemForm({ item, open, onOpenChange, onSubmit }: MealItemFormProps) {
+export function MealItemForm({
+  item,
+  sourceRecipe,
+  open,
+  onOpenChange,
+  onSubmit,
+  onRefreshFromRecipe,
+}: MealItemFormProps) {
   const { temperatureUnit: preferredTempUnit } = usePreferences()
   const [loading, setLoading] = useState(false)
   const [scannerOpen, setScannerOpen] = useState(false)
@@ -149,6 +160,54 @@ export function MealItemForm({ item, open, onOpenChange, onSubmit }: MealItemFor
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Snapshot context line — visible only when this item came from a recipe */}
+          {item && item.recipe_id && (() => {
+            const stale = sourceRecipe && isStale(item.recipe_snapshot_at, sourceRecipe.updated_at)
+            const dateLabel = formatSnapshotDate(item.recipe_snapshot_at)
+            return (
+              <div
+                className={
+                  stale
+                    ? 'rounded-md border border-[#C99846]/40 bg-[#C99846]/10 px-3 py-2 text-sm flex items-start justify-between gap-2'
+                    : 'rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground flex items-center justify-between gap-2'
+                }
+              >
+                <div className="flex-1 min-w-0">
+                  {stale ? (
+                    <>
+                      <div className="font-bold text-[#8B5A2B]">Recipe updated</div>
+                      <div className="text-xs text-muted-foreground">
+                        From <span className="font-semibold">{sourceRecipe?.title || 'recipe'}</span>{' '}
+                        · snapshot {dateLabel}
+                      </div>
+                    </>
+                  ) : (
+                    <span>
+                      From{' '}
+                      <Link
+                        href={`/recipes/${item.recipe_id}`}
+                        className="font-semibold text-foreground hover:underline"
+                      >
+                        {sourceRecipe?.title || 'recipe'}
+                      </Link>{' '}
+                      · snapshot {dateLabel}
+                    </span>
+                  )}
+                </div>
+                {stale && onRefreshFromRecipe && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => onRefreshFromRecipe(item)}
+                    className="shrink-0 bg-[#C99846] text-white hover:bg-[#B5853C]"
+                  >
+                    Refresh
+                  </Button>
+                )}
+              </div>
+            )
+          })()}
+
           {/* Scan Label Button */}
           <Button
             type="button"

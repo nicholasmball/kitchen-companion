@@ -26,11 +26,13 @@ import type { Recipe } from '@/types'
 
 interface RecipeCardProps {
   recipe: Recipe
+  /** Number of meal-plan items pointing at an older snapshot of this recipe. */
+  staleSnapshotCount?: number
   onToggleFavourite?: (id: string) => void
   onDelete?: (id: string) => void
 }
 
-export function RecipeCard({ recipe, onToggleFavourite, onDelete }: RecipeCardProps) {
+export function RecipeCard({ recipe, staleSnapshotCount, onToggleFavourite, onDelete }: RecipeCardProps) {
   const totalTime = recipe.total_time_minutes
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showAddToPlanDialog, setShowAddToPlanDialog] = useState(false)
@@ -157,6 +159,15 @@ export function RecipeCard({ recipe, onToggleFavourite, onDelete }: RecipeCardPr
                 {recipe.cuisine}
               </Badge>
             )}
+            {staleSnapshotCount && staleSnapshotCount > 0 ? (
+              <span
+                className="inline-flex items-center gap-1 text-xs font-bold rounded-md px-1.5 py-0.5 border border-[#C99846]/40 bg-[#C99846]/12 text-[#8B5A2B]"
+                title={`${staleSnapshotCount} meal item${staleSnapshotCount === 1 ? '' : 's'} would update from this recipe`}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-[#C99846]" />
+                {staleSnapshotCount} plan item{staleSnapshotCount === 1 ? '' : 's'} stale
+              </span>
+            ) : null}
           </div>
         </CardContent>
       </Card>

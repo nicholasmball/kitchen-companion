@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useRecipes } from '@/hooks/use-recipes'
@@ -16,10 +16,44 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { createClient } from '@/lib/supabase/client'
+import { isStale } from '@/lib/recipe-sync'
 
 export default function RecipesPage() {
   const router = useRouter()
   const { recipes, loading, error, fetchRecipes, toggleFavourite, deleteRecipe, createRecipe } = useRecipes()
+
+  // Phase 3: count stale meal-item snapshots per recipe.
+  const [staleCountByRecipeId, setStaleCountByRecipeId] = useState<Record<string, number>>({})
+
+  useEffect(() => {
+    if (recipes.length === 0) {
+      setStaleCountByRecipeId({})
+      return
+    }
+    let cancelled = false
+    ;(async () => {
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from('meal_items')
+        .select('recipe_id, recipe_snapshot_at')
+        .not('recipe_id', 'is', null)
+      if (cancelled || error || !data) return
+      const updatedByRecipeId = new Map(recipes.map((r) => [r.id, r.updated_at]))
+      const counts: Record<string, number> = {}
+      for (const item of data as { recipe_id: string; recipe_snapshot_at: string | null }[]) {
+        const recipeUpdatedAt = updatedByRecipeId.get(item.recipe_id)
+        if (!recipeUpdatedAt) continue
+        if (isStale(item.recipe_snapshot_at, recipeUpdatedAt)) {
+          counts[item.recipe_id] = (counts[item.recipe_id] || 0) + 1
+        }
+      }
+      setStaleCountByRecipeId(counts)
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [recipes])
   const [importerOpen, setImporterOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [filterFavourites, setFilterFavourites] = useState(false)
@@ -188,6 +222,7 @@ export default function RecipesPage() {
             <RecipeCard
               key={recipe.id}
               recipe={recipe}
+              staleSnapshotCount={staleCountByRecipeId[recipe.id]}
               onToggleFavourite={toggleFavourite}
               onDelete={deleteRecipe}
             />

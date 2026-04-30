@@ -83,10 +83,18 @@ create table public.meal_items (
   instructions text,
   notes text,
   sort_order int default 0,
+  recipe_id uuid references public.recipes(id) on delete set null,
+  ingredients jsonb,
+  recipe_snapshot_at timestamptz,
   created_at timestamptz default now()
 );
 
 create index meal_items_meal_plan_id_idx on public.meal_items(meal_plan_id);
+
+-- Index for stale-detection joins (used by the recipe ↔ planner sync feature)
+create index meal_items_recipe_snapshot_at_idx
+  on public.meal_items(recipe_id, recipe_snapshot_at)
+  where recipe_id is not null;
 
 -- ============================================
 -- RECIPES TABLE

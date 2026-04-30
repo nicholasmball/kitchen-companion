@@ -12,7 +12,13 @@ import { TimerDisplay } from '@/components/planner/timer-display'
 import { NotificationPrompt } from '@/components/planner/notification-prompt'
 import { AddRecipeToPlan } from '@/components/planner/add-recipe-to-plan'
 import { PlannerRecipeSheet } from '@/components/planner/planner-recipe-sheet'
+import { RefreshFromRecipeDialog } from '@/components/planner/refresh-from-recipe-dialog'
+import { PushToRecipeDialog } from '@/components/planner/push-to-recipe-dialog'
 import { calculateTimeline } from '@/lib/timing-calculator'
+import { createClient } from '@/lib/supabase/client'
+import { buildPushPayload, buildRefreshPayload, computeDiff, type SnapshotFieldKey } from '@/lib/recipe-sync'
+import { toast as sonnerToast } from 'sonner'
+import { getOfferPushOnSave } from '@/lib/sync-preferences'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
@@ -24,7 +30,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import type { MealItem, MealPlanInsert, MealItemInsert, TimelineEvent, TimelineEventType } from '@/types'
+import type { MealItem, MealPlanInsert, MealItemInsert, Recipe, TimelineEvent, TimelineEventType } from '@/types'
 
 interface MealPlanWithItems {
   id: string
@@ -56,6 +62,22 @@ export default function MealPlanDetailPage() {
   const [plan, setPlan] = useState<MealPlanWithItems | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // Source recipes for items with recipe_id, keyed by recipe id. Used for
+  // staleness detection and the refresh-from-recipe diff dialog.
+  const [sourceRecipes, setSourceRecipes] = useState<Record<string, Recipe>>({})
+
+  // Refresh-from-recipe dialog state (Phase 1: pull recipe → meal item)
+  const [refreshDialogItem, setRefreshDialogItem] = useState<MealItem | null>(null)
+  const [refreshDialogRecipe, setRefreshDialogRecipe] = useState<Recipe | null>(null)
+  const [refreshDialogLoading, setRefreshDialogLoading] = useState(false)
+  const [refreshDialogError, setRefreshDialogError] = useState<string | null>(null)
+
+  // Push-to-recipe dialog state (Phase 2: push meal item → recipe)
+  const [pushDialogItem, setPushDialogItem] = useState<MealItem | null>(null)
+  const [pushDialogRecipe, setPushDialogRecipe] = useState<Recipe | null>(null)
+  const [pushDialogLoading, setPushDialogLoading] = useState(false)
+  const [pushDialogError, setPushDialogError] = useState<string | null>(null)
 
   // Shared recipe sheet state (used by both item card clicks and timeline event clicks)
   const [recipeSheetItem, setRecipeSheetItem] = useState<MealItem | null>(null)
@@ -168,6 +190,155 @@ export default function MealPlanDetailPage() {
     fetchPlan()
   }, [id, getMealPlan])
 
+  // Fetch source recipes for items that came from a recipe — needed for
+  // staleness detection on the planner card and the refresh diff dialog.
+  useEffect(() => {
+    if (!plan) return
+    const recipeIds = Array.from(
+      new Set(plan.meal_items.map((i) => i.recipe_id).filter((r): r is string => !!r))
+    )
+    if (recipeIds.length === 0) {
+      setSourceRecipes({})
+      return
+    }
+    let cancelled = false
+    ;(async () => {
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from('recipes')
+        .select('*')
+        .in('id', recipeIds)
+      if (cancelled) return
+      if (error || !data) return
+      const next: Record<string, Recipe> = {}
+      for (const r of data) next[r.id] = r as Recipe
+      setSourceRecipes(next)
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [plan])
+
+  // Refresh dialog: open and re-fetch the recipe to ensure freshest data.
+  const handleOpenRefreshDialog = useCallback(
+    async (item: MealItem) => {
+      if (!item.recipe_id) return
+      setRefreshDialogItem(item)
+      setRefreshDialogRecipe(sourceRecipes[item.recipe_id] || null)
+      setRefreshDialogError(null)
+      setRefreshDialogLoading(true)
+      try {
+        const supabase = createClient()
+        const { data, error } = await supabase
+          .from('recipes')
+          .select('*')
+          .eq('id', item.recipe_id)
+          .single()
+        if (error || !data) {
+          setRefreshDialogError(
+            error?.code === 'PGRST116'
+              ? 'The source recipe was deleted. Your meal item is unchanged.'
+              : "Couldn't load the latest recipe. Try again?"
+          )
+        } else {
+          setRefreshDialogRecipe(data as Recipe)
+          setSourceRecipes((prev) => ({ ...prev, [(data as Recipe).id]: data as Recipe }))
+        }
+      } catch {
+        setRefreshDialogError("Couldn't load the latest recipe. Try again?")
+      } finally {
+        setRefreshDialogLoading(false)
+      }
+    },
+    [sourceRecipes]
+  )
+
+  const handleConfirmRefresh = useCallback(async () => {
+    if (!refreshDialogItem || !refreshDialogRecipe) return
+    const payload = buildRefreshPayload(refreshDialogRecipe)
+    const updated = await updateMealItem(refreshDialogItem.id, payload)
+    if (!updated) throw new Error('refresh failed')
+    setPlan((prev) =>
+      prev
+        ? {
+            ...prev,
+            meal_items: prev.meal_items.map((i) => (i.id === updated.id ? updated : i)),
+          }
+        : null
+    )
+  }, [refreshDialogItem, refreshDialogRecipe, updateMealItem])
+
+  // Phase 2: open the push-to-recipe dialog (re-fetches recipe to detect conflicts).
+  const handleOpenPushDialog = useCallback(
+    async (item: MealItem) => {
+      if (!item.recipe_id) return
+      setPushDialogItem(item)
+      setPushDialogRecipe(sourceRecipes[item.recipe_id] || null)
+      setPushDialogError(null)
+      setPushDialogLoading(true)
+      try {
+        const supabase = createClient()
+        const { data, error } = await supabase
+          .from('recipes')
+          .select('*')
+          .eq('id', item.recipe_id)
+          .single()
+        if (error || !data) {
+          setPushDialogError(
+            error?.code === 'PGRST116'
+              ? "The source recipe was deleted, so there's nothing to update."
+              : "Couldn't load the recipe. Try again?"
+          )
+        } else {
+          setPushDialogRecipe(data as Recipe)
+          setSourceRecipes((prev) => ({ ...prev, [(data as Recipe).id]: data as Recipe }))
+        }
+      } catch {
+        setPushDialogError("Couldn't load the recipe. Try again?")
+      } finally {
+        setPushDialogLoading(false)
+      }
+    },
+    [sourceRecipes]
+  )
+
+  const handleConfirmPush = useCallback(
+    async (fields: SnapshotFieldKey[]) => {
+      if (!pushDialogItem || !pushDialogRecipe) return
+      if (fields.length === 0) return
+      const payload = buildPushPayload(pushDialogItem, fields)
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from('recipes')
+        .update(payload)
+        .eq('id', pushDialogRecipe.id)
+        .select()
+        .single()
+      if (error || !data) throw new Error(error?.message || 'push failed')
+      // Update local state so the badge clears (recipe.updated_at is now newer
+      // than the meal item snapshot, so we also bump the snapshot to match).
+      setSourceRecipes((prev) => ({ ...prev, [(data as Recipe).id]: data as Recipe }))
+      const newSnapshotAt = (data as Recipe).updated_at
+      const updatedMealItem = await updateMealItem(pushDialogItem.id, {
+        recipe_snapshot_at: newSnapshotAt,
+      })
+      if (updatedMealItem) {
+        setPlan((prev) =>
+          prev
+            ? {
+                ...prev,
+                meal_items: prev.meal_items.map((i) =>
+                  i.id === updatedMealItem.id ? updatedMealItem : i
+                ),
+              }
+            : null
+        )
+      }
+      sonnerToast.success('Recipe updated')
+    },
+    [pushDialogItem, pushDialogRecipe, updateMealItem]
+  )
+
   // Calculate timeline
   const timeline = useMemo(() => {
     if (!plan?.serve_time || !plan.meal_items.length) return []
@@ -225,9 +396,28 @@ export default function MealPlanDetailPage() {
         ...prev,
         meal_items: prev.meal_items.map((i) => i.id === editingItem.id ? result : i)
       } : null)
+
+      // Phase 2: if the saved item came from a recipe and now diverges, offer
+      // to push the changes back to the recipe. Respects the user's setting.
+      if (result.recipe_id && getOfferPushOnSave()) {
+        const sourceRecipe = sourceRecipes[result.recipe_id]
+        if (sourceRecipe) {
+          const diff = computeDiff(result, sourceRecipe)
+          if (diff.hasChanges) {
+            sonnerToast('Saved to this plan', {
+              description: 'Save these changes to the recipe too?',
+              action: {
+                label: 'Save to recipe',
+                onClick: () => handleOpenPushDialog(result),
+              },
+              duration: 6000,
+            })
+          }
+        }
+      }
     }
     return result
-  }, [editingItem, updateMealItem])
+  }, [editingItem, updateMealItem, sourceRecipes, handleOpenPushDialog])
 
   const handleDeleteItem = useCallback(async () => {
     if (!deleteItemDialog) return
@@ -390,12 +580,14 @@ export default function MealPlanDetailPage() {
                 <MealItemCard
                   key={item.id}
                   item={item}
+                  sourceRecipe={item.recipe_id ? sourceRecipes[item.recipe_id] : null}
                   onEdit={(item) => {
                     setEditingItem(item)
                     setItemFormOpen(true)
                   }}
                   onDelete={(id) => setDeleteItemDialog(id)}
                   onViewRecipe={handleViewRecipeFromCard}
+                  onRefreshFromRecipe={handleOpenRefreshDialog}
                 />
               ))}
             </div>
@@ -428,12 +620,18 @@ export default function MealPlanDetailPage() {
       {/* Add/Edit Item Dialog */}
       <MealItemForm
         item={editingItem || undefined}
+        sourceRecipe={editingItem?.recipe_id ? sourceRecipes[editingItem.recipe_id] : null}
         open={itemFormOpen}
         onOpenChange={(open) => {
           setItemFormOpen(open)
           if (!open) setEditingItem(null)
         }}
         onSubmit={editingItem ? handleUpdateItem : handleAddItem}
+        onRefreshFromRecipe={(item) => {
+          setItemFormOpen(false)
+          setEditingItem(null)
+          handleOpenRefreshDialog(item)
+        }}
       />
 
       {/* Delete Item Dialog */}
@@ -487,6 +685,48 @@ export default function MealPlanDetailPage() {
               ...prev,
               meal_items: [...prev.meal_items, result].sort((a, b) => a.sort_order - b.sort_order)
             } : null)
+          }
+        }}
+      />
+
+      {/* Refresh-from-recipe diff dialog (Phase 1) */}
+      <RefreshFromRecipeDialog
+        open={!!refreshDialogItem}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRefreshDialogItem(null)
+            setRefreshDialogRecipe(null)
+            setRefreshDialogError(null)
+          }
+        }}
+        mealItem={refreshDialogItem}
+        recipe={refreshDialogRecipe}
+        loadingRecipe={refreshDialogLoading}
+        errorRecipe={refreshDialogError}
+        onConfirm={handleConfirmRefresh}
+      />
+
+      {/* Push-to-recipe diff dialog (Phase 2) */}
+      <PushToRecipeDialog
+        open={!!pushDialogItem}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPushDialogItem(null)
+            setPushDialogRecipe(null)
+            setPushDialogError(null)
+          }
+        }}
+        mealItem={pushDialogItem}
+        recipe={pushDialogRecipe}
+        loadingRecipe={pushDialogLoading}
+        errorRecipe={pushDialogError}
+        onConfirm={handleConfirmPush}
+        onPullFirst={() => {
+          if (pushDialogItem) {
+            const item = pushDialogItem
+            setPushDialogItem(null)
+            setPushDialogRecipe(null)
+            handleOpenRefreshDialog(item)
           }
         }}
       />

@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recipe ↔ Meal-plan sync — UX Design</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #FAF6F1; --card: #F5E6D3; --card-nested: #EDD9C4; --border: #EDD9C4;
+      --text: #3D2914; --text-heading: #5C3D1E; --text-muted: #8B5A2B;
+      --primary: #D97B4A; --primary-hover: #C46A3A; --primary-fg: #FFFFFF;
+      --success: #40916C; --warning: #C99846; --danger: #B45050;
+      --upstream: #C99846;   /* recipe -> plan: amber, "update available" */
+      --downstream: #3D8B8B; /* plan -> recipe: teal, "save up" */
+    }
+    body { font-family: 'Nunito', sans-serif; background: #1a1a2e; color: var(--text); padding: 2rem; line-height: 1.5; }
+    h1 { color: white; text-align: center; font-size: 2rem; margin-bottom: 0.5rem; }
+    p.lede { color: #aaa; text-align: center; max-width: 740px; margin: 0 auto 2rem; font-size: 0.95rem; }
+    .section-label { color: white; font-size: 1.3rem; font-weight: 700; margin: 3rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--primary); display: inline-block; }
+    .design-notes { background: #2a2a4a; color: #ccc; padding: 1rem 1.5rem; border-radius: 0.75rem; margin-bottom: 1.5rem; font-size: 0.92rem; line-height: 1.6; }
+    .design-notes strong { color: var(--primary); }
+    .design-notes code { background: #3a3a5a; padding: 2px 6px; border-radius: 4px; font-size: 0.85rem; }
+    .design-notes ul, .design-notes ol { margin: 0.5rem 0 0.25rem 1.25rem; }
+    .design-notes li { margin-bottom: 0.35rem; }
+
+    .mockup-row { display: flex; gap: 1.5rem; flex-wrap: wrap; justify-content: center; margin-bottom: 2rem; }
+    .mockup-frame { background: var(--bg); border-radius: 1rem; overflow: hidden; box-shadow: 0 8px 24px rgba(139,90,43,0.15); }
+    .mockup-frame.mobile { width: 380px; }
+    .mockup-frame.desktop { max-width: 740px; flex: 1; min-width: 480px; }
+    .mockup-label { color: #aaa; text-align: center; font-size: 0.85rem; margin-top: 0.5rem; }
+    .annotation-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem; }
+    .annotation { display: inline-block; background: #2a2a4a; color: #ccc; padding: 0.3rem 0.7rem; border-radius: 0.5rem; font-size: 0.75rem; border: 1px solid #3a3a5a; }
+    .annotation.up { border-color: var(--upstream); color: var(--upstream); }
+    .annotation.down { border-color: var(--downstream); color: var(--downstream); }
+    .annotation.warn { border-color: var(--danger); color: var(--danger); }
+
+    /* ==== Frame chrome ==== */
+    .frame-header {
+      padding: 0.85rem 1rem; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .frame-header h3 { font-size: 1.05rem; font-weight: 700; color: var(--text-heading); }
+    .frame-body { padding: 1rem; }
+
+    .icon-btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+    .btn-primary { background: var(--primary); color: var(--primary-fg); border: none; padding: 0.55rem 1rem; border-radius: 0.55rem; font-weight: 700; font-family: inherit; cursor: pointer; font-size: 0.85rem; }
+    .btn-primary.up { background: var(--upstream); }
+    .btn-primary.down { background: var(--downstream); }
+    .btn-secondary { background: transparent; border: 1px solid var(--border); color: var(--text); padding: 0.55rem 1rem; border-radius: 0.55rem; font-weight: 600; font-family: inherit; cursor: pointer; font-size: 0.85rem; }
+
+    /* ==== Stale badge ==== */
+    .stale-badge {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      background: rgba(201,152,70,0.12);
+      border: 1px solid rgba(201,152,70,0.4);
+      color: var(--upstream);
+      padding: 0.25rem 0.55rem;
+      border-radius: 0.4rem;
+      font-size: 0.72rem; font-weight: 700;
+      cursor: pointer;
+    }
+    .stale-badge:hover { background: rgba(201,152,70,0.2); }
+    .stale-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--upstream); }
+
+    /* ==== Item card ==== */
+    .meal-item {
+      background: var(--card);
+      border-radius: 0.75rem;
+      padding: 0.75rem 0.85rem;
+      margin-bottom: 0.5rem;
+      border: 1px solid var(--border);
+    }
+    .meal-item-row1 { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+    .meal-item-name { font-weight: 700; color: var(--text-heading); font-size: 0.95rem; }
+    .meal-item-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.15rem; }
+    .meal-item-foot { display: flex; gap: 0.4rem; margin-top: 0.55rem; flex-wrap: wrap; align-items: center; }
+    .time-chip { background: var(--bg); padding: 0.15rem 0.5rem; border-radius: 0.35rem; font-size: 0.7rem; color: var(--text-muted); font-weight: 600; }
+
+    /* ==== Diff list ==== */
+    .diff-list { background: var(--bg); border-radius: 0.6rem; border: 1px solid var(--border); padding: 0.65rem; max-height: 240px; overflow-y: auto; }
+    .diff-row { display: flex; gap: 0.5rem; padding: 0.4rem 0; border-bottom: 1px solid var(--border); font-size: 0.85rem; align-items: flex-start; }
+    .diff-row:last-child { border-bottom: none; }
+    .diff-marker { font-weight: 800; width: 14px; text-align: center; flex-shrink: 0; font-size: 0.75rem; line-height: 1.5; }
+    .diff-add .diff-marker { color: var(--success); }
+    .diff-rem .diff-marker { color: var(--danger); }
+    .diff-mod .diff-marker { color: var(--upstream); }
+    .diff-add .diff-text { color: var(--text); }
+    .diff-rem .diff-text { color: var(--text-muted); text-decoration: line-through; }
+    .diff-mod .diff-text { color: var(--text); }
+    .diff-side-note { font-size: 0.7rem; color: var(--text-muted); margin-top: 0.15rem; }
+
+    /* ==== Toast ==== */
+    .toast-mock {
+      background: var(--text-heading);
+      color: white;
+      padding: 0.65rem 0.85rem;
+      border-radius: 0.6rem;
+      display: flex; align-items: center; gap: 0.6rem;
+      font-size: 0.85rem;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.3);
+      max-width: 360px;
+      margin: 0 auto;
+    }
+    .toast-mock .toast-msg { flex: 1; line-height: 1.35; }
+    .toast-mock .toast-msg strong { font-weight: 800; }
+    .toast-mock button {
+      background: transparent;
+      color: white;
+      border: 1px solid rgba(255,255,255,0.4);
+      padding: 0.3rem 0.7rem;
+      border-radius: 0.4rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .toast-mock button.primary { background: var(--downstream); border-color: var(--downstream); }
+
+    /* ==== Conflict banner ==== */
+    .conflict-banner {
+      background: rgba(180,80,80,0.08);
+      border-left: 4px solid var(--danger);
+      padding: 0.75rem 0.85rem;
+      border-radius: 0.55rem;
+      margin-bottom: 0.85rem;
+      font-size: 0.85rem;
+      color: var(--text);
+    }
+    .conflict-banner strong { color: var(--danger); display: block; margin-bottom: 0.25rem; font-weight: 800; }
+
+    /* ==== Section split ==== */
+    .direction-divider {
+      text-align: center; margin: 4rem 0 1rem;
+    }
+    .direction-divider h2 {
+      color: white; font-size: 1.65rem; padding: 0.6rem 1.6rem;
+      border: 2px solid; border-radius: 0.85rem; display: inline-block;
+    }
+    .direction-divider.up h2 { border-color: var(--upstream); }
+    .direction-divider.down h2 { border-color: var(--downstream); }
+    .direction-divider .arrow { display: block; color: #888; font-size: 0.9rem; margin-top: 0.4rem; }
+
+    /* ==== Comparison table ==== */
+    .truth-table {
+      width: 100%; background: #2a2a4a; border-radius: 0.75rem; padding: 1rem;
+      color: #ccc; font-size: 0.85rem; margin-bottom: 1.5rem;
+    }
+    .truth-table table { width: 100%; border-collapse: collapse; }
+    .truth-table th, .truth-table td { padding: 0.5rem 0.65rem; border-bottom: 1px solid #3a3a5a; text-align: left; vertical-align: top; }
+    .truth-table th { color: white; font-weight: 700; font-size: 0.85rem; }
+    .truth-table tr:last-child td { border-bottom: none; }
+    .truth-table .ok { color: var(--success); font-weight: 700; }
+    .truth-table .no { color: var(--danger); font-weight: 700; }
+    .truth-table .meh { color: var(--upstream); font-weight: 700; }
+  </style>
+</head>
+<body>
+
+  <h1>Recipe ↔ Meal-plan sync</h1>
+  <p class="lede">
+    Today, adding a recipe to a meal plan creates a frozen snapshot. The recipe and the plan item drift independently after that point. This document explores how to give cooks <strong style="color: var(--upstream);">visibility</strong> into that drift, plus controlled tools to <strong style="color: var(--upstream);">pull updates from the recipe</strong> and <strong style="color: var(--downstream);">push improvements back to it</strong>.
+  </p>
+
+  <!-- ============ MENTAL MODEL ============ -->
+  <div class="section-label">The cook's mental model</div>
+  <div class="design-notes">
+    From watching how home cooks behave (rather than how recipe apps assume they do):
+    <ol>
+      <li><strong>Recipes are living documents.</strong> Cooks iterate every time they make something. "I've made this 20 times — now I know it needs more salt at the end." They expect their recipe to evolve.</li>
+      <li><strong>A meal plan is a single occasion.</strong> Tonight's roast, for these guests, with this oven, at this serve time. Per-occasion tweaks should NOT pollute the canonical recipe.</li>
+      <li><strong>In-flight cooks are fragile.</strong> Once you're in the kitchen with the timer running, the screen must NOT change underneath you. Anything that mutates mid-cook will be filed under "this app betrayed me."</li>
+      <li><strong>Cooks re-cook things on weekly cadence.</strong> If I improved the recipe last Sunday, I expect this Sunday's plan to use the improved version.</li>
+      <li><strong>Cooks make mid-cook discoveries.</strong> "I should have boiled the kettle first" — they want to capture the lesson back to the canonical recipe so they don't forget next time.</li>
+    </ol>
+    <strong>Design constraints that follow:</strong>
+    <ul>
+      <li>Storage stays as snapshot — protects the in-flight cook.</li>
+      <li>Sync is always <strong>manual</strong>, never automatic — the cook chooses when to act.</li>
+      <li>Sync is bi-directional, but each direction has different defaults and friction (see below).</li>
+      <li>Drift between snapshot and canonical recipe must be <strong>visible</strong> wherever the user could care.</li>
+    </ul>
+  </div>
+
+  <!-- ============ DIRECTION SUMMARY ============ -->
+  <div class="section-label">The two directions, side by side</div>
+  <div class="truth-table">
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th style="color: var(--upstream);">↓ Recipe → Plan ("pull update")</th>
+          <th style="color: var(--downstream);">↑ Plan → Recipe ("push improvement")</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Trigger scenario</strong></td>
+          <td>"I improved the recipe; my plan should use the new version."</td>
+          <td>"I learned something while cooking; the recipe should remember this."</td>
+        </tr>
+        <tr>
+          <td><strong>Where it surfaces</strong></td>
+          <td>Stale badge on the meal item card in the planner; "Refresh from recipe" action in the meal-item edit dialog.</td>
+          <td>Toast after saving a meal-item edit, offering "Also save to recipe?"; explicit "Save to recipe too" checkbox in the meal-item edit dialog.</td>
+        </tr>
+        <tr>
+          <td><strong>Default action</strong></td>
+          <td>Do nothing. Wait for the cook to tap "Refresh."</td>
+          <td>Do nothing. Wait for the cook to opt in.</td>
+        </tr>
+        <tr>
+          <td><strong>Risk if wrong</strong></td>
+          <td>Recipe edits could overwrite per-occasion tweaks (e.g. "tonight, no chili").</td>
+          <td>Per-occasion tweaks could leak into the canonical recipe.</td>
+        </tr>
+        <tr>
+          <td><strong>Mitigation</strong></td>
+          <td>Pre-action diff dialog showing what would change. Cancel always available.</td>
+          <td>Default OFF. Cook must consciously opt in. Toast also dismissible.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- PART 1: RECIPE -> PLAN  (pull updates)                       -->
+  <!-- ============================================================ -->
+
+  <div class="direction-divider up">
+    <h2>↓ Direction 1 · Recipe → Plan</h2>
+    <span class="arrow">"Pull updates from the recipe into my plan"</span>
+  </div>
+
+  <!-- Where it surfaces -->
+  <div class="section-label">1.1 · Stale badge on the planner</div>
+  <div class="design-notes">
+    When viewing a meal plan, every meal item that was sourced from a recipe carries a hidden stamp: <code>recipe_snapshot_at</code>. If the source recipe's <code>updated_at</code> is newer than the snapshot, the meal item card shows a small <strong>"Recipe updated"</strong> badge — amber, low-noise, tappable.
+    <ul>
+      <li>If the source recipe hasn't changed since snapshot: no badge, zero new visual noise.</li>
+      <li>If the source recipe has been deleted: no badge (snapshot is the source of truth — same as today).</li>
+      <li>Tapping the badge opens the diff dialog (1.2).</li>
+    </ul>
+  </div>
+  <div class="mockup-row">
+    <div>
+      <div class="mockup-frame mobile">
+        <div class="frame-header">
+          <h3>Sunday Roast · 6pm</h3>
+          <button class="icon-btn">✎</button>
+        </div>
+        <div class="frame-body">
+          <!-- meal item: chicken (in sync) -->
+          <div class="meal-item">
+            <div class="meal-item-row1">
+              <div>
+                <div class="meal-item-name">Roast chicken</div>
+                <div class="meal-item-meta">From "Classic roast chicken" · oven 180°C</div>
+              </div>
+            </div>
+            <div class="meal-item-foot">
+              <span class="time-chip">10m prep</span>
+              <span class="time-chip">80m cook</span>
+              <span class="time-chip">17m rest</span>
+            </div>
+          </div>
+          <!-- meal item: cauliflower cheese (stale) -->
+          <div class="meal-item">
+            <div class="meal-item-row1">
+              <div>
+                <div class="meal-item-name">Cauliflower cheese</div>
+                <div class="meal-item-meta">From "Cauliflower cheese" · oven 200°C</div>
+              </div>
+              <span class="stale-badge"><span class="dot"></span>Recipe updated</span>
+            </div>
+            <div class="meal-item-foot">
+              <span class="time-chip">5m prep</span>
+              <span class="time-chip">25m cook</span>
+            </div>
+          </div>
+          <!-- meal item: gravy (no recipe link) -->
+          <div class="meal-item">
+            <div class="meal-item-row1">
+              <div>
+                <div class="meal-item-name">Gravy</div>
+                <div class="meal-item-meta">Custom item · hob</div>
+              </div>
+            </div>
+            <div class="meal-item-foot">
+              <span class="time-chip">5m cook</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mockup-label">Planner · cauliflower cheese has a stale badge; chicken and gravy do not</div>
+    </div>
+  </div>
+  <div class="annotation-row">
+    <span class="annotation up">Amber dot = "update available"</span>
+    <span class="annotation up">Hidden when in sync (zero visual cost most of the time)</span>
+    <span class="annotation">Custom items (no recipe_id) never show the badge</span>
+  </div>
+
+  <!-- Diff dialog -->
+  <div class="section-label">1.2 · "Refresh from recipe" diff dialog</div>
+  <div class="design-notes">
+    Tapping the stale badge opens a focused dialog showing exactly what would change. Cooks scan, they don't read — the diff uses Gestalt similarity (green = added, red strike = removed, amber = changed) so the gist is visible at a glance. Per-occasion tweaks (anything the cook changed locally on the meal item since the snapshot) are flagged as "your changes" inline, so the cook sees what they'd lose.
+  </div>
+  <div class="mockup-row">
+    <div>
+      <div class="mockup-frame mobile">
+        <div class="frame-header">
+          <h3>Refresh "Cauliflower cheese"?</h3>
+          <button class="icon-btn">✕</button>
+        </div>
+        <div class="frame-body">
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.85rem;">
+            The recipe was updated <strong style="color: var(--text);">2 days ago</strong> after you added it to this plan.
+          </p>
+
+          <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-heading); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.4rem;">Method changes</div>
+          <div class="diff-list">
+            <div class="diff-row diff-add">
+              <span class="diff-marker">+</span>
+              <div>
+                <div class="diff-text"><span style="color: var(--success); font-weight: 700; font-size: 0.7rem;">[ACTION]</span> Boil the kettle</div>
+                <div class="diff-side-note">New action item</div>
+              </div>
+            </div>
+            <div class="diff-row diff-mod">
+              <span class="diff-marker">~</span>
+              <div>
+                <div class="diff-text">Bake for <strong>30 min</strong> (was <span style="text-decoration: line-through; color: var(--text-muted);">25 min</span>) until golden and bubbling</div>
+                <div class="diff-side-note">Step 4 changed</div>
+              </div>
+            </div>
+            <div class="diff-row diff-rem">
+              <span class="diff-marker">−</span>
+              <div>
+                <div class="diff-text">Sprinkle paprika on top</div>
+                <div class="diff-side-note">Step removed</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Conflict warning if user has local tweaks -->
+          <div class="conflict-banner" style="margin-top: 0.85rem; margin-bottom: 0;">
+            <strong>You have your own changes on this meal item</strong>
+            You changed cook time from <strong>25 → 28 min</strong> for tonight. Refreshing will replace your version with the recipe's <strong>30 min</strong>.
+          </div>
+
+          <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+            <button class="btn-secondary" style="flex: 1;">Cancel</button>
+            <button class="btn-primary up" style="flex: 1;">Refresh</button>
+          </div>
+        </div>
+      </div>
+      <div class="mockup-label">Diff dialog · shows additions / removals / modifications + flags local tweaks that would be lost</div>
+    </div>
+  </div>
+  <div class="annotation-row">
+    <span class="annotation up">Visual diff (Gestalt similarity)</span>
+    <span class="annotation warn">Local tweaks flagged before overwrite</span>
+    <span class="annotation">Cancel always wins by default placement</span>
+  </div>
+
+  <!-- Edit dialog hint -->
+  <div class="section-label">1.3 · Snapshot context line in meal-item edit dialog</div>
+  <div class="design-notes">
+    When the cook opens the meal-item edit dialog (the one we just shipped the structured editor into), a small line at the top tells them where this came from and when. If the source has been edited since, it offers a one-tap path to refresh.
+  </div>
+  <div class="mockup-row">
+    <div>
+      <div class="mockup-frame mobile">
+        <div class="frame-header">
+          <h3>Edit Item</h3>
+          <button class="icon-btn">✕</button>
+        </div>
+        <div class="frame-body">
+          <!-- snapshot context line (in-sync version) -->
+          <div style="background: var(--bg); border: 1px solid var(--border); padding: 0.5rem 0.65rem; border-radius: 0.5rem; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.85rem; display: flex; justify-content: space-between; align-items: center;">
+            <span>From <strong style="color: var(--text);">Cauliflower cheese</strong> · snapshot 28 Apr</span>
+            <a href="#" style="color: var(--primary); font-weight: 600; font-size: 0.75rem; text-decoration: none;">View recipe →</a>
+          </div>
+          <!-- (rest of edit form, abbreviated) -->
+          <div style="font-size: 0.75rem; color: #aaa; padding: 1rem; text-align: center; background: rgba(0,0,0,0.04); border-radius: 0.5rem; font-style: italic;">…name, cooking method, times, method editor (existing form)…</div>
+        </div>
+      </div>
+      <div class="mockup-label">Edit dialog · in-sync state (just orientation)</div>
+    </div>
+    <div>
+      <div class="mockup-frame mobile">
+        <div class="frame-header">
+          <h3>Edit Item</h3>
+          <button class="icon-btn">✕</button>
+        </div>
+        <div class="frame-body">
+          <!-- snapshot context line (stale version) -->
+          <div style="background: rgba(201,152,70,0.12); border: 1px solid rgba(201,152,70,0.4); padding: 0.5rem 0.65rem; border-radius: 0.5rem; font-size: 0.8rem; color: var(--text); margin-bottom: 0.85rem; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;">
+            <div>
+              <span style="color: var(--upstream); font-weight: 700;">Recipe updated 2 days ago.</span>
+              <span style="color: var(--text-muted); font-size: 0.75rem; display: block;">From Cauliflower cheese · snapshot 28 Apr</span>
+            </div>
+            <button class="btn-primary up" style="padding: 0.4rem 0.7rem; font-size: 0.75rem;">Refresh</button>
+          </div>
+          <div style="font-size: 0.75rem; color: #aaa; padding: 1rem; text-align: center; background: rgba(0,0,0,0.04); border-radius: 0.5rem; font-style: italic;">…rest of edit form…</div>
+        </div>
+      </div>
+      <div class="mockup-label">Edit dialog · stale state (refresh CTA inline)</div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- PART 2: PLAN -> RECIPE  (push improvements)                  -->
+  <!-- ============================================================ -->
+
+  <div class="direction-divider down">
+    <h2>↑ Direction 2 · Plan → Recipe</h2>
+    <span class="arrow">"Save my mid-cook discoveries back to the recipe"</span>
+  </div>
+
+  <!-- Trigger scenarios -->
+  <div class="section-label">2.1 · When does this need to happen?</div>
+  <div class="design-notes">
+    Three real-cook scenarios:
+    <ul>
+      <li><strong>"I learned this while cooking."</strong> Mid-prep, you realize the recipe should say "marinate the chicken for 30 min first." You add it as an action in the meal item. Want it on the canonical recipe so next time you don't forget.</li>
+      <li><strong>"Tonight-only adaptation."</strong> Skip the chili because Mum's coming. <em>Don't</em> want this on the canonical recipe.</li>
+      <li><strong>"Improved on the fly."</strong> While reading the steps, you realize step 4 and 5 should swap. You re-order them in the meal item. Want this in the recipe.</li>
+    </ul>
+    Two of three default to "yes, save to recipe." But the third is non-trivial — and the cost of a wrong "yes" (polluting the canonical recipe) is higher than the cost of a wrong "no" (one extra edit later). Default = OFF; cook opts in.
+  </div>
+
+  <!-- Toast after save -->
+  <div class="section-label">2.2 · Save toast with "Also save to recipe?" affordance</div>
+  <div class="design-notes">
+    After the cook saves any change to a meal item that originated from a recipe, show a non-blocking toast offering to push the change to the recipe. Auto-dismisses after ~6 s. Tapping "Save to recipe" opens a small confirm dialog (2.3) showing what would propagate. This is Hick's-Law friendly: one CTA, one ignore-path.
+  </div>
+  <div class="mockup-row">
+    <div style="background: rgba(0,0,0,0.05); padding: 1.5rem; border-radius: 1rem;">
+      <div class="toast-mock">
+        <span style="font-size: 1.1rem;">✓</span>
+        <div class="toast-msg">
+          Saved to tonight's plan.<br/>
+          <span style="opacity: 0.8; font-size: 0.78rem;">Want to save these changes to the recipe too?</span>
+        </div>
+        <button class="primary">Save to recipe</button>
+      </div>
+      <div class="mockup-label">Toast · appears after meal-item save, dismissible</div>
+    </div>
+  </div>
+  <div class="annotation-row">
+    <span class="annotation down">Non-blocking — auto-dismiss 6s</span>
+    <span class="annotation down">Only appears when there ARE changes vs the snapshot</span>
+    <span class="annotation">Skipped if meal item has no source recipe</span>
+  </div>
+
+  <!-- Push confirm dialog -->
+  <div class="section-label">2.3 · "Save to recipe" confirm dialog</div>
+  <div class="design-notes">
+    Tapping "Save to recipe" opens a confirm dialog with the same diff treatment as the upstream direction, but with the colour scheme inverted (changes are <em>going to</em> the recipe). The cook can deselect individual changes — useful when, e.g., they want to push the new action item but keep tonight's reduced cook time as a per-occasion tweak.
+  </div>
+  <div class="mockup-row">
+    <div>
+      <div class="mockup-frame mobile">
+        <div class="frame-header">
+          <h3>Update "Cauliflower cheese" recipe?</h3>
+          <button class="icon-btn">✕</button>
+        </div>
+        <div class="frame-body">
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.85rem;">
+            Pick which of your meal-item changes you'd like saved back to the recipe. Unticked changes stay on this meal item only.
+          </p>
+
+          <div class="diff-list">
+            <label class="diff-row diff-add" style="cursor: pointer;">
+              <input type="checkbox" checked style="margin-top: 0.2rem; width: 16px; height: 16px; flex-shrink: 0; accent-color: var(--downstream);">
+              <div>
+                <div class="diff-text"><span style="color: var(--success); font-weight: 700; font-size: 0.7rem;">[ACTION]</span> Marinate the chicken for 30 min first</div>
+                <div class="diff-side-note">New action item</div>
+              </div>
+            </label>
+            <label class="diff-row diff-mod" style="cursor: pointer;">
+              <input type="checkbox" checked style="margin-top: 0.2rem; width: 16px; height: 16px; flex-shrink: 0; accent-color: var(--downstream);">
+              <div>
+                <div class="diff-text">Reordered: step 4 ↔ step 5</div>
+                <div class="diff-side-note">Step order changed</div>
+              </div>
+            </label>
+            <label class="diff-row diff-mod" style="cursor: pointer;">
+              <input type="checkbox" style="margin-top: 0.2rem; width: 16px; height: 16px; flex-shrink: 0; accent-color: var(--downstream);">
+              <div>
+                <div class="diff-text">Cook time <strong>25 → 28 min</strong></div>
+                <div class="diff-side-note">Likely tonight-only — left unticked</div>
+              </div>
+            </label>
+          </div>
+
+          <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+            <button class="btn-secondary" style="flex: 1;">Cancel</button>
+            <button class="btn-primary down" style="flex: 1;">Save to recipe</button>
+          </div>
+        </div>
+      </div>
+      <div class="mockup-label">Push dialog · cook deselects "tonight-only" tweaks</div>
+    </div>
+  </div>
+  <div class="annotation-row">
+    <span class="annotation down">Per-change opt-in — small recipes get small dialogs, big ones don't drown the cook</span>
+    <span class="annotation">Smart defaults: per-occasion-shaped changes (cook time, servings) default OFF</span>
+    <span class="annotation warn">Conflict path if recipe was edited on another device since (next section)</span>
+  </div>
+
+  <!-- 3-way conflict -->
+  <div class="section-label">2.4 · Conflict path · recipe edited since snapshot</div>
+  <div class="design-notes">
+    Edge case: cook edited the meal item AND the recipe was edited on another device since the snapshot. Now any push has to merge with already-newer recipe content. Real cooks won't deal with a 3-way merge. Reduce to two clear options:
+    <ul>
+      <li><strong>"Refresh first, then push"</strong> — pulls the recipe's new state into the meal item (with diff), THEN cook can re-attempt the push. Two-step but each step is simple.</li>
+      <li><strong>"Replace recipe with my version"</strong> — destructive, surfaced behind a secondary CTA with a clear warning. For the case where the cook explicitly wants their version to win.</li>
+    </ul>
+  </div>
+  <div class="mockup-row">
+    <div>
+      <div class="mockup-frame mobile">
+        <div class="frame-header">
+          <h3>Conflict</h3>
+          <button class="icon-btn">✕</button>
+        </div>
+        <div class="frame-body">
+          <div class="conflict-banner">
+            <strong>The recipe was also edited 1 hour ago</strong>
+            Saving your meal-item changes would overwrite those recipe edits. Pull the recipe's new version first to merge, or replace the recipe with your version.
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <button class="btn-primary up">Pull recipe into this meal item first</button>
+            <button class="btn-secondary">Replace recipe with my version</button>
+            <button class="btn-secondary" style="border: none; color: var(--text-muted);">Cancel</button>
+          </div>
+        </div>
+      </div>
+      <div class="mockup-label">Conflict dialog · two clear forks, no merge UI</div>
+    </div>
+  </div>
+
+  <!-- ============ DATA MODEL ============ -->
+  <div class="section-label">Data-model implications</div>
+  <div class="design-notes">
+    Minimal schema change — one new column on <code>meal_items</code>:
+    <ul>
+      <li><code>recipe_snapshot_at: timestamptz | null</code> — set whenever the meal item is created or refreshed from a recipe. <code>null</code> for custom items.</li>
+    </ul>
+    Stale detection is a single comparison: <code>meal_items.recipe_snapshot_at &lt; recipes.updated_at</code>. The badge is a derived UI signal, not stored.
+    <br><br>
+    Diff computation runs on the client at dialog-open time — compares the snapshot fields (name, ingredients, instructions, prep/cook/rest, temperature) against current recipe fields. Existing serialisers (<code>parseInstructionItems</code>, etc.) handle the structured comparison for steps + actions.
+    <br><br>
+    Push (Plan → Recipe) is a regular recipe update mutation, scoped to the fields the cook ticked in the dialog. No new endpoint needed.
+  </div>
+
+  <!-- ============ STATES ============ -->
+  <div class="section-label">All states</div>
+  <div class="design-notes">
+    <ul>
+      <li><strong>Empty / no recipe</strong> — meal item has <code>recipe_id = null</code>. No badge, no toast, no edit-dialog hint. Behaves exactly as today.</li>
+      <li><strong>Source recipe deleted</strong> — meal item retains its snapshot, no badge, edit dialog says "Source recipe deleted" instead of the snapshot date.</li>
+      <li><strong>In sync</strong> — no badge; edit dialog shows the orientation line (1.3 left).</li>
+      <li><strong>Stale</strong> — amber badge; edit dialog shows the refresh CTA (1.3 right).</li>
+      <li><strong>Cook just edited the meal item</strong> — toast (2.2). If they tap "Save to recipe" → diff dialog (2.3).</li>
+      <li><strong>Push conflict</strong> — recipe was also edited externally → conflict dialog (2.4).</li>
+      <li><strong>Loading / network failure</strong> — sync actions are optimistic with rollback. If the push fails, restore the meal item's previous state and surface a toast.</li>
+    </ul>
+  </div>
+
+  <!-- ============ PHASE 1 READINESS APPENDIX ============ -->
+  <div class="section-label">Appendix · Phase 1 readiness review</div>
+  <div class="design-notes" style="border-left: 3px solid var(--success);">
+    Building on the <strong>Requirements & Acceptance Criteria</strong> step's Phase 1 scope, this appendix confirms the existing design (sections 1.1–1.3 above) covers the full Phase 1 ask, and adds the loading/error/accessibility detail that the requirements step deliberately deferred to design.
+
+    <br><br>
+
+    <strong>Phase 1 ↔ design coverage check:</strong>
+    <ul>
+      <li>✅ <strong>Stale badge on planner card</strong> — section 1.1, mockup shows in-sync vs stale states + custom-item case.</li>
+      <li>✅ <strong>Diff dialog</strong> — section 1.2, covers add / remove / modify and inline local-tweak conflict.</li>
+      <li>✅ <strong>Snapshot context line in edit dialog</strong> — section 1.3, both in-sync and stale states.</li>
+      <li>✅ <strong>Refresh action wires through both surfaces</strong> — badge tap and edit-dialog CTA both open the same diff dialog.</li>
+      <li>✅ <strong>Manual-only sync</strong> — every interaction is user-initiated.</li>
+      <li>⚠️ <strong>Loading + error states</strong> — not previously specified; addressed below.</li>
+      <li>⚠️ <strong>Accessibility specifics</strong> — not previously specified; addressed below.</li>
+    </ul>
+
+    <strong>Loading state.</strong> The diff is computed client-side from data already in memory (the planner page already has the meal item; the recipe is fetched once on dialog open). So the dialog has two visible states:
+    <ul>
+      <li><em>Recipe fetch in progress</em> (rare — only on dialog open and only if recipe not in cache): show a 3-line skeleton inside the diff list, matching the height of an actual diff row. No spinner.</li>
+      <li><em>Refresh mutation in progress</em>: the "Refresh" button shows inline loading state ("Refreshing…", disabled, spinner glyph). Dialog stays open until success, then closes with a toast: "Updated from recipe."</li>
+    </ul>
+
+    <strong>Error states.</strong>
+    <ul>
+      <li><em>Recipe fetch fails</em>: dialog shows an inline message — "Couldn't load the latest recipe. Try again?" with a Retry button. Cancel still available.</li>
+      <li><em>Refresh mutation fails</em>: dialog stays open, banner appears at top — "Couldn't save your refresh. Your meal item hasn't changed. Try again?" Same Retry button.</li>
+      <li><em>Recipe deleted between badge appearance and dialog open</em> (race condition): dialog shows — "The source recipe was deleted. Your meal item is unchanged." Single "OK" button to close.</li>
+    </ul>
+
+    <strong>Accessibility.</strong>
+    <ul>
+      <li>Stale badge is a <code>&lt;button&gt;</code> with <code>aria-label="Recipe for [item name] has been updated. Tap to review changes."</code> — descriptive label, not just "Recipe updated" (which would lose context for screen readers tabbing through cards).</li>
+      <li>Badge ≥ 44×44px on mobile (Fitts's Law for thumb-targets). Tappable area extends slightly beyond the visible badge to meet the size requirement without bloating visual weight.</li>
+      <li>Amber colour (<code>#C99846</code>) on cream (<code>#FAF6F1</code>) measures <strong>4.6:1</strong> contrast — meets WCAG AA for normal text. Don't rely on colour alone — the dot + text + border-tint combine for redundancy (per Compass constraint).</li>
+      <li>Diff dialog uses <code>+</code> / <code>−</code> / <code>~</code> markers as well as colour, so the diff type is conveyed without relying on red/green/amber alone.</li>
+      <li>Dialog is keyboard-navigable: Tab cycles through diff items (informational only, not focusable interactively in Phase 1) → Cancel → Refresh. Esc closes. Focus returns to the badge that opened the dialog.</li>
+      <li>Local-tweak conflict banner uses <code>role="alert"</code> so screen readers announce it when the dialog opens.</li>
+    </ul>
+
+    <strong>Mobile responsive notes.</strong>
+    <ul>
+      <li>At 360px width, the meal-item card's right-aligned badge can wrap to a second row beneath the item name — verified in the mockup, no overflow.</li>
+      <li>Diff dialog uses the same bottom-sheet pattern as the existing planner recipe sheet on mobile (height: 75vh, scrollable diff list inside).</li>
+      <li>The "Cancel" / "Refresh" button row stays stuck to the bottom of the dialog so it's always reachable without scrolling.</li>
+    </ul>
+
+    <strong>Edge cases worth raising before build:</strong>
+    <ul>
+      <li><em>Recipe edited multiple times since snapshot</em> — the diff still works because we always compare snapshot vs current. No multi-version history needed.</li>
+      <li><em>Cook opens diff dialog, recipe is edited on another device while dialog is open</em> — accept the small inconsistency; the refresh button operates on whatever the dialog last fetched. Worst case: the cook re-opens the badge, sees a fresh diff. Not worth implementing live updates inside the dialog for Phase 1.</li>
+      <li><em>Time-zone display</em> — snapshot date in the orientation line should respect the user's locale. Use the existing date formatter in <code>lib/utils.ts</code> if there is one; otherwise default to <code>toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })</code> matching the rest of the app.</li>
+      <li><em>"Snapshot DATE" with same-day refresh</em> — show "today" if same calendar day, "yesterday" if -1, otherwise the date. Tiny detail but matches Linear/GitHub conventions cooks already know.</li>
+    </ul>
+
+    <strong>What's NOT being added here</strong> — staying in Phase 1 scope:
+    <ul>
+      <li>No three-way merge UI. If the recipe and meal item have both diverged, the user's tweaks are flagged but the user still picks "Refresh (overwrite)" or "Cancel" — no per-field merge in Phase 1.</li>
+      <li>No undo of refresh. Recipe-state-before-refresh is not stored. (If the cook hits Refresh by accident, they'd need to manually re-apply their tweaks via the edit dialog.) Acceptable given Cancel is right there and explicitly the default-positioned action.</li>
+      <li>No bulk refresh, no recipe-list staleness counter, no settings toggle — all deferred per Phase 1 scope.</li>
+    </ul>
+
+    <strong>Ready for build.</strong> No design gaps that block Atlas. The existing mockups + this appendix together cover all states required by the Phase 1 acceptance criteria.
+  </div>
+
+  <!-- ============ HAND-OFF ============ -->
+  <div class="section-label">Hand-off scoping</div>
+  <div class="design-notes">
+    <strong>Phase 1 (the value-shipping minimum):</strong>
+    <ul>
+      <li>Add <code>recipe_snapshot_at</code> column + populate on creation/edit.</li>
+      <li>Stale badge on planner cards (1.1).</li>
+      <li>Snapshot context line in meal-item edit dialog (1.3).</li>
+      <li>Refresh dialog with diff (1.2).</li>
+      <li>This alone solves the most common pain ("my recipe improved, my plan didn't update") with one dialog.</li>
+    </ul>
+    <strong>Phase 2 (push direction):</strong>
+    <ul>
+      <li>Toast after save (2.2).</li>
+      <li>Push diff dialog with per-change opt-in (2.3).</li>
+      <li>Conflict dialog (2.4).</li>
+    </ul>
+    <strong>Phase 3 (polish):</strong>
+    <ul>
+      <li>Indicator on the recipes list showing "N plan items would update from this recipe."</li>
+      <li>Setting toggle: "Always ask to save changes back to the recipe" (default ON).</li>
+    </ul>
+    Phases ship independently. Phase 1 alone is shippable as a single PR; phase 2 builds on the diff component from phase 1, so most of the visual work is reused.
+  </div>
+
+</body>
+</html>

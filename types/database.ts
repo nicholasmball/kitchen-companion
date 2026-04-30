@@ -53,6 +53,7 @@ export type Database = {
           created_at: string
           recipe_id: string | null
           ingredients: Ingredient[] | null
+          recipe_snapshot_at: string | null
         }
         Insert: {
           id?: string
@@ -70,6 +71,7 @@ export type Database = {
           created_at?: string
           recipe_id?: string | null
           ingredients?: Ingredient[] | null
+          recipe_snapshot_at?: string | null
         }
         Update: {
           id?: string
@@ -87,6 +89,7 @@ export type Database = {
           created_at?: string
           recipe_id?: string | null
           ingredients?: Ingredient[] | null
+          recipe_snapshot_at?: string | null
         }
       }
       recipes: {

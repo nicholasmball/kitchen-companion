@@ -3,13 +3,16 @@
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import type { MealItem } from '@/types'
+import { isStale } from '@/lib/recipe-sync'
+import type { MealItem, Recipe } from '@/types'
 
 interface MealItemCardProps {
   item: MealItem
+  sourceRecipe?: Recipe | null
   onEdit: (item: MealItem) => void
   onDelete: (id: string) => void
   onViewRecipe: (item: MealItem) => void
+  onRefreshFromRecipe?: (item: MealItem) => void
 }
 
 const METHOD_LABELS: Record<string, string> = {
@@ -24,8 +27,19 @@ const METHOD_LABELS: Record<string, string> = {
   other: 'Other',
 }
 
-export function MealItemCard({ item, onEdit, onDelete, onViewRecipe }: MealItemCardProps) {
+export function MealItemCard({
+  item,
+  sourceRecipe,
+  onEdit,
+  onDelete,
+  onViewRecipe,
+  onRefreshFromRecipe,
+}: MealItemCardProps) {
   const totalTime = (item.prep_time_minutes || 0) + item.cook_time_minutes + (item.rest_time_minutes || 0)
+  const stale =
+    !!sourceRecipe &&
+    !!item.recipe_id &&
+    isStale(item.recipe_snapshot_at, sourceRecipe.updated_at)
 
   return (
     <Card
@@ -35,7 +49,23 @@ export function MealItemCard({ item, onEdit, onDelete, onViewRecipe }: MealItemC
       <CardContent className="py-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold truncate">{item.name}</h3>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="font-semibold truncate">{item.name}</h3>
+              {stale && onRefreshFromRecipe && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onRefreshFromRecipe(item)
+                  }}
+                  aria-label={`Recipe for ${item.name} has been updated. Tap to review changes.`}
+                  className="inline-flex items-center gap-1.5 min-h-[28px] px-2 py-1 rounded-md text-xs font-bold border border-[#C99846]/40 bg-[#C99846]/12 text-[#8B5A2B] hover:bg-[#C99846]/20 transition-colors"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#C99846]" />
+                  Recipe updated
+                </button>
+              )}
+            </div>
 
             <div className="flex flex-wrap gap-2 mt-2">
               <Badge variant="secondary">
