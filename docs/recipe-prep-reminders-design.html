@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recipe Prep Reminders — Design Proposal (2 options)</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #FAF6F1; --card: #F5E6D3; --card-nested: #EDD9C4; --border: #EDD9C4;
+      --text: #3D2914; --text-heading: #5C3D1E; --text-muted: #8B5A2B;
+      --primary: #D97B4A; --primary-hover: #C46A3A; --primary-fg: #FFFFFF;
+      --success: #40916C; --teal: #3D8B8B;
+      --reminder-accent: #B6743D;
+      --reminder-soft: #F0E0CC;
+    }
+    body { font-family: 'Nunito', sans-serif; background: #1a1a2e; color: var(--text); padding: 2rem; line-height: 1.5; }
+    h1.page-title { color: white; text-align: center; font-size: 2rem; margin-bottom: 0.5rem; }
+    p.page-subtitle { color: #aaa; text-align: center; margin-bottom: 2rem; font-size: 0.95rem; max-width: 720px; margin-left: auto; margin-right: auto; }
+    .section-label { color: white; font-size: 1.3rem; font-weight: 700; margin: 3rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--primary); display: inline-block; }
+    .design-notes { background: #2a2a4a; color: #ccc; padding: 1rem 1.5rem; border-radius: 0.75rem; margin-bottom: 1.5rem; font-size: 0.9rem; line-height: 1.6; }
+    .design-notes strong { color: var(--primary); }
+    .design-notes code { background: #3a3a5a; padding: 2px 6px; border-radius: 4px; font-size: 0.85rem; }
+    .design-notes ul { margin: 0.5rem 0 0 1.25rem; }
+    .design-notes li { margin-bottom: 0.3rem; }
+    .mockup-row { display: flex; gap: 1.5rem; flex-wrap: wrap; justify-content: center; margin-bottom: 2rem; }
+    .mockup-frame { background: var(--bg); border-radius: 1rem; overflow: hidden; box-shadow: 0 8px 24px rgba(139,90,43,0.15); }
+    .mockup-frame.mobile { width: 360px; }
+    .mockup-frame.desktop { max-width: 720px; flex: 1; min-width: 480px; }
+    .mockup-label { color: #aaa; text-align: center; font-size: 0.85rem; margin-top: 0.5rem; }
+    .annotation-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem; }
+    .annotation { display: inline-block; background: #2a2a4a; color: #ccc; padding: 0.3rem 0.7rem; border-radius: 0.5rem; font-size: 0.75rem; border: 1px solid #3a3a5a; }
+    .annotation.highlight { border-color: var(--primary); color: var(--primary); }
+    .annotation.new { border-color: var(--success); color: var(--success); }
+
+    /* ===== Header / generic ===== */
+    .frame-header {
+      padding: 0.85rem 1rem; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .frame-header h3 { font-size: 1rem; font-weight: 700; color: var(--text-heading); }
+    .frame-body { padding: 1rem; }
+
+    .icon-btn { width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); display: flex; align-items: center; justify-content: center; color: var(--text-muted); cursor: pointer; }
+    .icon-btn:hover { background: var(--card); }
+    .btn-primary { background: var(--primary); color: var(--primary-fg); border: none; padding: 0.6rem 1rem; border-radius: 0.6rem; font-weight: 700; font-family: inherit; cursor: pointer; font-size: 0.9rem; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-ghost { background: transparent; border: 1px dashed var(--text-muted); color: var(--text-muted); padding: 0.5rem 0.85rem; border-radius: 0.6rem; font-weight: 600; font-family: inherit; cursor: pointer; font-size: 0.85rem; width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.4rem; }
+    .btn-ghost:hover { border-style: solid; border-color: var(--primary); color: var(--primary); }
+
+    /* ===== Reminder section (shared) ===== */
+    .reminder-section {
+      background: var(--reminder-soft);
+      border: 1px solid var(--card-nested);
+      border-radius: 0.85rem;
+      padding: 0.85rem;
+      margin-bottom: 1rem;
+    }
+    .reminder-section.compact-done {
+      background: transparent;
+      border-style: dashed;
+    }
+    .reminder-header {
+      display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem;
+    }
+    .reminder-icon-wrap {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--primary); color: white;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; font-size: 0.95rem;
+    }
+    .reminder-section.compact-done .reminder-icon-wrap {
+      background: var(--success);
+    }
+    .reminder-title {
+      font-weight: 700; color: var(--text-heading); font-size: 0.95rem;
+      flex: 1;
+    }
+    .reminder-progress {
+      font-size: 0.75rem; color: var(--text-muted); font-weight: 600;
+    }
+
+    .reminder-list { display: flex; flex-direction: column; gap: 0.35rem; }
+
+    .reminder-item {
+      display: flex; align-items: center; gap: 0.65rem;
+      min-height: 44px;
+      padding: 0.4rem 0.55rem;
+      background: var(--bg);
+      border-radius: 0.6rem;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.15s, opacity 0.15s;
+      font-size: 0.9rem;
+      color: var(--text);
+    }
+    .reminder-item:hover { background: white; }
+    .reminder-item.checked { opacity: 0.55; }
+    .reminder-item.checked .reminder-text { text-decoration: line-through; }
+
+    .reminder-check {
+      width: 22px; height: 22px; border-radius: 6px;
+      border: 2px solid var(--text-muted);
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .reminder-item.checked .reminder-check {
+      background: var(--success);
+      border-color: var(--success);
+    }
+    .reminder-item.checked .reminder-check::after {
+      content: '✓'; color: white; font-size: 0.85rem; font-weight: 700;
+    }
+    .reminder-text { flex: 1; line-height: 1.35; }
+
+    /* ===== Edit-mode reminder row ===== */
+    .reminder-edit-row {
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0.5rem 0.4rem;
+      background: var(--bg);
+      border-radius: 0.55rem;
+      border: 1px solid var(--border);
+      margin-bottom: 0.45rem;
+    }
+    .drag-handle {
+      width: 28px; height: 36px; border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-muted); cursor: grab;
+      font-size: 1.1rem;
+    }
+    .reminder-input {
+      flex: 1; border: none; background: transparent;
+      font-family: inherit; font-size: 0.9rem; color: var(--text);
+      padding: 0.25rem;
+      outline: none;
+    }
+    .reminder-input:focus { background: white; border-radius: 0.4rem; }
+    .reminder-delete {
+      width: 32px; height: 32px; border-radius: 6px;
+      border: none; background: transparent;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-muted); cursor: pointer;
+    }
+    .reminder-delete:hover { background: rgba(217,123,74,0.1); color: var(--primary); }
+
+    .char-counter {
+      font-size: 0.7rem; color: var(--text-muted); padding: 0 0.55rem;
+    }
+
+    /* ===== Cooking mode chrome (for context) ===== */
+    .cooking-view-header {
+      padding: 0.85rem 1rem; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .cooking-view-header h3 { font-size: 1.05rem; font-weight: 700; color: var(--text-heading); }
+    .step-progress-text { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem; }
+    .step-progress-bar { height: 4px; background: var(--card-nested); border-radius: 2px; overflow: hidden; margin-bottom: 1rem; }
+    .step-progress-fill { height: 100%; background: var(--primary); border-radius: 2px; }
+    .step-item {
+      display: flex; align-items: flex-start; gap: 0.55rem;
+      padding: 0.55rem 0.5rem; border-bottom: 1px solid var(--border);
+      font-size: 0.9rem; border-radius: 0.5rem;
+    }
+    .step-item:last-child { border-bottom: none; }
+    .step-num {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--card); color: var(--text-heading);
+      font-size: 0.75rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 1px;
+    }
+    .step-item.highlighted { background: rgba(217,123,74,0.06); border-left: 3px solid var(--primary); }
+
+    /* ===== Section divider ===== */
+    .gentle-divider {
+      display: flex; align-items: center; gap: 0.5rem;
+      color: var(--text-muted); font-size: 0.75rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.05em;
+      margin: 0.75rem 0 0.5rem;
+    }
+    .gentle-divider::before, .gentle-divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+
+    /* ===== Option B: inline prep step ===== */
+    .step-item.prep {
+      background: rgba(64, 145, 108, 0.06);
+      border-left: 3px solid var(--success);
+      padding-left: 0.5rem;
+    }
+    .step-item.prep .step-num {
+      background: var(--success);
+      color: white;
+    }
+    .prep-badge {
+      display: inline-flex; align-items: center; gap: 0.25rem;
+      font-size: 0.65rem; font-weight: 800; letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--success);
+      background: rgba(64, 145, 108, 0.12);
+      padding: 0.15rem 0.4rem;
+      border-radius: 0.35rem;
+      margin-right: 0.4rem;
+      vertical-align: 1px;
+    }
+    .step-item.cooking-mode-checkable {
+      cursor: pointer;
+    }
+    .step-check {
+      width: 22px; height: 22px; border-radius: 6px;
+      border: 2px solid var(--text-muted);
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      margin-top: 1px;
+    }
+    .step-item.checked .step-check {
+      background: var(--success);
+      border-color: var(--success);
+    }
+    .step-item.checked .step-check::after {
+      content: '✓'; color: white; font-size: 0.85rem; font-weight: 700;
+    }
+    .step-item.checked .step-text {
+      opacity: 0.55; text-decoration: line-through;
+    }
+
+    /* Edit row with type toggle */
+    .step-edit-row {
+      display: flex; align-items: flex-start; gap: 0.5rem;
+      padding: 0.5rem 0.4rem;
+      background: var(--bg);
+      border-radius: 0.55rem;
+      border: 1px solid var(--border);
+      margin-bottom: 0.45rem;
+    }
+    .step-edit-row.prep {
+      background: rgba(64, 145, 108, 0.05);
+      border-color: rgba(64, 145, 108, 0.25);
+    }
+    .step-edit-row .drag-handle { width: 24px; height: 36px; }
+    .step-edit-row .step-input {
+      flex: 1; border: none; background: transparent;
+      font-family: inherit; font-size: 0.9rem; color: var(--text);
+      padding: 0.4rem 0.3rem; outline: none; resize: none;
+      min-height: 36px; line-height: 1.4;
+    }
+    .step-edit-row .step-input:focus { background: white; border-radius: 0.4rem; }
+    .type-toggle {
+      display: flex; gap: 0.2rem; padding: 0.15rem;
+      background: var(--card);
+      border-radius: 0.45rem;
+      flex-shrink: 0;
+    }
+    .type-toggle button {
+      border: none; background: transparent;
+      font-family: inherit; font-size: 0.7rem; font-weight: 700;
+      padding: 0.3rem 0.55rem;
+      border-radius: 0.35rem;
+      color: var(--text-muted); cursor: pointer;
+      letter-spacing: 0.04em; text-transform: uppercase;
+    }
+    .type-toggle button.active {
+      background: white;
+      color: var(--text-heading);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .type-toggle button.active.is-prep {
+      color: var(--success);
+    }
+
+    /* Comparison grid */
+    .comparison-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 1rem; background: #2a2a4a; padding: 1.5rem;
+      border-radius: 0.85rem; color: #ccc; font-size: 0.85rem;
+    }
+    .comparison-grid h4 {
+      color: white; font-size: 1rem; margin-bottom: 0.5rem;
+      padding-bottom: 0.4rem; border-bottom: 1px solid #3a3a5a;
+    }
+    .comparison-grid h4.opt-a { color: var(--primary); }
+    .comparison-grid h4.opt-b { color: var(--success); }
+    .comparison-grid ul { margin-left: 1.1rem; }
+    .comparison-grid li { margin-bottom: 0.35rem; line-height: 1.45; }
+    .comparison-grid .pro::before { content: '✓ '; color: var(--success); font-weight: 700; }
+    .comparison-grid .con::before { content: '✗ '; color: #c97070; font-weight: 700; }
+    @media (max-width: 720px) {
+      .comparison-grid { grid-template-columns: 1fr; }
+    }
+
+    /* Big section divider for Option B */
+    .option-divider {
+      text-align: center; margin: 4rem 0 1.5rem;
+    }
+    .option-divider h2 {
+      color: white; font-size: 1.6rem;
+      padding: 0.5rem 1.5rem;
+      border: 2px solid var(--success); border-radius: 0.75rem;
+      display: inline-block;
+    }
+
+    /* Empty state callout */
+    .empty-state-card {
+      padding: 1rem; background: white; border-radius: 0.75rem;
+      border: 1px dashed var(--border);
+      text-align: center; color: var(--text-muted); font-size: 0.85rem;
+    }
+    .empty-state-card strong { display: block; color: var(--text-heading); margin-bottom: 0.25rem; }
+  </style>
+</head>
+<body>
+
+  <h1 class="page-title">Recipe Prep Reminders</h1>
+  <p class="page-subtitle">
+    Building on the <strong>Requirements & Acceptance Criteria</strong> step. After user feedback, this proposal now presents <strong>two alternative approaches</strong>:
+    <br><br>
+    <strong style="color: #D97B4A;">Option A — Dedicated "Before you start" section</strong> (separate from cooking steps).<br>
+    <strong style="color: #40916C;">Option B — Prep items live inline inside the recipe's method list</strong>, flagged with a "Prep" badge.<br><br>
+    A comparison & recommendation appears at the end. Both options share the same edit-form interaction patterns and accessibility properties.
+  </p>
+
+  <!-- ============ OPTION COMPARISON CARD AT TOP ============ -->
+  <div class="design-notes" style="border: 2px solid var(--primary);">
+    <strong>The core question:</strong> are prep tasks <em>their own activity</em> (do them all at once before you cook) or <em>part of the recipe flow</em> (fit them in where they belong)?
+    <ul>
+      <li><strong>Option A</strong> answers: their own activity. Prep is a checklist you run through before turning on the hob.</li>
+      <li><strong>Option B</strong> answers: part of the flow. Prep is just a kind of step — sometimes it's first, sometimes it's between two cooking steps (e.g. "warm the tin" sits naturally between "make the batter" and "pour the batter").</li>
+    </ul>
+    The user's example tasks point both ways: "boil the kettle" and "tea towel on the radiator" feel pre-cook; "put lard in the tin and heat" is genuinely mid-recipe. That's why both options are worth seeing in mockup form before deciding.
+  </div>
+
+  <h2 style="color: white; text-align: center; margin: 3rem 0 1rem; font-size: 1.6rem; padding: 0.5rem 1.5rem; border: 2px solid #D97B4A; border-radius: 0.75rem; display: inline-block; margin-left: 50%; transform: translateX(-50%);">Option A · Separate "Before you start" section</h2>
+
+  <!-- ============ DESIGN PRINCIPLES ============ -->
+  <div class="section-label">Option A · Design principles & decisions</div>
+  <div class="design-notes">
+    <strong>Resolving the open questions from the Requirements step:</strong>
+    <ul>
+      <li><strong>Snapshot vs reference (data model)</strong> — Reminders are <strong>snapshotted onto <code>meal_items</code></strong> as a JSONB array, the same as ingredients. This protects the planner from broken state if a user edits or deletes the source recipe mid-cook.</li>
+      <li><strong>Visual treatment in cooking mode</strong> — Reminders are a <strong>distinct, separately-labelled section above the numbered steps</strong>, not a "step 0". Reasoning: prep tasks have a different mental model (do them now, all at once, before you start) and benefit from a visually distinct container so they don't compete with the linear flow of method steps.</li>
+      <li><strong>Empty state</strong> — Section is hidden entirely in read & cooking views when there are no reminders. In edit mode it shows a single ghost-button "Add a reminder" affordance.</li>
+      <li><strong>Visual identity</strong> — Reminders use a soft cream-tinted card (<code>--reminder-soft</code>) with a small "lightbulb" mascot-friendly icon, distinct from ingredients (which use the secondary card colour) and steps (which use plain rows). This applies Gestalt similarity within the section and Gestalt proximity to keep them grouped without a heavy outline.</li>
+      <li><strong>Once everything is ticked</strong> — The card collapses to a slim "All prep done ✓" strip and the cooking view auto-scrolls to step 1, applying Hick's Law (reduce visible options once they're complete).</li>
+    </ul>
+  </div>
+
+  <!-- ============ EDIT MODE ============ -->
+  <div class="section-label">Option A · 1. Recipe edit form</div>
+  <div class="design-notes">
+    Reminders sit between <strong>Ingredients</strong> and <strong>Instructions</strong> in the edit form (matches the order they'll be read in cooking mode). Each row has a drag handle (Fitts: 44px tall, easy thumb target on mobile), an inline text input, and a delete affordance. A persistent ghost button at the bottom lets the user add another. Character counter appears only when ≥ 100/140 chars used.
+  </div>
+
+  <div class="mockup-row">
+    <div>
+      <div class="mockup-frame mobile">
+        <div class="frame-header">
+          <h3>Edit recipe</h3>
+          <button class="icon-btn" title="Save">✓</button>
+        </div>
+        <div class="frame-body">
+          <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-heading); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.45rem;">Prep reminders <span style="font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--text-muted); font-size: 0.75rem;">(optional)</span></div>
+
+          <div class="reminder-edit-row">
+            <div class="drag-handle">≡</div>
+            <input class="reminder-input" value="Boil the kettle" />
+            <button class="reminder-delete" title="Remove">✕</button>
+          </div>
+          <div class="reminder-edit-row">
+            <div class="drag-handle">≡</div>
+            <input class="reminder-input" value="Warm the tin with lard for 5 min" />
+            <button class="reminder-delete" title="Remove">✕</button>
+          </div>
+          <div class="reminder-edit-row">
+            <div class="drag-handle">≡</div>
+            <input class="reminder-input" value="Tea towel on the radiator" />
+            <button class="reminder-delete" title="Remove">✕</button>
+          </div>
+
+          <button class="btn-ghost" style="margin-top: 0.5rem;">＋ Add a reminder</button>
+        </div>
+      </div>
+      <div class="mockup-label">Mobile · 360px width</div>
+    </div>
+
+    <div>
+      <div class="mockup-frame desktop">
+        <div class="frame-header">
+          <h3>Empty state — first time</h3>
+        </div>
+        <div class="frame-body">
+          <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-heading); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.45rem;">Prep reminders <span style="font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--text-muted); font-size: 0.75rem;">(optional)</span></div>
+          <div class="empty-state-card" style="margin-bottom: 0.5rem;">
+            <strong>Got little jobs that aren't cooking steps?</strong>
+            Boil the kettle, warm the tin, get a tea towel ready — add them here and we'll surface them when you start cooking.
+          </div>
+          <button class="btn-ghost">＋ Add a reminder</button>
+        </div>
+      </div>
+      <div class="mockup-label">Desktop · empty state with one-line educational hint</div>
+    </div>
+  </div>
+
+  <div class="annotation-row">
+    <span class="annotation new">New section "Prep reminders"</span>
+    <span class="annotation highlight">Drag handle (44×44 tap target)</span>
+    <span class="annotation highlight">140 char cap (per requirements)</span>
+    <span class="annotation">Empty state shown only on first creation</span>
+  </div>
+
+  <!-- ============ READ VIEW ============ -->
+  <div class="section-label">Option A · 2. Recipe detail (read view)</div>
+  <div class="design-notes">
+    On the recipe detail page, reminders render as a non-interactive list above instructions. Visual treatment is consistent with cooking mode (same icon, same colour) so the user recognises the section instantly when they enter cooking mode. Hidden entirely if the recipe has no reminders.
+  </div>
+
+  <div class="mockup-row">
+    <div>
+      <div class="mockup-frame mobile">
+        <div class="frame-header">
+          <h3>Yorkshire Puddings</h3>
+        </div>
+        <div class="frame-body">
+          <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">15 min prep · 25 min cook · serves 4</div>
+
+          <!-- Ingredients (abbreviated) -->
+          <div class="gentle-divider">Ingredients</div>
+          <div style="font-size: 0.85rem; color: var(--text); padding: 0.4rem 0;">140g plain flour · 4 eggs · 200ml milk · pinch of salt · lard for the tin</div>
+
+          <!-- Reminders -->
+          <div class="reminder-section">
+            <div class="reminder-header">
+              <div class="reminder-icon-wrap">💡</div>
+              <div class="reminder-title">Before you start</div>
+            </div>
+            <div class="reminder-list">
+              <div class="reminder-item" style="cursor: default;">
+                <div class="reminder-check"></div>
+                <span class="reminder-text">Boil the kettle</span>
+              </div>
+              <div class="reminder-item" style="cursor: default;">
+                <div class="reminder-check"></div>
+                <span class="reminder-text">Warm the tin with lard for 5 min</span>
+              </div>
+              <div class="reminder-item" style="cursor: default;">
+                <div class="reminder-check"></div>
+                <span class="reminder-text">Tea towel on the radiator</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Steps (abbreviated) -->
+          <div class="gentle-divider">Method</div>
+          <div class="step-item">
+            <div class="step-num">1</div>
+            <div>Whisk flour, eggs, milk and salt into a smooth batter…</div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">2</div>
+            <div>Heat oven to 220°C…</div>
+          </div>
+        </div>
+      </div>
+      <div class="mockup-label">Recipe detail · Yorkshires (3 reminders)</div>
+    </div>
+  </div>
+
+  <!-- ============ COOKING MODE ============ -->
+  <div class="section-label">Option A · 3. Cooking mode (standalone & planner sheet)</div>
+  <div class="design-notes">
+    The same reminder section appears at the top of cooking mode in both <strong>standalone recipe cooking</strong> and the <strong>planner recipe sheet</strong>. Items are tickable. The check state lives in component state and persists via the same <code>sessionStorage</code> pattern we just wired into the planner page. When all reminders are ticked, the card transitions to a slim collapsed bar and the view scrolls/focuses on step 1 — keeping the visual hierarchy clean once prep is done.
+  </div>
+
+  <div class="mockup-row">
+    <!-- State A: in progress -->
+    <div>
+      <div class="mockup-frame mobile">
+        <div class="cooking-view-header">
+          <div>
+            <h3>Yorkshire Puddings</h3>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">Cooking mode</div>
+          </div>
+          <button class="icon-btn">✕</button>
+        </div>
+        <div class="frame-body">
+          <div class="step-progress-text">0 of 4 steps complete</div>
+          <div class="step-progress-bar"><div class="step-progress-fill" style="width: 0%"></div></div>
+
+          <div class="reminder-section">
+            <div class="reminder-header">
+              <div class="reminder-icon-wrap">💡</div>
+              <div class="reminder-title">Before you start</div>
+              <div class="reminder-progress">1 / 3</div>
+            </div>
+            <div class="reminder-list">
+              <div class="reminder-item checked">
+                <div class="reminder-check"></div>
+                <span class="reminder-text">Boil the kettle</span>
+              </div>
+              <div class="reminder-item">
+                <div class="reminder-check"></div>
+                <span class="reminder-text">Warm the tin with lard for 5 min</span>
+              </div>
+              <div class="reminder-item">
+                <div class="reminder-check"></div>
+                <span class="reminder-text">Tea towel on the radiator</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="step-item highlighted">
+            <div class="step-num">1</div>
+            <div>Whisk flour, eggs, milk and salt into a smooth batter…</div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">2</div>
+            <div>Heat oven to 220°C…</div>
+          </div>
+        </div>
+      </div>
+      <div class="mockup-label">State A · 1 of 3 reminders ticked</div>
+    </div>
+
+    <!-- State B: all done -->
+    <div>
+      <div class="mockup-frame mobile">
+        <div class="cooking-view-header">
+          <div>
+            <h3>Yorkshire Puddings</h3>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">Cooking mode</div>
+          </div>
+          <button class="icon-btn">✕</button>
+        </div>
+        <div class="frame-body">
+          <div class="step-progress-text">0 of 4 steps complete</div>
+          <div class="step-progress-bar"><div class="step-progress-fill" style="width: 0%"></div></div>
+
+          <div class="reminder-section compact-done">
+            <div class="reminder-header" style="margin-bottom: 0;">
+              <div class="reminder-icon-wrap">✓</div>
+              <div class="reminder-title" style="font-size: 0.85rem;">Prep done · 3 of 3</div>
+              <button class="icon-btn" style="width: 28px; height: 28px;" title="Show again">▾</button>
+            </div>
+          </div>
+
+          <div class="step-item highlighted">
+            <div class="step-num">1</div>
+            <div>Whisk flour, eggs, milk and salt into a smooth batter…</div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">2</div>
+            <div>Heat oven to 220°C…</div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">3</div>
+            <div>Pour 1cm of batter into each well of the heated tin…</div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">4</div>
+            <div>Bake 22–25 min, do not open the oven door.</div>
+          </div>
+        </div>
+      </div>
+      <div class="mockup-label">State B · all reminders done, card collapses</div>
+    </div>
+
+    <!-- State C: planner sheet, no reminders -->
+    <div>
+      <div class="mockup-frame mobile">
+        <div class="cooking-view-header">
+          <div>
+            <h3>Stir-fry chicken</h3>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">From "Tuesday dinner" plan</div>
+          </div>
+          <button class="icon-btn">✕</button>
+        </div>
+        <div class="frame-body">
+          <div class="step-progress-text">0 of 7 steps complete</div>
+          <div class="step-progress-bar"><div class="step-progress-fill" style="width: 0%"></div></div>
+
+          <!-- No reminders section at all -->
+          <div class="step-item highlighted">
+            <div class="step-num">1</div>
+            <div>Heat a large non-stick pan over medium-high heat…</div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">2</div>
+            <div>Spray with cooking spray, add onions and peppers…</div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">3</div>
+            <div>Cook 8–10 min until starting to caramelise…</div>
+          </div>
+        </div>
+      </div>
+      <div class="mockup-label">State C · planner sheet, recipe with zero reminders (section hidden)</div>
+    </div>
+  </div>
+
+  <div class="annotation-row">
+    <span class="annotation highlight">Tickable, syncs to sessionStorage</span>
+    <span class="annotation new">Collapses when 100% complete</span>
+    <span class="annotation">Dismiss arrow re-expands the section</span>
+    <span class="annotation">Hidden when recipe has no reminders</span>
+  </div>
+
+  <!-- ============ INTERACTION FLOW ============ -->
+  <div class="section-label">Option A · 4. Interaction flow & states</div>
+  <div class="design-notes">
+    <strong>State map</strong> (per Compass UX heuristic — handle every state explicitly):
+    <ul>
+      <li><strong>Empty (no reminders)</strong> — Edit form: educational empty card + one ghost button. Read view: section hidden. Cooking mode: section hidden.</li>
+      <li><strong>Populated, none ticked</strong> — Edit form: list of editable rows. Read view: list of read-only rows. Cooking mode: full reminder card at top with "0 / N" progress.</li>
+      <li><strong>Partially ticked</strong> — Cooking mode shows ticked items at reduced opacity with strikethrough; progress label updates ("2 / 3").</li>
+      <li><strong>All ticked</strong> — Card transitions to compact "Prep done · N of N" bar with a tiny chevron to re-expand if needed. Progress badge turns green.</li>
+      <li><strong>Editing while in cooking mode (out of v1 scope)</strong> — Cooking-mode reminders are read/tick only; if the user wants to add one mid-cook they exit to edit. (Documented as a v2 nice-to-have if needed.)</li>
+      <li><strong>Loading</strong> — Skeleton: a 32px tall placeholder bar inside the reminder section while the recipe is fetched. Re-uses the existing skeleton pattern from ingredients.</li>
+      <li><strong>Error (save failed)</strong> — Inline toast "Couldn't save your reminder, try again" — same as the existing recipe-save error pattern.</li>
+    </ul>
+
+    <strong>Accessibility</strong>: Each tickable row is a <code>&lt;button&gt;</code> with <code>aria-pressed</code>, not a styled div. Reminder card has <code>role="region"</code> and <code>aria-label="Prep reminders"</code>. Drag handle has <code>aria-label="Drag to reorder"</code>; keyboard reorder via Up/Down with focus on the handle (matches the React DnD pattern already in the project). Contrast checked: reminder text on <code>--reminder-soft</code> is 9.2:1 (AAA).
+
+    <strong>Mobile constraints</strong>: 360px width verified — text wraps to 2 lines comfortably; drag handle and delete buttons are 44px tap targets; no horizontal overflow.
+  </div>
+
+  <!-- ============ DATA MODEL HOOK ============ -->
+  <div class="section-label">Option A · 5. Data model implications</div>
+  <div class="design-notes">
+    <ul>
+      <li>Add <code>reminders</code> JSONB column to <code>recipes</code> — array of <code>{ id: string, text: string }</code>. <code>id</code> is a stable key for reorder/animation; default <code>[]</code>.</li>
+      <li>Add the same <code>reminders</code> column to <code>meal_items</code> (snapshot at add-to-plan time, mirroring how <code>ingredients</code> is handled).</li>
+      <li>Type validation in <code>/types/database.ts</code> and serialiser/deserialiser helpers in <code>/lib</code>.</li>
+      <li>Cooking-mode tick state lives in the existing <code>itemCheckState</code> Map structure — extend the per-item shape to include <code>checkedReminders: Set&lt;number&gt;</code> alongside the existing <code>checkedIngredients</code> and <code>completedSteps</code>. Persistence is automatic via the sessionStorage we just shipped.</li>
+    </ul>
+  </div>
+
+  <!-- ============ OPTION B ============ -->
+  <div class="option-divider">
+    <h2>Option B · Prep tasks inline within method</h2>
+  </div>
+
+  <div class="design-notes" style="border-left: 3px solid var(--success);">
+    <strong>Concept.</strong> No separate section. Instead, each item in the recipe's method list has a <strong>type</strong>: either a normal cooking step or a prep task. Both live in one numbered list. Prep tasks are visually flagged with a small green "PREP" badge and a left-edge accent — similar to how Linear flags issues by type, or how Notion uses inline callouts. The user places them <em>where they belong</em> in the flow — sometimes that's at the very top (mise en place), sometimes between steps (warm the tin between mixing and pouring).
+    <br><br>
+    <strong>Why this works.</strong> It treats prep as part of the recipe rather than as a separate concept the user has to manage. From the cook's point of view, you read the recipe top to bottom and do whatever each item asks — no switching between two lists. The "PREP" badge gives you the same scannability as a separate section (you can pick out "what do I need to do before I start" by skimming for green badges) without splitting the data model in two.
+  </div>
+
+  <!-- Option B - Edit form -->
+  <div class="section-label">Option B · 1. Recipe edit form</div>
+  <div class="design-notes">
+    Method becomes a single list. Each row has a <strong>two-state toggle</strong> on the right (<code>STEP / PREP</code>) — segmented-control pattern from iOS settings, familiar from Jakob's Law. Default new rows are <code>STEP</code>; the user taps once to flip to <code>PREP</code>. Drag handle reorders within the same list, so prep can sit anywhere.
+  </div>
+
+  <div class="mockup-row">
+    <div>
+      <div class="mockup-frame mobile">
+        <div class="frame-header">
+          <h3>Edit recipe</h3>
+          <button class="icon-btn" title="Save">✓</button>
+        </div>
+        <div class="frame-body">
+          <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-heading); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.45rem;">Method</div>
+
+          <div class="step-edit-row prep">
+            <div class="drag-handle">≡</div>
+            <textarea class="step-input" rows="1">Boil the kettle</textarea>
+            <div class="type-toggle">
+              <button>Step</button>
+              <button class="active is-prep">Prep</button>
+            </div>
+          </div>
+          <div class="step-edit-row prep">
+            <div class="drag-handle">≡</div>
+            <textarea class="step-input" rows="1">Tea towel on the radiator</textarea>
+            <div class="type-toggle">
+              <button>Step</button>
+              <button class="active is-prep">Prep</button>
+            </div>
+          </div>
+          <div class="step-edit-row">
+            <div class="drag-handle">≡</div>
+            <textarea class="step-input" rows="2">Whisk flour, eggs, milk and salt into a smooth batter, leave to rest 5 min.</textarea>
+            <div class="type-toggle">
+              <button class="active">Step</button>
+              <button>Prep</button>
+            </div>
+          </div>
+          <div class="step-edit-row prep">
+            <div class="drag-handle">≡</div>
+            <textarea class="step-input" rows="1">Put lard into the tin and heat for 5 min in the oven</textarea>
+            <div class="type-toggle">
+              <button>Step</button>
+              <button class="active is-prep">Prep</button>
+            </div>
+          </div>
+          <div class="step-edit-row">
+            <div class="drag-handle">≡</div>
+            <textarea class="step-input" rows="2">Pour 1cm of batter into each well of the heated tin.</textarea>
+            <div class="type-toggle">
+              <button class="active">Step</button>
+              <button>Prep</button>
+            </div>
+          </div>
+
+          <button class="btn-ghost" style="margin-top: 0.5rem;">＋ Add step</button>
+        </div>
+      </div>
+      <div class="mockup-label">Mobile · prep mixed with cooking steps, "warm tin" placed mid-flow</div>
+    </div>
+  </div>
+
+  <div class="annotation-row">
+    <span class="annotation new">Step / Prep toggle on every row</span>
+    <span class="annotation highlight">Single list — drag to reorder anywhere</span>
+    <span class="annotation">Prep rows visually tinted but same width/UX as steps</span>
+  </div>
+
+  <!-- Option B - Detail view -->
+  <div class="section-label">Option B · 2. Recipe detail (read view)</div>
+  <div class="design-notes">
+    The method list renders top-to-bottom in user-defined order. Prep items keep their continuous numbering but carry a green "PREP" badge inline with the text and a subtle left-edge accent. The user can scan for prep at a glance, but the linear flow is preserved.
+  </div>
+
+  <div class="mockup-row">
+    <div>
+      <div class="mockup-frame mobile">
+        <div class="frame-header">
+          <h3>Yorkshire Puddings</h3>
+        </div>
+        <div class="frame-body">
+          <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">15 min prep · 25 min cook · serves 4</div>
+
+          <div class="gentle-divider">Ingredients</div>
+          <div style="font-size: 0.85rem; color: var(--text); padding: 0.4rem 0;">140g plain flour · 4 eggs · 200ml milk · pinch of salt · lard for the tin</div>
+
+          <div class="gentle-divider">Method</div>
+          <div class="step-item prep">
+            <div class="step-num">1</div>
+            <div><span class="prep-badge">Prep</span>Boil the kettle.</div>
+          </div>
+          <div class="step-item prep">
+            <div class="step-num">2</div>
+            <div><span class="prep-badge">Prep</span>Tea towel on the radiator.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">3</div>
+            <div>Whisk flour, eggs, milk and salt into a smooth batter, leave to rest 5 min.</div>
+          </div>
+          <div class="step-item prep">
+            <div class="step-num">4</div>
+            <div><span class="prep-badge">Prep</span>Put lard into the tin and heat for 5 min in the oven.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">5</div>
+            <div>Pour 1cm of batter into each well of the heated tin.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">6</div>
+            <div>Bake 22–25 min, do not open the oven door.</div>
+          </div>
+        </div>
+      </div>
+      <div class="mockup-label">Recipe detail · prep interleaved with cooking steps</div>
+    </div>
+  </div>
+
+  <!-- Option B - Cooking mode -->
+  <div class="section-label">Option B · 3. Cooking mode</div>
+  <div class="design-notes">
+    Cooking mode renders the same single list, every item tickable. Prep items keep their badge + accent so the user can mentally batch them ("let me knock out the green ones first"), but they appear at their natural position in the recipe. The first unchecked item is highlighted as the active step, regardless of type — this preserves the existing cooking-mode interaction and keeps the user moving forward through the recipe.
+  </div>
+
+  <div class="mockup-row">
+    <div>
+      <div class="mockup-frame mobile">
+        <div class="cooking-view-header">
+          <div>
+            <h3>Yorkshire Puddings</h3>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">Cooking mode</div>
+          </div>
+          <button class="icon-btn">✕</button>
+        </div>
+        <div class="frame-body">
+          <div class="step-progress-text">2 of 6 complete</div>
+          <div class="step-progress-bar"><div class="step-progress-fill" style="width: 33%"></div></div>
+
+          <div class="step-item prep checked cooking-mode-checkable">
+            <div class="step-check"></div>
+            <div class="step-text"><span class="prep-badge">Prep</span>Boil the kettle.</div>
+          </div>
+          <div class="step-item prep checked cooking-mode-checkable">
+            <div class="step-check"></div>
+            <div class="step-text"><span class="prep-badge">Prep</span>Tea towel on the radiator.</div>
+          </div>
+          <div class="step-item highlighted cooking-mode-checkable">
+            <div class="step-check"></div>
+            <div class="step-text">Whisk flour, eggs, milk and salt into a smooth batter, leave to rest 5 min.</div>
+          </div>
+          <div class="step-item prep cooking-mode-checkable">
+            <div class="step-check"></div>
+            <div class="step-text"><span class="prep-badge">Prep</span>Put lard into the tin and heat for 5 min in the oven.</div>
+          </div>
+          <div class="step-item cooking-mode-checkable">
+            <div class="step-check"></div>
+            <div class="step-text">Pour 1cm of batter into each well of the heated tin.</div>
+          </div>
+          <div class="step-item cooking-mode-checkable">
+            <div class="step-check"></div>
+            <div class="step-text">Bake 22–25 min, do not open the oven door.</div>
+          </div>
+        </div>
+      </div>
+      <div class="mockup-label">Cooking mode · 2 prep items ticked, on step 3</div>
+    </div>
+  </div>
+
+  <div class="annotation-row">
+    <span class="annotation new">Single tickable list, prep + cook</span>
+    <span class="annotation highlight">First unchecked = highlighted, regardless of type</span>
+    <span class="annotation">Prep badge stays visible even when ticked</span>
+  </div>
+
+  <!-- Option B - Data model -->
+  <div class="section-label">Option B · 4. Data model implications</div>
+  <div class="design-notes">
+    <strong>Smaller and simpler than Option A.</strong> Today <code>recipes.instructions</code> is a single text/markdown field. Option B requires either:
+    <ul>
+      <li><strong>Approach 1 (lighter, recommended):</strong> Keep <code>instructions</code> but restructure to a JSONB array of <code>{ id: string, text: string, type: 'step' | 'prep' }</code>. A migration converts existing string-based instructions into <code>type: 'step'</code> entries (split on newlines or list markers — fallback safe).</li>
+      <li><strong>Approach 2 (least invasive):</strong> Keep instructions as text/markdown and use an inline marker syntax like <code>[prep] Boil the kettle</code> that the renderer parses. No schema change, but parsing logic + lossy round-trip if the user edits raw markdown.</li>
+    </ul>
+    <strong>No</strong> changes to <code>meal_items</code> beyond what already exists (instructions are already snapshotted there). Tick state in cooking mode reuses the existing <code>completedSteps: Set&lt;number&gt;</code> on <code>itemCheckState</code> with no extension — every list item is a "step" from the tick-state's point of view.
+  </div>
+
+  <!-- ============ COMPARISON & RECOMMENDATION ============ -->
+  <div class="section-label">Comparison & recommendation</div>
+
+  <div class="comparison-grid">
+    <div>
+      <h4 class="opt-a">Option A · Separate "Before you start" section</h4>
+      <ul>
+        <li class="pro">Strong "mise en place" affordance — see all prep at a glance before starting.</li>
+        <li class="pro">Visually batched: the user can tick all prep before turning on the hob.</li>
+        <li class="pro">Existing instructions field stays untouched.</li>
+        <li class="con">Two lists to manage in cooking mode — small context-switch cost.</li>
+        <li class="con">Mid-recipe prep ("warm the tin between mixing and pouring") doesn't fit naturally — has to live above all the cooking, away from where it's actually used.</li>
+        <li class="con">New JSONB column on <code>recipes</code> + <code>meal_items</code> — bigger data-model footprint.</li>
+        <li class="con">Maximum of 20 items per recipe — extra constraint to enforce.</li>
+      </ul>
+    </div>
+
+    <div>
+      <h4 class="opt-b">Option B · Prep inline within method</h4>
+      <ul>
+        <li class="pro">Single source of truth for "what to do" — read top-to-bottom, no switching.</li>
+        <li class="pro">Prep can sit at the right position in the flow (e.g. "warm the tin" between mixing and pouring) — matches how cooks actually think.</li>
+        <li class="pro">Smaller new UI surface — extends existing steps rather than adding a new section.</li>
+        <li class="pro">Cooking-mode tick state reuses the existing <code>completedSteps</code> Set with no extension.</li>
+        <li class="pro">Migration path for existing recipes is automatic — every existing instruction becomes a <code>type: 'step'</code> entry.</li>
+        <li class="con">No batched "see all prep at once" view (partly mitigated by green badges being scannable).</li>
+        <li class="con">Requires restructuring <code>recipes.instructions</code> from text → JSONB array (or accepting lossy markdown markers).</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="design-notes" style="margin-top: 1rem; border: 2px solid var(--success);">
+    <strong>Compass's recommendation: Option B.</strong>
+    <br><br>
+    Three reasons:
+    <ol style="margin-left: 1.25rem;">
+      <li><strong>It matches how cooks think.</strong> The user's three example tasks — boil kettle (pre-cook), warm tin (mid-recipe), tea towel (pre-cook) — already span the whole timeline of a recipe. Option A forces them all to live above the cooking; Option B lets each one sit where it belongs.</li>
+      <li><strong>It's less code, less data, less UI surface.</strong> Reuses the existing tick-state model, the existing snapshot to <code>meal_items</code>, the existing cooking-mode rendering loop. Option A introduces a parallel set of all of those.</li>
+      <li><strong>The "scan for prep" use case is preserved by the badge.</strong> A green PREP chip on a few rows is easily scannable on a 360px screen — you don't lose the "what do I need to do before I start" affordance, you just don't need a separate section to get it.</li>
+    </ol>
+
+    <strong>Caveat / when to prefer Option A:</strong> if you imagine future versions where prep gets its own behaviours that <em>don't</em> apply to cooking steps — e.g. "remind me 10 minutes before serve time", or "Alexa, read me my prep list before I start" — then Option A's separation pays off because prep has its own data home to hang those features off. If those are likely v2 features, Option A is the more defensible long-term shape even though it's heavier today.
+  </div>
+
+  <!-- ============ HANDOFF CHECKLIST ============ -->
+  <div class="section-label">Hand-off to Implementation</div>
+  <div class="design-notes">
+    <strong>Ready for build once the user picks an option.</strong> Both options have:
+    <ul>
+      <li>✅ Mockups for all four surfaces (edit form, detail, standalone cooking, planner).</li>
+      <li>✅ All states defined (empty / populated / partial / done / loading / error).</li>
+      <li>✅ Data model decisions documented.</li>
+      <li>✅ Tick state strategy defined.</li>
+    </ul>
+    <strong>⏸ Awaiting user choice (A or B) + approval before Atlas picks up.</strong>
+  </div>
+
+</body>
+</html>

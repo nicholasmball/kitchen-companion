@@ -15,6 +15,12 @@ import {
 } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { RecipeImageUpload } from './recipe-image-upload'
+import { InstructionEditor } from './instruction-editor'
+import {
+  parseInstructionItems,
+  serializeInstructionItems,
+  type InstructionItem,
+} from '@/lib/instruction-items'
 import type { Recipe, Ingredient } from '@/types'
 
 interface RecipeFormProps {
@@ -51,7 +57,9 @@ export function RecipeForm({ recipe, onSubmit }: RecipeFormProps) {
         }))
       : [{ amount: '', unit: '', item: '', notes: '' }]
   )
-  const [instructions, setInstructions] = useState(recipe?.instructions || '')
+  const [instructionItems, setInstructionItems] = useState<InstructionItem[]>(() =>
+    parseInstructionItems(recipe?.instructions)
+  )
   const [prepTime, setPrepTime] = useState(recipe?.prep_time_minutes?.toString() || '')
   const [cookTime, setCookTime] = useState(recipe?.cook_time_minutes?.toString() || '')
   const [restTime, setRestTime] = useState(recipe?.rest_time_minutes?.toString() || '')
@@ -88,11 +96,13 @@ export function RecipeForm({ recipe, onSubmit }: RecipeFormProps) {
     // Filter out empty ingredients
     const filteredIngredients = ingredients.filter((i) => i.item.trim())
 
+    const serializedInstructions = serializeInstructionItems(instructionItems)
+
     const data = {
       title: title.trim(),
       description: description.trim() || null,
       ingredients: filteredIngredients,
-      instructions: instructions.trim() || null,
+      instructions: serializedInstructions || null,
       prep_time_minutes: prepTime ? parseInt(prepTime) : null,
       cook_time_minutes: cookTime ? parseInt(cookTime) : null,
       rest_time_minutes: restTime ? parseInt(restTime) : null,
@@ -229,18 +239,10 @@ export function RecipeForm({ recipe, onSubmit }: RecipeFormProps) {
       {/* Instructions */}
       <Card>
         <CardHeader>
-          <CardTitle>Instructions</CardTitle>
+          <CardTitle>Method</CardTitle>
         </CardHeader>
         <CardContent>
-          <Textarea
-            value={instructions}
-            onChange={(e) => setInstructions(e.target.value)}
-            placeholder="Step-by-step cooking instructions..."
-            rows={8}
-          />
-          <p className="text-xs text-muted-foreground mt-2">
-            Tip: Number your steps (1. Preheat oven... 2. Mix ingredients...)
-          </p>
+          <InstructionEditor items={instructionItems} onChange={setInstructionItems} />
         </CardContent>
       </Card>
 

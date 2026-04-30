@@ -21,6 +21,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
+import { parseInstructionItems } from '@/lib/instruction-items'
 import type { Recipe } from '@/types'
 
 export default function RecipeDetailPage() {
@@ -362,22 +363,44 @@ export default function RecipeDetailPage() {
       )}
 
       {/* Instructions */}
-      {recipe.instructions && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Instructions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="prose prose-sm max-w-none">
-              {recipe.instructions.split('\n').map((line, i) => (
-                <p key={i} className={line.trim() ? '' : 'h-4'}>
-                  {line}
-                </p>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {recipe.instructions && (() => {
+        const items = parseInstructionItems(recipe.instructions)
+        if (items.length === 0) return null
+        let stepCount = 0
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle>Method</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ol className="space-y-2 list-none pl-0">
+                {items.map((item) => {
+                  const isPrep = item.type === 'prep'
+                  if (!isPrep) stepCount += 1
+                  const label = isPrep ? 'Prep' : `${stepCount}.`
+                  return (
+                    <li
+                      key={item.id}
+                      className={cn(
+                        "flex gap-3 p-3 rounded-lg",
+                        isPrep ? "bg-[#40916C]/5 border-l-[3px] border-[#40916C]" : "bg-transparent"
+                      )}
+                    >
+                      <span className={cn(
+                        "shrink-0 w-12 text-sm font-bold",
+                        isPrep ? "text-[#40916C] uppercase tracking-wide" : "text-muted-foreground"
+                      )}>
+                        {label}
+                      </span>
+                      <span className="flex-1 leading-relaxed">{item.text}</span>
+                    </li>
+                  )
+                })}
+              </ol>
+            </CardContent>
+          </Card>
+        )
+      })()}
 
       {/* Tags */}
       {recipe.tags && recipe.tags.length > 0 && (
