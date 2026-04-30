@@ -6,6 +6,8 @@ import {
   buildResumePayload,
   buildPushBackPayload,
   applyPauseAndPadding,
+  findOverrunEvents,
+  computeOverrunDeltaMinutes,
   previewPushedServeTime,
   formatElapsed,
   isValidPushBackTarget,
@@ -59,16 +61,14 @@ describe('getPauseOffsetSeconds', () => {
     expect(getPauseOffsetSeconds(makePlan({ total_pause_seconds: 600 }))).toBe(600)
   })
 
-  it('adds current elapsed pause when paused', () => {
-    const now = new Date('2026-04-30T17:05:00Z')
+  it('does NOT include current pause window — pause = freeze', () => {
     const plan = makePlan({ paused_at: '2026-04-30T17:00:00Z', total_pause_seconds: 60 })
-    expect(getPauseOffsetSeconds(plan, now)).toBe(60 + 5 * 60)
+    expect(getPauseOffsetSeconds(plan)).toBe(60)
   })
 
-  it('does not subtract when pause looks negative (clock skew)', () => {
-    const now = new Date('2026-04-30T16:59:00Z')
-    const plan = makePlan({ paused_at: '2026-04-30T17:00:00Z', total_pause_seconds: 100 })
-    expect(getPauseOffsetSeconds(plan, now)).toBe(100)
+  it('returns the same value regardless of how long the plan has been paused', () => {
+    const plan = makePlan({ paused_at: '2026-04-30T17:00:00Z', total_pause_seconds: 0 })
+    expect(getPauseOffsetSeconds(plan)).toBe(0)
   })
 })
 
@@ -87,18 +87,12 @@ describe('getCurrentPauseElapsedSeconds', () => {
 // ─── buildResumePayload ───────────────────────────────────────────────────
 
 describe('buildResumePayload', () => {
-  it('clears paused_at and accumulates the current pause window', () => {
-    const now = new Date('2026-04-30T17:03:00Z')
-    const plan = makePlan({ paused_at: '2026-04-30T17:00:00Z', total_pause_seconds: 90 })
-    expect(buildResumePayload(plan, now)).toEqual({
-      paused_at: null,
-      total_pause_seconds: 90 + 180,
-    })
+  it('clears paused_at only — does not accumulate elapsed pause', () => {
+    expect(buildResumePayload()).toEqual({ paused_at: null })
   })
 
-  it('handles a no-op resume gracefully (not paused)', () => {
-    const plan = makePlan({ total_pause_seconds: 42 })
-    expect(buildResumePayload(plan)).toEqual({ paused_at: null, total_pause_seconds: 42 })
+  it('returns the same payload regardless of how long the plan was paused', () => {
+    expect(buildResumePayload()).toEqual({ paused_at: null })
   })
 })
 
@@ -136,7 +130,7 @@ describe('applyPauseAndPadding', () => {
     expect(out).toEqual(baseEvents)
   })
 
-  it('shifts every event forward by total_pause_seconds', () => {
+  it('shifts every event forward by total_pause_seconds (historical pauses)', () => {
     const out = applyPauseAndPadding(baseEvents, makePlan({ total_pause_seconds: 600 }))
     expect(out[0].time.toISOString()).toBe('2026-04-30T17:10:00.000Z')
     expect(out[1].time.toISOString()).toBe('2026-04-30T17:40:00.000Z')
@@ -147,7 +141,6 @@ describe('applyPauseAndPadding', () => {
     const out = applyPauseAndPadding(baseEvents, makePlan({ padding_minutes: 10 }))
     expect(out[0].time.toISOString()).toBe('2026-04-30T16:50:00.000Z')
     expect(out[1].time.toISOString()).toBe('2026-04-30T17:20:00.000Z')
-    // Serve unchanged by padding
     expect(out[2].time.toISOString()).toBe('2026-04-30T18:00:00.000Z')
   })
 
@@ -156,20 +149,18 @@ describe('applyPauseAndPadding', () => {
       baseEvents,
       makePlan({ total_pause_seconds: 300, padding_minutes: 10 })
     )
-    expect(out[0].time.toISOString()).toBe('2026-04-30T16:55:00.000Z') // +5 -10
-    expect(out[1].time.toISOString()).toBe('2026-04-30T17:25:00.000Z') // +5 -10
-    expect(out[2].time.toISOString()).toBe('2026-04-30T18:05:00.000Z') // +5 only
+    expect(out[0].time.toISOString()).toBe('2026-04-30T16:55:00.000Z')
+    expect(out[1].time.toISOString()).toBe('2026-04-30T17:25:00.000Z')
+    expect(out[2].time.toISOString()).toBe('2026-04-30T18:05:00.000Z')
   })
 
-  it('factors in current pause window when paused', () => {
-    const now = new Date('2026-04-30T17:02:00Z')
+  it('does NOT include the current pause window — pause = freeze the displayed timeline', () => {
     const out = applyPauseAndPadding(
       baseEvents,
-      makePlan({ paused_at: '2026-04-30T17:00:00Z', total_pause_seconds: 60 }),
-      now
+      makePlan({ paused_at: '2026-04-30T17:00:00Z', total_pause_seconds: 60 })
     )
-    // pauseOffset = 60 + 120 = 180s = 3min
-    expect(out[1].time.toISOString()).toBe('2026-04-30T17:33:00.000Z')
+    // total_pause_seconds = 60 only; no current-window contribution
+    expect(out[1].time.toISOString()).toBe('2026-04-30T17:31:00.000Z')
   })
 
   it('preserves original event metadata', () => {
@@ -177,6 +168,105 @@ describe('applyPauseAndPadding', () => {
     expect(out[0].id).toBe(baseEvents[0].id)
     expect(out[0].type).toBe('prep_start')
     expect(out[0].description).toBe('test')
+  })
+})
+
+// ─── findOverrunEvents / computeOverrunDeltaMinutes ───────────────────────
+
+describe('findOverrunEvents', () => {
+  const events = [
+    makeEvent('2026-04-30T16:00:00Z', 'prep_start'),
+    makeEvent('2026-04-30T17:00:00Z', 'cook_start'),
+    makeEvent('2026-04-30T18:00:00Z', 'cook_end'),
+    makeEvent('2026-04-30T18:00:00Z', 'serve'),
+  ]
+
+  it('returns empty when not paused', () => {
+    expect(findOverrunEvents(events, null)).toEqual([])
+  })
+
+  it('returns events that fired during the pause window', () => {
+    const out = findOverrunEvents(
+      events,
+      '2026-04-30T15:45:00Z',
+      new Date('2026-04-30T17:30:00Z')
+    )
+    // prep at 16:00, cook_start at 17:00 are both within [15:45, 17:30]
+    expect(out.map((e) => e.type)).toEqual(['prep_start', 'cook_start'])
+  })
+
+  it('excludes events scheduled before pause started', () => {
+    const out = findOverrunEvents(
+      events,
+      '2026-04-30T16:30:00Z',
+      new Date('2026-04-30T17:30:00Z')
+    )
+    // 16:00 is before pause; 17:00 is within
+    expect(out.map((e) => e.type)).toEqual(['cook_start'])
+  })
+
+  it('excludes events scheduled after resume', () => {
+    const out = findOverrunEvents(
+      events,
+      '2026-04-30T15:45:00Z',
+      new Date('2026-04-30T16:30:00Z')
+    )
+    // Only prep at 16:00 falls within [15:45, 16:30]
+    expect(out.map((e) => e.type)).toEqual(['prep_start'])
+  })
+
+  it('always excludes the serve event', () => {
+    const out = findOverrunEvents(
+      events,
+      '2026-04-30T15:45:00Z',
+      new Date('2026-04-30T19:00:00Z')
+    )
+    expect(out.find((e) => e.type === 'serve')).toBeUndefined()
+  })
+
+  it('returns empty when no events fall within the pause window', () => {
+    const out = findOverrunEvents(
+      events,
+      '2026-04-30T15:00:00Z',
+      new Date('2026-04-30T15:30:00Z')
+    )
+    expect(out).toEqual([])
+  })
+})
+
+describe('computeOverrunDeltaMinutes', () => {
+  it('returns 0 for an empty overrun list', () => {
+    expect(computeOverrunDeltaMinutes([])).toBe(0)
+  })
+
+  it('returns rounded-up minutes between latest overrun and resume time', () => {
+    const events = [
+      makeEvent('2026-04-30T16:00:00Z', 'prep_start'),
+      makeEvent('2026-04-30T17:00:00Z', 'cook_start'),
+    ]
+    const resume = new Date('2026-04-30T17:30:00Z')
+    expect(computeOverrunDeltaMinutes(events, resume)).toBe(30)
+  })
+
+  it('uses the LATEST overrun event, not the earliest', () => {
+    const events = [
+      makeEvent('2026-04-30T16:00:00Z', 'prep_start'),
+      makeEvent('2026-04-30T17:00:00Z', 'cook_start'),
+    ]
+    const resume = new Date('2026-04-30T17:05:00Z')
+    expect(computeOverrunDeltaMinutes(events, resume)).toBe(5)
+  })
+
+  it('rounds up sub-minute deltas to 1 minute', () => {
+    const events = [makeEvent('2026-04-30T17:00:00Z', 'cook_start')]
+    const resume = new Date('2026-04-30T17:00:30Z')
+    expect(computeOverrunDeltaMinutes(events, resume)).toBe(1)
+  })
+
+  it('returns 0 if resume time is somehow earlier than latest overrun (clock skew)', () => {
+    const events = [makeEvent('2026-04-30T17:00:00Z', 'cook_start')]
+    const resume = new Date('2026-04-30T16:00:00Z')
+    expect(computeOverrunDeltaMinutes(events, resume)).toBe(0)
   })
 })
 

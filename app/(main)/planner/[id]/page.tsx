@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useMealPlans } from '@/hooks/use-meal-plan'
@@ -29,6 +29,8 @@ import {
   applyPauseAndPadding,
   buildPushBackPayload,
   buildResumePayload,
+  computeOverrunDeltaMinutes,
+  findOverrunEvents,
   isPaused,
 } from '@/lib/plan-pause'
 import { cancelScheduledNotification } from '@/lib/notifications'
@@ -497,23 +499,54 @@ export default function MealPlanDetailPage() {
     setPausing(false)
   }, [plan, id, updateMealPlan, cancelAllPlanNotifications])
 
+  // Ref to handlePushBack so handleResume can call it without creating a
+  // declaration-order TDZ issue (handlePushBack is declared further down).
+  const handlePushBackRef = useRef<
+    ((s: { addMinutes: number } | { newServeTime: string }) => Promise<void>) | null
+  >(null)
+
   const handleResume = useCallback(async () => {
     if (!plan || !plan.paused_at) return
     setResuming(true)
-    const payload = buildResumePayload(plan)
-    const prevPaused = plan.paused_at
-    const prevTotal = plan.total_pause_seconds
-    // Optimistic update
-    setPlan((p) => (p ? { ...p, paused_at: null, total_pause_seconds: payload.total_pause_seconds } : null))
+    const pausedAtSnapshot = plan.paused_at
+    const payload = buildResumePayload()
+    // Optimistic update — schedule unchanged. Pause is now a pure no-op.
+    setPlan((p) => (p ? { ...p, paused_at: null } : null))
     const result = await updateMealPlan(id, payload)
     if (!result) {
-      setPlan((p) => (p ? { ...p, paused_at: prevPaused, total_pause_seconds: prevTotal } : null))
+      setPlan((p) => (p ? { ...p, paused_at: pausedAtSnapshot } : null))
       sonnerToast.error("Couldn't resume", { description: 'Try again?' })
-    } else {
-      sonnerToast.success('Resumed')
+      setResuming(false)
+      return
+    }
+
+    // Did the cook fall behind? Check for events scheduled during the pause
+    // window. If yes, offer a one-tap push-back. If not, silent resume.
+    const resumeNow = new Date()
+    const overruns = findOverrunEvents(timeline, pausedAtSnapshot, resumeNow)
+    const deltaMin = computeOverrunDeltaMinutes(overruns, resumeNow)
+    if (deltaMin > 0 && plan.serve_time) {
+      const newServe = new Date(
+        new Date(plan.serve_time).getTime() + deltaMin * 60 * 1000
+      )
+      const newServeLabel = newServe.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+      sonnerToast(
+        `You're ${deltaMin} min behind`,
+        {
+          description: `Push serve to ${newServeLabel}?`,
+          action: {
+            label: 'Push back',
+            onClick: () => handlePushBackRef.current?.({ addMinutes: deltaMin }),
+          },
+          duration: 12000,
+        }
+      )
     }
     setResuming(false)
-  }, [plan, id, updateMealPlan])
+  }, [plan, id, updateMealPlan, timeline])
 
   const handlePushBack = useCallback(
     async (selection: { addMinutes: number } | { newServeTime: string }) => {
@@ -606,6 +639,11 @@ export default function MealPlanDetailPage() {
     },
     [plan, id, updateMealPlan]
   )
+
+  // Keep the ref in sync so handleResume can invoke push-back without a TDZ.
+  useEffect(() => {
+    handlePushBackRef.current = handlePushBack
+  }, [handlePushBack])
 
   const handleSetActive = useCallback(async () => {
     const success = await setAsActive(id)
@@ -784,7 +822,12 @@ export default function MealPlanDetailPage() {
         <div>
           <h2 className="text-xl font-semibold mb-4">Timeline</h2>
           {serveTime ? (
-            <TimelineView events={timeline} serveTime={serveTime} onEventClick={handleViewRecipeFromTimeline} />
+            <TimelineView
+              events={timeline}
+              serveTime={serveTime}
+              frozenNow={planIsPaused && plan.paused_at ? new Date(plan.paused_at) : null}
+              onEventClick={handleViewRecipeFromTimeline}
+            />
           ) : (
             <Card>
               <CardContent className="py-8 text-center text-muted-foreground">

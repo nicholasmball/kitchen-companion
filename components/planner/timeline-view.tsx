@@ -10,6 +10,12 @@ import { getTimeUntil, formatTimeUntil, getEventColor } from '@/lib/timing-calcu
 interface TimelineViewProps {
   events: TimelineEvent[]
   serveTime: Date
+  /**
+   * When provided, "now" is fixed at this value — used to freeze the
+   * timeline display when the plan is paused (countdowns stop ticking,
+   * "next event" doesn't advance, no fade-to-Done as time moves on).
+   */
+  frozenNow?: Date | null
   onEventClick?: (event: TimelineEvent) => void
 }
 
@@ -17,14 +23,16 @@ function isClickableEvent(event: TimelineEvent): boolean {
   return event.type !== 'serve' && !!event.instructions
 }
 
-export function TimelineView({ events, serveTime, onEventClick }: TimelineViewProps) {
-  const [now, setNow] = useState(new Date())
+export function TimelineView({ events, serveTime, frozenNow, onEventClick }: TimelineViewProps) {
+  const [tickingNow, setTickingNow] = useState(new Date())
+  const now = frozenNow ?? tickingNow
 
-  // Update current time every second
+  // Tick every second when not frozen.
   useEffect(() => {
-    const interval = setInterval(() => setNow(new Date()), 1000)
+    if (frozenNow) return
+    const interval = setInterval(() => setTickingNow(new Date()), 1000)
     return () => clearInterval(interval)
-  }, [])
+  }, [frozenNow])
 
   if (events.length === 0) {
     return (
@@ -114,7 +122,7 @@ export function TimelineView({ events, serveTime, onEventClick }: TimelineViewPr
                               {event.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </div>
                             <div className={`text-sm ${isNext ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
-                              {isPast ? 'Done' : formatTimeUntil(event.time)}
+                              {isPast ? 'Done' : formatTimeUntil(event.time, now)}
                             </div>
                           </div>
                           {clickable && onEventClick && (

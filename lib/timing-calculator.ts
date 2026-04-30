@@ -172,16 +172,16 @@ export function getStartTime(events: TimelineEvent[]): Date | null {
 }
 
 /**
- * Calculate time until an event
+ * Calculate time until an event. Pass `now` to freeze the calculation
+ * (e.g. when the plan is paused — `now` should be `paused_at`).
  */
-export function getTimeUntil(eventTime: Date): {
+export function getTimeUntil(eventTime: Date, now: Date = new Date()): {
   hours: number
   minutes: number
   seconds: number
   totalSeconds: number
   isPast: boolean
 } {
-  const now = new Date()
   const diff = eventTime.getTime() - now.getTime()
   const isPast = diff < 0
   const absDiff = Math.abs(diff)
@@ -195,10 +195,11 @@ export function getTimeUntil(eventTime: Date): {
 }
 
 /**
- * Format time until as a human-readable string
+ * Format time until as a human-readable string. Pass `now` to freeze the
+ * calculation (e.g. when the plan is paused).
  */
-export function formatTimeUntil(eventTime: Date): string {
-  const { hours, minutes, isPast } = getTimeUntil(eventTime)
+export function formatTimeUntil(eventTime: Date, now: Date = new Date()): string {
+  const { hours, minutes, isPast } = getTimeUntil(eventTime, now)
 
   if (isPast) {
     if (hours > 0) return `${hours}h ${minutes}m ago`

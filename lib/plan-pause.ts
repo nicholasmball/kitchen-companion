@@ -18,19 +18,22 @@ export function isPaused(plan: PausableMealPlan): boolean {
 }
 
 /**
- * Number of seconds currently being held aside by pause activity.
- * = total_pause_seconds + (now - paused_at if paused else 0)
+ * Number of seconds the timeline is shifted forward by historical pause
+ * activity. Returns only `total_pause_seconds` — the *current* pause window
+ * is intentionally NOT included.
  *
- * This is what gets added to every event time to push them forward.
+ * Why: pause = freeze. While the cook is paused we want the displayed
+ * timeline to stay still, not creep forward as `now` advances. The current
+ * pause window only matters at Resume time, when we decide whether the
+ * cook fell behind and offer a push-back catch-up. See `findOverrunEvents`.
+ *
+ * Historic note: previous versions accumulated the current window into the
+ * offset, which caused (a) timeline events shifting forward on every
+ * re-render during pause, and (b) Resume auto-shifting the schedule even
+ * when the cook hadn't actually consumed slack.
  */
-export function getPauseOffsetSeconds(plan: PausableMealPlan, now: Date = new Date()): number {
-  let offset = plan.total_pause_seconds
-  if (plan.paused_at) {
-    const pausedAtMs = new Date(plan.paused_at).getTime()
-    const elapsed = Math.floor((now.getTime() - pausedAtMs) / 1000)
-    if (elapsed > 0) offset += elapsed
-  }
-  return offset
+export function getPauseOffsetSeconds(plan: PausableMealPlan): number {
+  return plan.total_pause_seconds
 }
 
 /** Elapsed seconds in the current pause cycle (0 if not paused). */
@@ -46,17 +49,15 @@ export function getCurrentPauseElapsedSeconds(
 // ─── Resume payload ───────────────────────────────────────────────────────
 
 /**
- * Build the meal_plan update payload for a Resume action — clears paused_at
- * and accumulates the elapsed pause into total_pause_seconds.
+ * Build the meal_plan update payload for a Resume action.
+ *
+ * Just clears `paused_at`. Pause is now a pure no-op for the schedule —
+ * times don't shift on resume. If the cook actually fell behind during the
+ * pause (a scheduled event passed), the planner page surfaces a toast with
+ * a one-tap push-back. See `findOverrunEvents`.
  */
-export function buildResumePayload(
-  plan: PausableMealPlan,
-  now: Date = new Date()
-): { paused_at: null; total_pause_seconds: number } {
-  return {
-    paused_at: null,
-    total_pause_seconds: plan.total_pause_seconds + getCurrentPauseElapsedSeconds(plan, now),
-  }
+export function buildResumePayload(): { paused_at: null } {
+  return { paused_at: null }
 }
 
 // ─── Push-back payload ────────────────────────────────────────────────────
@@ -99,10 +100,9 @@ export function buildPushBackPayload(
  */
 export function applyPauseAndPadding(
   events: TimelineEvent[],
-  plan: PausableMealPlan,
-  now: Date = new Date()
+  plan: PausableMealPlan
 ): TimelineEvent[] {
-  const pauseOffsetMs = getPauseOffsetSeconds(plan, now) * 1000
+  const pauseOffsetMs = getPauseOffsetSeconds(plan) * 1000
   const paddingMs = (plan.padding_minutes || 0) * 60 * 1000
   if (pauseOffsetMs === 0 && paddingMs === 0) return events
   return events.map((e) => {
@@ -111,6 +111,48 @@ export function applyPauseAndPadding(
     const pad = isServe ? 0 : paddingMs
     return { ...e, time: new Date(base + pauseOffsetMs - pad) }
   })
+}
+
+// ─── Overrun detection (used by Resume to offer catch-up push-back) ───────
+
+/**
+ * Events whose scheduled time passed while the plan was paused. Used to
+ * decide whether to show the "you're behind" toast on Resume.
+ *
+ * Excludes the serve event — falling behind on serve doesn't make sense; we
+ * detect overruns based on cooking events.
+ */
+export function findOverrunEvents(
+  events: TimelineEvent[],
+  pausedAt: string | null,
+  resumeTime: Date = new Date()
+): TimelineEvent[] {
+  if (!pausedAt) return []
+  const pausedAtMs = new Date(pausedAt).getTime()
+  const resumeMs = resumeTime.getTime()
+  return events.filter((e) => {
+    if (e.type === 'serve') return false
+    const t = e.time.getTime()
+    return t >= pausedAtMs && t <= resumeMs
+  })
+}
+
+/**
+ * How many minutes behind the cook is at resume time, based on overrun
+ * events. Defined as `(resumeTime - latestOverrunEvent.time)` rounded up
+ * to the nearest minute. Returns 0 if no overruns.
+ */
+export function computeOverrunDeltaMinutes(
+  overrunEvents: TimelineEvent[],
+  resumeTime: Date = new Date()
+): number {
+  if (overrunEvents.length === 0) return 0
+  const latest = overrunEvents.reduce((acc, e) =>
+    e.time.getTime() > acc.time.getTime() ? e : acc
+  )
+  const diffMs = resumeTime.getTime() - latest.time.getTime()
+  if (diffMs <= 0) return 0
+  return Math.max(1, Math.ceil(diffMs / 60000))
 }
 
 // ─── Push-back quick-pick options ─────────────────────────────────────────

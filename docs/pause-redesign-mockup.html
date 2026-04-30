@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pause redesign · stop auto-shifting + freeze display</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #FAF6F1; --card: #F5E6D3; --card-nested: #EDD9C4; --border: #EDD9C4;
+      --text: #3D2914; --text-heading: #5C3D1E; --text-muted: #8B5A2B;
+      --primary: #D97B4A; --primary-hover: #C46A3A;
+      --pause: #C99846; --pause-deep: #8B5A2B;
+      --success: #40916C;
+      --danger: #B45050;
+    }
+    body { font-family: 'Nunito', sans-serif; background: #1a1a2e; color: var(--text); padding: 2rem; line-height: 1.5; }
+    h1 { color: white; text-align: center; font-size: 2rem; margin-bottom: 0.5rem; }
+    p.lede { color: #aaa; text-align: center; max-width: 760px; margin: 0 auto 2rem; font-size: 0.95rem; }
+    .section-label { color: white; font-size: 1.2rem; font-weight: 700; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--primary); display: inline-block; }
+    .design-notes { background: #2a2a4a; color: #ccc; padding: 1rem 1.5rem; border-radius: 0.75rem; margin-bottom: 1.5rem; font-size: 0.9rem; line-height: 1.6; }
+    .design-notes strong { color: var(--primary); }
+    .design-notes code { background: #3a3a5a; padding: 2px 6px; border-radius: 4px; font-size: 0.85rem; }
+    .design-notes ul, .design-notes ol { margin: 0.5rem 0 0.25rem 1.25rem; }
+    .design-notes li { margin-bottom: 0.3rem; }
+
+    .scenario-grid {
+      display: grid; gap: 1.25rem;
+      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+      max-width: 1200px; margin: 0 auto 2rem;
+    }
+    .scenario {
+      background: var(--bg); border-radius: 1rem; overflow: hidden;
+      box-shadow: 0 8px 24px rgba(139,90,43,0.15);
+      display: flex; flex-direction: column;
+    }
+    .scenario-header {
+      background: var(--card); padding: 0.7rem 1rem;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+    }
+    .scenario-title { font-weight: 800; color: var(--text-heading); font-size: 0.95rem; }
+    .scenario-tag {
+      font-size: 0.65rem; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: 0.3rem;
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .scenario-tag.broken { background: rgba(180,80,80,0.15); color: var(--danger); }
+    .scenario-tag.fixed { background: rgba(64,145,108,0.15); color: var(--success); }
+    .scenario-body { padding: 1rem; flex: 1; display: flex; flex-direction: column; gap: 0.75rem; }
+
+    /* Scene-setting strip — explains what's happening at this moment */
+    .clock {
+      background: rgba(0,0,0,0.04); border-radius: 0.5rem;
+      padding: 0.55rem 0.7rem;
+      font-size: 0.78rem; color: var(--text-muted);
+      line-height: 1.4;
+    }
+    .clock strong { color: var(--text); font-weight: 700; }
+    .clock-time { font-weight: 800; color: var(--text-heading); font-variant-numeric: tabular-nums; }
+
+    /* Timeline excerpt */
+    .timeline-mini { display: flex; flex-direction: column; gap: 0.25rem; }
+    .tl-event {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.45rem 0.6rem; background: white; border: 1px solid var(--border);
+      border-radius: 0.45rem; font-size: 0.85rem;
+    }
+    .tl-event.passed {
+      background: rgba(180,80,80,0.04); border-color: rgba(180,80,80,0.25);
+    }
+    .tl-event.passed .tl-time { color: var(--danger); }
+    .tl-time {
+      font-weight: 800; color: var(--text-heading); font-variant-numeric: tabular-nums;
+      font-size: 0.85rem;
+    }
+    .tl-shifted .tl-time { color: var(--danger); position: relative; }
+    .tl-shifted .tl-time::after {
+      content: attr(data-was);
+      position: absolute; right: 0; top: 100%;
+      font-size: 0.65rem; font-weight: 600; color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .tl-event-name { color: var(--text); flex: 1; margin-right: 0.5rem; }
+    .tl-countdown { font-size: 0.7rem; color: var(--text-muted); margin-left: 0.4rem; font-variant-numeric: tabular-nums; }
+
+    /* Banner mock */
+    .banner {
+      background: var(--pause); color: white;
+      padding: 0.7rem 0.85rem; border-radius: 0.6rem;
+      display: flex; align-items: center; gap: 0.5rem;
+      font-size: 0.85rem;
+    }
+    .banner-icon {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: rgba(255,255,255,0.2); border: 2px solid white;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; flex-shrink: 0;
+    }
+    .banner-text { flex: 1; }
+    .banner-text strong { display: block; font-weight: 800; line-height: 1.1; }
+    .banner-text small { font-size: 0.7rem; opacity: 0.95; font-variant-numeric: tabular-nums; }
+    .banner-resume {
+      background: white; color: var(--pause-deep);
+      border: none; padding: 0.4rem 0.85rem; border-radius: 0.4rem;
+      font-family: inherit; font-weight: 800; font-size: 0.8rem;
+      cursor: pointer;
+    }
+
+    /* Behind-prompt toast */
+    .behind-toast {
+      background: var(--text-heading); color: white;
+      padding: 0.65rem 0.85rem; border-radius: 0.55rem;
+      display: flex; align-items: center; gap: 0.6rem;
+      font-size: 0.82rem; line-height: 1.35;
+      position: relative;
+      box-shadow: 0 6px 14px rgba(0,0,0,0.25);
+    }
+    .behind-toast strong { font-weight: 800; }
+    .behind-toast button.cta {
+      background: var(--primary); color: white; border: none;
+      padding: 0.35rem 0.7rem; border-radius: 0.4rem;
+      font-family: inherit; font-weight: 800; font-size: 0.72rem;
+      cursor: pointer; flex-shrink: 0;
+    }
+    .behind-toast .dismiss-x {
+      background: transparent; border: none;
+      color: rgba(255,255,255,0.55);
+      font-size: 1rem; line-height: 1;
+      cursor: pointer; padding: 0.2rem 0.35rem;
+      border-radius: 0.3rem; flex-shrink: 0;
+    }
+    .behind-toast .dismiss-x:hover { color: white; background: rgba(255,255,255,0.08); }
+    .toast-progress {
+      position: absolute; left: 0; bottom: 0; height: 2px;
+      background: var(--primary); border-radius: 0 0 0.55rem 0.55rem;
+      width: 60%;
+    }
+    .toast-caption {
+      font-size: 0.7rem; color: var(--text-muted);
+      text-align: center; padding-top: 0.35rem;
+      font-style: italic;
+    }
+
+    /* Past-due timeline event treatment */
+    .tl-event.past-due {
+      background: rgba(0,0,0,0.03);
+      border-color: rgba(180,80,80,0.18);
+      opacity: 0.75;
+    }
+    .tl-event.past-due .tl-event-name {
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
+    .tl-event.past-due .tl-time { color: var(--text-muted); }
+    .tl-event.past-due .late-badge {
+      display: inline-block;
+      background: rgba(180,80,80,0.12);
+      color: var(--danger);
+      font-size: 0.6rem; font-weight: 800;
+      padding: 0.1rem 0.4rem; border-radius: 0.3rem;
+      margin-left: 0.35rem;
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .tl-event.next-up {
+      background: rgba(217,123,74,0.06);
+      border-color: var(--primary);
+      border-left-width: 3px;
+    }
+    .tl-event.next-up .tl-event-name { font-weight: 700; }
+    .tl-event.next-up .next-badge {
+      display: inline-block;
+      background: var(--primary); color: white;
+      font-size: 0.6rem; font-weight: 800;
+      padding: 0.1rem 0.4rem; border-radius: 0.3rem;
+      margin-left: 0.35rem;
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+
+    /* Step labels */
+    .step {
+      font-size: 0.78rem; color: var(--text-muted);
+      padding: 0.3rem 0; border-top: 1px dashed var(--border);
+    }
+    .step strong { color: var(--text-heading); font-weight: 800; }
+
+    .arrow { text-align: center; color: #888; font-size: 1.4rem; padding: 0.5rem 0; }
+
+    .key-row {
+      display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;
+      margin-bottom: 1.5rem;
+    }
+    .key-pill {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      background: #2a2a4a; color: #ccc; padding: 0.35rem 0.75rem;
+      border-radius: 0.5rem; font-size: 0.78rem; border: 1px solid #3a3a5a;
+    }
+    .key-pill .swatch { width: 10px; height: 10px; border-radius: 50%; }
+    .key-pill.broken { border-color: var(--danger); color: var(--danger); }
+    .key-pill.broken .swatch { background: var(--danger); }
+    .key-pill.fixed { border-color: var(--success); color: var(--success); }
+    .key-pill.fixed .swatch { background: var(--success); }
+  </style>
+</head>
+<body>
+
+  <h1>Pause redesign — two bugs, one PR</h1>
+  <p class="lede">
+    Mockups for the two pause bugs being fixed together. <strong style="color:var(--danger);">Red times</strong> show the broken behaviour today; <strong style="color:var(--success);">stable times</strong> show the post-fix behaviour. Both fixes ship in one PR because they touch the same code.
+  </p>
+
+  <div class="key-row">
+    <span class="key-pill broken"><span class="swatch"></span>Today (broken)</span>
+    <span class="key-pill fixed"><span class="swatch"></span>After fix</span>
+  </div>
+
+  <!-- ============ BUG 2: refresh during pause ============ -->
+  <div class="section-label">Bug 2 · Times jump forward on refresh during pause</div>
+  <div class="design-notes">
+    During pause, the displayed timeline includes the <em>current</em> elapsed pause window in its offset. That offset is recomputed on every render. So a hard refresh (or any state change that re-renders the page) picks up a larger pause window and shifts every event forward.
+    <br><br>
+    <strong>Fix:</strong> drop the current pause window from the display calculation. Times stay frozen at whatever they were when pause was tapped. Only the elapsed counter at the top of the banner ticks.
+  </div>
+
+  <div class="scenario-grid">
+    <!-- BROKEN -->
+    <div class="scenario">
+      <div class="scenario-header">
+        <div class="scenario-title">Today · before refresh</div>
+        <span class="scenario-tag broken">Broken</span>
+      </div>
+      <div class="scenario-body">
+        <div class="clock">
+          Cook tapped Pause at <span class="clock-time">15:30</span>. It&apos;s now 15:33; next event was 1 min away when they paused.
+        </div>
+        <div class="banner">
+          <div class="banner-icon">⏸</div>
+          <div class="banner-text">
+            <strong>Plan paused</strong>
+            <small>Paused for 2:57</small>
+          </div>
+        </div>
+        <div class="timeline-mini">
+          <div class="tl-event">
+            <span class="tl-event-name">Start prepping cauliflower cheese</span>
+            <span class="tl-time">15:34</span>
+            <span class="tl-countdown">in 1m</span>
+          </div>
+          <div class="tl-event">
+            <span class="tl-event-name">Start prepping potatoes</span>
+            <span class="tl-time">15:54</span>
+            <span class="tl-countdown">in 21m</span>
+          </div>
+          <div class="tl-event">
+            <span class="tl-event-name">Serve</span>
+            <span class="tl-time">16:32</span>
+            <span class="tl-countdown">in 59m</span>
+          </div>
+        </div>
+        <div class="step"><strong>Cook does:</strong> hard refresh ↓</div>
+      </div>
+    </div>
+
+    <!-- BROKEN AFTER REFRESH -->
+    <div class="scenario">
+      <div class="scenario-header">
+        <div class="scenario-title">Today · after refresh</div>
+        <span class="scenario-tag broken">Broken</span>
+      </div>
+      <div class="scenario-body">
+        <div class="clock">
+          3 minutes later, the cook hard-refreshes the page.
+        </div>
+        <div class="banner">
+          <div class="banner-icon">⏸</div>
+          <div class="banner-text">
+            <strong>Plan paused</strong>
+            <small>Paused for 5:57</small>
+          </div>
+        </div>
+        <div class="timeline-mini">
+          <div class="tl-event tl-shifted">
+            <span class="tl-event-name">Start prepping cauliflower cheese</span>
+            <span class="tl-time" data-was="was 15:34">15:37</span>
+            <span class="tl-countdown">in 4m</span>
+          </div>
+          <div class="tl-event tl-shifted">
+            <span class="tl-event-name">Start prepping potatoes</span>
+            <span class="tl-time" data-was="was 15:54">15:57</span>
+            <span class="tl-countdown">in 24m</span>
+          </div>
+          <div class="tl-event tl-shifted">
+            <span class="tl-event-name">Serve</span>
+            <span class="tl-time" data-was="was 16:32">16:35</span>
+            <span class="tl-countdown">in 1h 02m</span>
+          </div>
+        </div>
+        <div class="step"><strong>Defect:</strong> times jumped forward 3 min just from refreshing.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="scenario-grid">
+    <!-- FIXED BEFORE REFRESH -->
+    <div class="scenario">
+      <div class="scenario-header">
+        <div class="scenario-title">After fix · before refresh</div>
+        <span class="scenario-tag fixed">Fixed</span>
+      </div>
+      <div class="scenario-body">
+        <div class="clock">
+          Cook tapped Pause at <span class="clock-time">15:30</span>. It&apos;s now 15:33; next event was 1 min away when they paused.
+        </div>
+        <div class="banner">
+          <div class="banner-icon">⏸</div>
+          <div class="banner-text">
+            <strong>Plan paused</strong>
+            <small>Paused for 2:57</small>
+          </div>
+        </div>
+        <div class="timeline-mini">
+          <div class="tl-event">
+            <span class="tl-event-name">Start prepping cauliflower cheese</span>
+            <span class="tl-time">15:34</span>
+            <span class="tl-countdown">in 1m</span>
+          </div>
+          <div class="tl-event">
+            <span class="tl-event-name">Start prepping potatoes</span>
+            <span class="tl-time">15:54</span>
+            <span class="tl-countdown">in 21m</span>
+          </div>
+          <div class="tl-event">
+            <span class="tl-event-name">Serve</span>
+            <span class="tl-time">16:32</span>
+            <span class="tl-countdown">in 59m</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FIXED AFTER REFRESH -->
+    <div class="scenario">
+      <div class="scenario-header">
+        <div class="scenario-title">After fix · after refresh</div>
+        <span class="scenario-tag fixed">Fixed</span>
+      </div>
+      <div class="scenario-body">
+        <div class="clock">
+          3 minutes later, the cook hard-refreshes the page.
+        </div>
+        <div class="banner">
+          <div class="banner-icon">⏸</div>
+          <div class="banner-text">
+            <strong>Plan paused</strong>
+            <small>Paused for 5:57</small>
+          </div>
+        </div>
+        <div class="timeline-mini">
+          <div class="tl-event">
+            <span class="tl-event-name">Start prepping cauliflower cheese</span>
+            <span class="tl-time">15:34</span>
+            <span class="tl-countdown">in 1m</span>
+          </div>
+          <div class="tl-event">
+            <span class="tl-event-name">Start prepping potatoes</span>
+            <span class="tl-time">15:54</span>
+            <span class="tl-countdown">in 21m</span>
+          </div>
+          <div class="tl-event">
+            <span class="tl-event-name">Serve</span>
+            <span class="tl-time">16:32</span>
+            <span class="tl-countdown">in 59m</span>
+          </div>
+        </div>
+        <div class="step"><strong>Behaviour:</strong> times unchanged. Only the "Paused for" counter ticked.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ BUG 1: Resume scenarios ============ -->
+  <div class="section-label">Bug 1 · Resume should not auto-shift</div>
+  <div class="design-notes">
+    Today, Resume always pushes every event forward by exactly the pause duration — even if the cook had slack ahead and didn't actually consume any of it. That conflates pause with push-back.
+    <br><br>
+    <strong>Fix:</strong> Resume just unfreezes. Schedule unchanged. If the cook fell behind (a scheduled event passed during pause), a toast offers a one-tap push-back.
+    <br><br>
+    Two scenarios shown below: <strong>(1) cook was within their slack window</strong> — schedule untouched; <strong>(2) cook fell behind</strong> — toast offers catch-up push-back.
+  </div>
+
+  <!-- Scenario 1: paused within slack -->
+  <div class="design-notes" style="background: #2f2f4f; border-left: 3px solid var(--success);">
+    <strong style="color:var(--success);">Scenario 1 · Paused within slack</strong> — Cook paused at 15:45, the next event was 16:00, cook resumed at 15:55. Pause used 10 min of a 15-min slack window. Nothing should change.
+  </div>
+
+  <div class="scenario-grid">
+    <div class="scenario">
+      <div class="scenario-header">
+        <div class="scenario-title">Today · after Resume</div>
+        <span class="scenario-tag broken">Broken</span>
+      </div>
+      <div class="scenario-body">
+        <div class="clock">
+          Cook paused at 15:45, resumed at <span class="clock-time">15:55</span>. Next event was scheduled for 16:00 — they're back within their slack window.
+        </div>
+        <div class="timeline-mini">
+          <div class="tl-event tl-shifted">
+            <span class="tl-event-name">Start prepping cauliflower cheese</span>
+            <span class="tl-time" data-was="was 16:00">16:10</span>
+          </div>
+          <div class="tl-event tl-shifted">
+            <span class="tl-event-name">Start prepping potatoes</span>
+            <span class="tl-time" data-was="was 16:20">16:30</span>
+          </div>
+          <div class="tl-event tl-shifted">
+            <span class="tl-event-name">Serve</span>
+            <span class="tl-time" data-was="was 18:00">18:10</span>
+          </div>
+        </div>
+        <div class="step"><strong>Defect:</strong> everything pushed +10 min even though cook is still on track.</div>
+      </div>
+    </div>
+
+    <div class="scenario">
+      <div class="scenario-header">
+        <div class="scenario-title">After fix · after Resume</div>
+        <span class="scenario-tag fixed">Fixed</span>
+      </div>
+      <div class="scenario-body">
+        <div class="clock">
+          Cook paused at 15:45, resumed at <span class="clock-time">15:55</span>. Next event was scheduled for 16:00 — they're back within their slack window.
+        </div>
+        <div class="timeline-mini">
+          <div class="tl-event">
+            <span class="tl-event-name">Start prepping cauliflower cheese</span>
+            <span class="tl-time">16:00</span>
+            <span class="tl-countdown">in 5m</span>
+          </div>
+          <div class="tl-event">
+            <span class="tl-event-name">Start prepping potatoes</span>
+            <span class="tl-time">16:20</span>
+            <span class="tl-countdown">in 25m</span>
+          </div>
+          <div class="tl-event">
+            <span class="tl-event-name">Serve</span>
+            <span class="tl-time">18:00</span>
+            <span class="tl-countdown">in 2h 5m</span>
+          </div>
+        </div>
+        <div class="step"><strong>Behaviour:</strong> schedule unchanged. Cook is still on time.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scenario 2: paused past an event -->
+  <div class="design-notes" style="background: #2f2f4f; border-left: 3px solid var(--pause);">
+    <strong style="color:var(--pause);">Scenario 2 · Paused past a scheduled event</strong> — Cook paused at 15:45, scheduled "start prepping cauliflower cheese" at 16:00, resumed at 16:30. Cook is 30 min behind. App offers a catch-up.
+  </div>
+
+  <div class="scenario-grid">
+    <div class="scenario">
+      <div class="scenario-header">
+        <div class="scenario-title">Today · after Resume</div>
+        <span class="scenario-tag broken">Broken</span>
+      </div>
+      <div class="scenario-body">
+        <div class="clock">
+          Cook paused at 15:45, resumed at <span class="clock-time">16:30</span>. Cauliflower cheese was supposed to start at 16:00 — that event passed during the pause; cook is 30 min behind.
+        </div>
+        <div class="timeline-mini">
+          <div class="tl-event tl-shifted">
+            <span class="tl-event-name">Start prepping cauliflower cheese</span>
+            <span class="tl-time" data-was="was 16:00">16:45</span>
+          </div>
+          <div class="tl-event tl-shifted">
+            <span class="tl-event-name">Take chicken out (in oven now)</span>
+            <span class="tl-time" data-was="was 17:30">18:15</span>
+          </div>
+          <div class="tl-event tl-shifted">
+            <span class="tl-event-name">Serve</span>
+            <span class="tl-time" data-was="was 18:00">18:45</span>
+          </div>
+        </div>
+        <div class="step"><strong>Defect:</strong> chicken cook_end shifted 45 min — chicken will overcook. Auto-pushed without asking.</div>
+      </div>
+    </div>
+
+    <div class="scenario">
+      <div class="scenario-header">
+        <div class="scenario-title">After fix · just resumed (toast visible)</div>
+        <span class="scenario-tag fixed">Fixed</span>
+      </div>
+      <div class="scenario-body">
+        <div class="clock">
+          Cook paused at 15:45, resumed at <span class="clock-time">16:30</span>. Cauliflower cheese was supposed to start at 16:00 — that event passed during the pause; cook is 30 min behind.
+        </div>
+        <div class="behind-toast">
+          <span style="font-size: 1rem;">⚠️</span>
+          <div style="flex:1;">
+            <strong>You're 30 min behind.</strong><br>
+            <small style="opacity:0.85;">Push serve to <strong>18:30</strong>?</small>
+          </div>
+          <button class="cta">Push back</button>
+          <button class="dismiss-x" aria-label="Dismiss">✕</button>
+          <div class="toast-progress"></div>
+        </div>
+        <div class="toast-caption">Auto-dismisses in ~12 s · or tap ✕ to dismiss now</div>
+        <div class="timeline-mini">
+          <div class="tl-event past-due">
+            <span class="tl-event-name">Start prepping cauliflower cheese<span class="late-badge">30m late</span></span>
+            <span class="tl-time">16:00</span>
+            <span class="tl-countdown">30m ago</span>
+          </div>
+          <div class="tl-event next-up">
+            <span class="tl-event-name">Take chicken out (in oven now)<span class="next-badge">Next</span></span>
+            <span class="tl-time">17:30</span>
+            <span class="tl-countdown">in 1h</span>
+          </div>
+          <div class="tl-event">
+            <span class="tl-event-name">Serve</span>
+            <span class="tl-time">18:00</span>
+            <span class="tl-countdown">in 1h 30m</span>
+          </div>
+        </div>
+        <div class="step"><strong>Toast behaviour:</strong> non-blocking, auto-dismisses in ~12&nbsp;s. ✕ dismisses immediately. Tapping <strong>Push back</strong> invokes the existing in-flight-aware push-back (chicken's cook_end stays put).</div>
+      </div>
+    </div>
+
+    <div class="scenario">
+      <div class="scenario-header">
+        <div class="scenario-title">After fix · toast dismissed / expired</div>
+        <span class="scenario-tag fixed">Fixed</span>
+      </div>
+      <div class="scenario-body">
+        <div class="clock">
+          A minute after resume — cook ignored the toast (or it auto-dismissed).
+        </div>
+        <div class="timeline-mini">
+          <div class="tl-event past-due">
+            <span class="tl-event-name">Start prepping cauliflower cheese<span class="late-badge">30m late</span></span>
+            <span class="tl-time">16:00</span>
+            <span class="tl-countdown">31m ago</span>
+          </div>
+          <div class="tl-event next-up">
+            <span class="tl-event-name">Take chicken out (in oven now)<span class="next-badge">Next</span></span>
+            <span class="tl-time">17:30</span>
+            <span class="tl-countdown">in 59m</span>
+          </div>
+          <div class="tl-event">
+            <span class="tl-event-name">Serve</span>
+            <span class="tl-time">18:00</span>
+            <span class="tl-countdown">in 1h 29m</span>
+          </div>
+        </div>
+        <div class="step"><strong>Persistent visual:</strong> past-due event greyed + struck through + "30m late" badge. Cook can see at a glance they're behind. The Push back button in the controls bar (not shown) is always available — they can catch up later when convenient. <strong>No nagging banner.</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lifecycle key for the resume toast -->
+  <div class="design-notes" style="background: #2f2f4f; border-left: 3px solid var(--primary);">
+    <strong style="color: var(--primary);">Resume toast lifecycle</strong>
+    <ul>
+      <li><strong>Trigger</strong>: cook taps Resume AND ≥ 1 scheduled event has passed during pause.</li>
+      <li><strong>Lifetime</strong>: ~12 seconds (Sonner default for toasts with action). Auto-dismiss after that — gone.</li>
+      <li><strong>Manual dismiss</strong>: ✕ button on the toast. Same as auto-dismiss.</li>
+      <li><strong>Manual accept</strong>: tap "Push back" → invokes existing push-back flow with the appropriate delta. Toast closes.</li>
+      <li><strong>If ignored</strong>: gone in ~12 s. <em>The cook still has clear cues</em> — past-due events stay flagged in the timeline + the Push-back button in the controls bar is always there for manual catch-up.</li>
+      <li><strong>Re-trigger</strong>: only fires once per resume action. If the cook pauses again and resumes again, a new evaluation runs.</li>
+    </ul>
+    Net effect: the toast is a <em>one-time helpful nudge</em>, not a sticky alert. Cook is never trapped staring at a banner they don't want.
+  </div>
+
+  <!-- ============ STATE MAP ============ -->
+  <div class="section-label">All states (post-fix)</div>
+  <div class="design-notes">
+    <ul>
+      <li><strong>Pause tapped:</strong> banner appears, notifications cancelled, displayed timeline frozen at the moment of pause.</li>
+      <li><strong>During pause, page re-renders for any reason:</strong> timeline times unchanged. Only "Paused for X:XX" counter advances.</li>
+      <li><strong>Resume tapped, no scheduled events passed:</strong> banner disappears, schedule untouched, notifications rescheduled at original times. No toast.</li>
+      <li><strong>Resume tapped, ≥1 scheduled events passed during pause:</strong> banner disappears, schedule still untouched, toast appears: <em>"You're {N} min behind. Push serve to {newTime}?"</em>. <strong>One-tap accept</strong> invokes the existing push-back flow (which anchors in-flight items correctly via the cook_end_override fix). <strong>Dismiss</strong> leaves the cook to handle manually.</li>
+      <li><strong>Multiple pause/resume cycles:</strong> each cycle is independent. Schedule only changes when the cook explicitly hits Push back.</li>
+      <li><strong>Pause + push-back combined:</strong> push-back works as today (already correctly anchors in-flight items). Pause has no effect on the push-back delta.</li>
+    </ul>
+  </div>
+
+  <!-- ============ IMPLEMENTATION ============ -->
+  <div class="section-label">Implementation summary (for Atlas)</div>
+  <div class="design-notes">
+    <strong>Bug 2 fix (refresh shift):</strong>
+    <ul>
+      <li><code>getPauseOffsetSeconds(plan)</code> drops the <code>now - paused_at</code> term — returns just <code>total_pause_seconds</code>.</li>
+      <li>(After Bug 1 fix, <code>total_pause_seconds</code> is always 0, so this becomes a no-op for pause; the function survives for the padding side or could be removed.)</li>
+      <li>Countdowns ("in 3m") need an <em>effective now</em>. When the plan is paused, pass <code>paused_at</code> as the effective now to <code>formatTimeUntil</code> so countdowns also freeze.</li>
+    </ul>
+    <strong>Bug 1 fix (no auto-shift):</strong>
+    <ul>
+      <li><code>handleResume</code> sends <code>{ paused_at: null }</code> only — does NOT mutate <code>total_pause_seconds</code>.</li>
+      <li>After successful resume, walk the timeline (computed from unchanged <code>serve_time</code>) and check whether any non-completed event's time is now in the past. If so, surface the "you're behind" toast with the appropriate delta.</li>
+      <li>Toast action button calls the existing <code>handlePushBack({ addMinutes: deltaMin })</code> — which already correctly anchors in-flight items.</li>
+    </ul>
+    <strong>Schema:</strong> no changes. <code>total_pause_seconds</code> stays in the schema (vestigial after this change; cleanup can wait).
+  </div>
+
+  <div class="section-label">Hand-off</div>
+  <div class="design-notes">
+    Ready for build. Two coupled fixes; one PR. Tests planned in <code>lib/plan-pause.test.ts</code> covering the new resume payload + the freeze-on-pause display behaviour.
+  </div>
+
+</body>
+</html>
