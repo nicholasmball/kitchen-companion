@@ -35,6 +35,7 @@ import {
 } from '@/lib/plan-pause'
 import { cancelScheduledNotification } from '@/lib/notifications'
 import { toast as sonnerToast } from 'sonner'
+import { showBehindToast } from '@/components/planner/behind-toast'
 import { getOfferPushOnSave } from '@/lib/sync-preferences'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -533,17 +534,11 @@ export default function MealPlanDetailPage() {
         hour: '2-digit',
         minute: '2-digit',
       })
-      sonnerToast(
-        `You're ${deltaMin} min behind`,
-        {
-          description: `Push serve to ${newServeLabel}?`,
-          action: {
-            label: 'Push back',
-            onClick: () => handlePushBackRef.current?.({ addMinutes: deltaMin }),
-          },
-          duration: 12000,
-        }
-      )
+      showBehindToast({
+        deltaMin,
+        newServeLabel,
+        onPushBack: () => handlePushBackRef.current?.({ addMinutes: deltaMin }),
+      })
     }
     setResuming(false)
   }, [plan, id, updateMealPlan, timeline])
