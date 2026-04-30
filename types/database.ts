@@ -63,6 +63,7 @@ export type Database = {
           recipe_id: string | null
           ingredients: Ingredient[] | null
           recipe_snapshot_at: string | null
+          cook_end_override: string | null
         }
         Insert: {
           id?: string
@@ -81,6 +82,7 @@ export type Database = {
           recipe_id?: string | null
           ingredients?: Ingredient[] | null
           recipe_snapshot_at?: string | null
+          cook_end_override?: string | null
         }
         Update: {
           id?: string
@@ -99,6 +101,7 @@ export type Database = {
           recipe_id?: string | null
           ingredients?: Ingredient[] | null
           recipe_snapshot_at?: string | null
+          cook_end_override?: string | null
         }
       }
       recipes: {

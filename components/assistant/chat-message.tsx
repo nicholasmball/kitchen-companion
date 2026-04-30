@@ -74,6 +74,7 @@ export function ChatMessageBubble({ message, isStreaming }: ChatMessageProps) {
         recipe_id: null,
         ingredients: parsed.ingredients?.length ? parsed.ingredients : null,
         recipe_snapshot_at: null,
+        cook_end_override: null,
       })
       if (item) {
         setAddedToPlan(true)

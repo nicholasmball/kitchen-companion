@@ -18,6 +18,11 @@ import { PausedBanner } from '@/components/planner/paused-banner'
 import { PlanControlsBar } from '@/components/planner/plan-controls-bar'
 import { PushBackMenu } from '@/components/planner/push-back-menu'
 import { calculateTimeline } from '@/lib/timing-calculator'
+import {
+  applyCookEndOverrides,
+  computeHotHoldGaps,
+  findInFlightItems,
+} from '@/lib/in-flight'
 import { createClient } from '@/lib/supabase/client'
 import { buildPushPayload, buildRefreshPayload, computeDiff, type SnapshotFieldKey } from '@/lib/recipe-sync'
 import {
@@ -361,7 +366,10 @@ export default function MealPlanDetailPage() {
   const timeline = useMemo(() => {
     if (!plan?.serve_time || !plan.meal_items.length) return []
     const base = calculateTimeline(plan.meal_items, new Date(plan.serve_time))
-    return applyPauseAndPadding(base, plan)
+    // Anchor in-flight items first (so push-back doesn't shift their cook_end);
+    // then apply pause + padding offsets on top.
+    const anchored = applyCookEndOverrides(base, plan.meal_items)
+    return applyPauseAndPadding(anchored, plan)
   }, [plan])
 
   // Sort items by timeline start time (earliest first) when a serve time exists
@@ -511,17 +519,88 @@ export default function MealPlanDetailPage() {
     async (selection: { addMinutes: number } | { newServeTime: string }) => {
       if (!plan || !plan.serve_time) return
       const payload = buildPushBackPayload(plan.serve_time, selection)
+
+      // BEFORE shifting serve_time, anchor any in-flight items so push-back
+      // doesn't move their physical finish time. Uses the existing (pre-push)
+      // schedule to detect what's currently cooking.
+      const baseTimeline = calculateTimeline(plan.meal_items, new Date(plan.serve_time))
+      const inFlight = findInFlightItems(baseTimeline)
+
       const prevServeTime = plan.serve_time
-      setPlan((p) => (p ? { ...p, serve_time: payload.serve_time } : null))
+      const prevOverridesById = new Map(
+        plan.meal_items.map((i) => [i.id, i.cook_end_override])
+      )
+
+      // Optimistic update: serve_time + cook_end_override per in-flight item.
+      setPlan((p) => {
+        if (!p) return null
+        return {
+          ...p,
+          serve_time: payload.serve_time,
+          meal_items: p.meal_items.map((item) => {
+            const info = inFlight.get(item.id)
+            if (!info) return item
+            // Only set override if not already set; keep existing if cook
+            // already explicitly anchored.
+            if (item.cook_end_override) return item
+            return { ...item, cook_end_override: info.scheduledCookEnd.toISOString() }
+          }),
+        }
+      })
+
       const result = await updateMealPlan(id, payload)
       if (!result) {
-        setPlan((p) => (p ? { ...p, serve_time: prevServeTime } : null))
-        sonnerToast.error("Couldn't push back serve time", { description: 'Try again?' })
-      } else {
-        const time = new Date(payload.serve_time).toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
+        // Rollback both serve_time and any optimistic overrides we set.
+        setPlan((p) => {
+          if (!p) return null
+          return {
+            ...p,
+            serve_time: prevServeTime,
+            meal_items: p.meal_items.map((item) => ({
+              ...item,
+              cook_end_override: prevOverridesById.get(item.id) ?? null,
+            })),
+          }
         })
+        sonnerToast.error("Couldn't push back serve time", { description: 'Try again?' })
+        return
+      }
+
+      // Persist cook_end_override for newly-anchored items. (Run sequentially —
+      // small N, simpler than a single batched mutation through the hook.)
+      const supabase = createClient()
+      for (const [itemId, info] of inFlight.entries()) {
+        if (prevOverridesById.get(itemId)) continue
+        await supabase
+          .from('meal_items')
+          .update({ cook_end_override: info.scheduledCookEnd.toISOString() })
+          .eq('id', itemId)
+      }
+
+      const newServeTime = new Date(payload.serve_time)
+      const time = newServeTime.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+      // Compute hot-hold gaps against the new serve time using the updated timeline.
+      const newTimeline = applyCookEndOverrides(
+        calculateTimeline(plan.meal_items, newServeTime),
+        plan.meal_items.map((item) => ({
+          ...item,
+          cook_end_override:
+            item.cook_end_override ??
+            inFlight.get(item.id)?.scheduledCookEnd.toISOString() ??
+            null,
+        }))
+      )
+      const gaps = computeHotHoldGaps(newTimeline, newServeTime)
+      if (gaps.length > 0) {
+        const summary =
+          gaps.length === 1
+            ? `${gaps[0].mealItemName} will be ready ${gaps[0].gapMinutes} min before serve — keep warm.`
+            : `${gaps.length} items will finish before serve — they'll need to wait warm.`
+        sonnerToast.success(`Serve time pushed to ${time}`, { description: summary })
+      } else {
         sonnerToast.success(`Serve time pushed to ${time}`)
       }
     },

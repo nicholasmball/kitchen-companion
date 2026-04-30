@@ -89,6 +89,7 @@ create table public.meal_items (
   recipe_id uuid references public.recipes(id) on delete set null,
   ingredients jsonb,
   recipe_snapshot_at timestamptz,
+  cook_end_override timestamptz,                          -- pin cook_end when push-back happens mid-cook
   created_at timestamptz default now()
 );
 

@@ -59,6 +59,7 @@ export function AddRecipeToPlan({ open, onOpenChange, onAdd }: AddRecipeToPlanPr
         recipe_id: recipe.id,
         ingredients: recipe.ingredients?.length ? recipe.ingredients : null,
         recipe_snapshot_at: new Date().toISOString(),
+        cook_end_override: null,
       })
       onOpenChange(false)
     } catch (err) {
@@ -90,6 +91,7 @@ export function AddRecipeToPlan({ open, onOpenChange, onAdd }: AddRecipeToPlanPr
         recipe_id: null,
         ingredients: null,
         recipe_snapshot_at: null,
+        cook_end_override: null,
       })
       onOpenChange(false)
     } catch (err) {
