@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Turnstile, type TurnstileRef } from '@/components/auth/turnstile'
+import { clearSupabaseAuthState } from '@/lib/auth-recovery'
 
 function LoginForm() {
   const [email, setEmail] = useState('')
@@ -17,11 +18,20 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const [resetting, setResetting] = useState(false)
   const turnstileRef = useRef<TurnstileRef>(null)
   const handleCaptchaToken = useCallback((token: string) => setCaptchaToken(token), [])
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirect = searchParams.get('redirect') || '/'
+
+  async function handleResetSession() {
+    setResetting(true)
+    const supabase = createClient()
+    await clearSupabaseAuthState(supabase)
+    // Hard reload so middleware re-runs against the now-empty cookie jar.
+    window.location.href = '/login'
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -121,6 +131,14 @@ function LoginForm() {
               Sign up
             </Link>
           </p>
+          <button
+            type="button"
+            onClick={handleResetSession}
+            disabled={resetting}
+            className="text-xs text-muted-foreground hover:text-primary underline-offset-4 hover:underline disabled:opacity-60"
+          >
+            {resetting ? 'Resetting…' : 'Trouble signing in? Reset session'}
+          </button>
         </CardFooter>
       </form>
     </Card>

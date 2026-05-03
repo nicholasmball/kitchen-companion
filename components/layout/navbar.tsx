@@ -17,6 +17,7 @@ import { ThemeToggle } from '@/components/theme-toggle'
 import { BugReportDialog } from '@/components/shared/bug-report-dialog'
 import { useEffect, useState } from 'react'
 import { withTimeout } from '@/lib/utils'
+import { clearSupabaseAuthState, isInvalidRefreshTokenError } from '@/lib/auth-recovery'
 import type { User } from '@supabase/supabase-js'
 
 export function Navbar() {
@@ -70,12 +71,19 @@ export function Navbar() {
             // Profile fetch failed — avatar will show fallback initial
           }
         }
-      } catch {
-        // Auth check timed out or failed — keep existing user state.
-        // Don't set user to null here, as a timeout doesn't mean
-        // the user is logged out. The session cookies are still valid.
-        // Only a definitive auth state change (via onAuthStateChange)
-        // should clear the user.
+      } catch (err) {
+        // If the refresh token is invalid, the SDK will be wedged forever —
+        // wipe local state and bounce to /login so the user can recover
+        // without manually clearing cookies. (Bug: PWA refresh-token deadlock.)
+        if (isInvalidRefreshTokenError(err)) {
+          await clearSupabaseAuthState(supabase)
+          setUser(null)
+          router.push('/login')
+          router.refresh()
+          return
+        }
+        // Otherwise: keep existing user state. A bare timeout doesn't mean
+        // the user is logged out — Supabase was just slow.
       }
     }
     getUser()
@@ -125,9 +133,13 @@ export function Navbar() {
   }, [supabase.auth, router])
 
   async function handleSignOut() {
-    await supabase.auth.signOut()
+    // scope: 'local' avoids the network round-trip to revoke the session,
+    // which can wedge if the auth lock is held by a stuck refresh. Also wipe
+    // sb-* cookies / localStorage as a belt-and-braces: the SDK doesn't
+    // always clear them when the refresh token is already invalid.
+    await clearSupabaseAuthState(supabase)
     localStorage.removeItem('rememberMe')
-    document.cookie = 'sessionActive=; Max-Age=0; path=/' // Clear session cookie
+    document.cookie = 'sessionActive=; Max-Age=0; path=/'
     router.push('/login')
     router.refresh()
   }
